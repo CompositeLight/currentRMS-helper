@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "CurrentRMS Helper",
+  "version": "1.1",
+  "description": "Adding functionality to Current RMS",
+  "icons": {
+    "16": "images/icon-16.png",
+    "32": "images/icon-32.png",
+    "48": "images/icon-48.png",
+    "128": "images/icon-128.png"
+  },
+  "action": {
+    "default_popup": "control.html"
+  },
+
+
+  "permissions": ["activeTab", "tabs", "scripting", "ttsEngine", "storage"],
+
+
+
+  "content_scripts": [
+    {
+      "js": ["scripts/content.js"],
+      "css": ["style.css"],
+      "matches": [
+        "https://*.current-rms.com/*"
+      ]
+    }
+  ],
+  "background": {
+    "service_worker": "/service-worker.js",
+    "type": "module"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [ "sounds/error_sound.wav", "sounds/scan_sound.mp3", "sounds/correct.mp3", "sounds/alert.wav"],
+      "matches": [
+        "*://*/*"
+      ]
+    }
+  ]
+}

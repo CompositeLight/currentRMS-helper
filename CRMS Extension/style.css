@@ -1,0 +1,96 @@
+
+.hide-prepared{
+  display: none !important;
+}
+
+.hide-nonbulk{
+  display: none !important;
+}
+
+.hide-subhire {
+    display: none !important;
+}
+
+
+.message-zone{
+  display: inline;
+  font-size: 28px;
+  color: red;
+}
+
+
+.helper-spacer{
+  color: transparent;
+  background-color: transparent;
+}
+
+.helper-btn {
+    display: inline-block;
+    margin-bottom: 0;
+    font-weight: normal;
+    text-align: center;
+    vertical-align: middle;
+    cursor: pointer;
+    background-image: none;
+    border: 1px solid transparent;
+    white-space: nowrap;
+    padding: 6px 12px;
+    font-size: 14px;
+    line-height: 1.428571429;
+    border-radius: 0px;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    -o-user-select: none;
+    user-select: none;
+    /* background-color: #f8f8f8; */
+    background-color: #ffeb3b;
+    color: #666666;
+    direction: rtl;
+    margin-right: 2px;
+}
+
+.helper-btn:focus {
+    outline: thin dotted #333;
+    outline: 5px auto -webkit-focus-ring-color;
+    outline-offset: -2px
+}
+
+.helper-btn:hover,.helper-btn:focus {
+    color: #fff;
+    text-decoration: none;
+    background-color: gold;
+}
+
+.helper-btn:active,.helper-btn.active {
+    outline: 0;
+    background-image: none;
+    -webkit-box-shadow: inset 0 3px 5px rgba(0,0,0,0.125);
+    box-shadow: inset 0 3px 5px rgba(0,0,0,0.125)
+}
+
+.helper-btn.disabled,.helper-btn[disabled],fieldset[disabled] .helper-btn {
+    cursor: not-allowed;
+    pointer-events: none;
+    opacity: 0.65;
+    filter: alpha(opacity=65);
+    -webkit-box-shadow: none;
+    box-shadow: none
+}
+
+.helper-btn-default {
+    color: #fff;
+    background-color: #b3b3b3;
+    border-color: #ccc
+}
+
+.helper-btn-default:hover,.helper-btn-default:focus,.helper-btn-default:active,.helper-btn-default.active {
+    color: #fff;
+    background-color: #9f9f9f;
+    border-color: #adadad
+}
+
+.help-active, .turned-on {
+  background-color: red !important;
+  color: white !important;
+}
