@@ -10,6 +10,7 @@ This is a work-in-progress Chrome extension to add functionality to the CurrentR
 4. Click "Load Unpacked"
 5. Select the folder location.
 6. Turn on the extension.
+7. Ensure the default / built-in sound scheme is turned off to avoid duplicate sounds.
 
 ## Features
 - View options: Added tab buttons in Detail View to allow the user to hide Prepared items, hide Sub Rentals, and hide everything except Bulk/Non Stock Items. These hide the rows without effecting the display/sort order. When hiding Prepared Items, the parent item of an unprepared accessory will not be hidden until all its children are prepared.
