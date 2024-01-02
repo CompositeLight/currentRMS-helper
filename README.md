@@ -12,7 +12,7 @@ This is a work-in-progress Chrome extension to add functionality to the CurrentR
 6. Turn on the extension.
 
 ## Features
-- View options: Added tab buttons in Detail View to allow the user to hide Prepared items, hide Sub Rentals, and hide everything except Bulk/Non Stock Items. These hide the rows without effecting the display/sort order. When hiding Prepared Items, the parent item of an unprepared accessory will not be hidden until all it’s children are prepared.
+- View options: Added tab buttons in Detail View to allow the user to hide Prepared items, hide Sub Rentals, and hide everything except Bulk/Non Stock Items. These hide the rows without effecting the display/sort order. When hiding Prepared Items, the parent item of an unprepared accessory will not be hidden until all its children are prepared.
 
 - Added time stamps to “toast messages” generated when scanning in Detail View. This makes it easier to identify when errors occurred if you return to a screen full of red messages.
 
@@ -32,3 +32,7 @@ This is a work-in-progress Chrome extension to add functionality to the CurrentR
 
 - Container weights: Added a section to the info side bar called Container Weights. This gives you a list of all containers currently in use, and the running total of weights in them. This is helpful as a quick reference in the warehouse to see if a crate has been overloaded, or to allow a tech to write the case weight on the road label. Note: In order for the weight of the case/container to be included it needs to be scanned onto the job. For example, if the container is 99008 (one of our laptop cases) the asset 99009 needs to be prepared on the job for the self weight of the that case to be included in the total. 
 
+## Feedback
+
+We've tested this to a point in day to day usage, but please let me know if you encounter and bugs or unuseful behaviour.
+If you've got any great ideas on other features you'd like to see, I'd love to hear those too...
