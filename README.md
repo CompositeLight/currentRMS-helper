@@ -1,9 +1,9 @@
 # currentRMS-helper
 This is a work-in-progress Chrome extension to add functionality to the CurrentRMS web interface. It was created out of our frustration waiting on "quality of life" modifications to make the user experience better - specifically, as part of warehouse operations. Our warehouse team has found it helpful, so we've decided to share it with others. As it was created with our own in-house work processes in mind, it may or may not work for other users. However, my hope is that others (who are better at coding that I) might take this forward, or even inspire the CurrentRMS team to implement some of the changes within the main product.
 
-# DISCLAIMER: This is a first attempt work-in-progress written by me, an utter rookie in JavaScript. Use at your own risk.
+### DISCLAIMER: This is a first attempt work-in-progress written by me, an utter rookie in JavaScript. Use at your own risk.
 
-# Installation
+## Installation
 1. Copy the folder onto your desktop computer.
 2. Open Google Chrome.
 3. Go to Settings -> Extensions
@@ -11,7 +11,7 @@ This is a work-in-progress Chrome extension to add functionality to the CurrentR
 5. Select the folder location.
 6. Turn on the extension.
 
-# Features
+## Features
 View options: Added tab buttons in Detail View to allow the user to hide Prepared items, hide Sub Rentals, or hide everything except Bulk/Non Stock Items. This hides the rows without effecting the display/sort order. When hiding Prepared Items, the parent item of an unprepared accessory will not be hidden until all it’s children are prepared.
 
 Added time stamps to “toast messages” generated when scanning in Detail View. This makes it easier to identify when errors occurred if you return to a screen full of red messages.
