@@ -34,5 +34,5 @@ This is a work-in-progress Chrome extension to add functionality to the CurrentR
 
 ## Feedback
 
-We've tested this to a point in day to day usage, but please let me know if you encounter and bugs or unuseful behaviour.
+I've tested this to a point in day to day usage, but please let me know if you encounter and bugs or unuseful behaviour.
 If you've got any great ideas on other features you'd like to see, I'd love to hear those too...
