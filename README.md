@@ -24,7 +24,7 @@ This is a work-in-progress Chrome extension to add functionality to the CurrentR
 
 - If a temporary container is scanned that has already been allocated/prepared a verbal message follows the error buzzer to say “Container already allocated”. Previously you’d just hear a generic error buzz.
 
-- If an item is scanned that requires an inspection, a verbal message follows the success “ping” to let you know this, and tells you the asset number that needs testing. Previously you wouldn’t know about the missing inspection unless you were looking at the screen whilst scanning.
+- If an item is scanned that requires an inspection, a verbal message follows the success “ping” to let you know this, and tells you the asset number that needs testing. Previously you wouldn’t know about the missing inspection unless you were looking at the screen whilst scanning. Note: This is most relevant where the inspection is not set as Mandatory, which is our workflow.
 
 - When adding serialised stock by scanning barcodes, you now get a success “ding”, or a fault buzz and verbal warning if the asset number already exists. Previously there was no audio of any kind.
 
