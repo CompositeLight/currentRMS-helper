@@ -94,3 +94,18 @@
   background-color: red !important;
   color: white !important;
 }
+
+
+.inspect-link{
+  background-color: #81bc00;
+  font-weight: bold;
+}
+
+.inspect-link: hover{
+  background-color: #a6db00 !important;
+}
+
+
+.inspect-link:before, .inspect-link:after{
+  content: "\00a0 ";
+}
