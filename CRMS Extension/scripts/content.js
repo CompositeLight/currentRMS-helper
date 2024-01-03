@@ -624,6 +624,7 @@ const observer = new MutationObserver((mutations) => {
         // find and click the freescan toggle slider
         var freeScanButton = document.querySelectorAll('label[for="free_scan"][class="checkbox toggle android"]');
         freeScanButton[0].click();
+        document.getElementById("stock_level_asset_number").focus();
 
         if (freeScanActive) {
           setTimeout(function() {
