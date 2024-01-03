@@ -152,21 +152,73 @@ function processHtmlToList(html) {
   // Remove all formatting tags and the specified phrase
   const listItems = tempElement.querySelectorAll('ul li');
   listItems.forEach((item) => {
-    // Remove formatting tags
-    item.innerHTML = item.innerHTML.replace(/<[^>]*>/g, '');
 
-    // Remove the specified phrase
-    item.innerHTML = item.innerHTML.replace(/Inspect Now/g, '');
+
+
+    if (item.innerHTML.includes("Inspect Now")){
+
+      var inspectionLink = extractHref(item.innerHTML)
+      // Remove formatting tags
+      item.innerHTML = item.innerHTML.replace(/<[^>]*>/g, '');
+
+      // Remove the specified phrase
+      item.innerHTML = item.innerHTML.replace(/Inspect Now/g, '');
+
+      // Add a test link to the end
+      item.innerHTML = item.innerHTML.concat(" " + "<span class='inspect-link'><a href='"+inspectionLink+"'> Inspect Now </a></span>");
+
+    } else {
+      // Remove formatting tags
+      item.innerHTML = item.innerHTML.replace(/<[^>]*>/g, '');
+    }
+
+
   });
 
   // Convert the list items to an array of strings
-  const resultList = Array.from(listItems, (item) => item.textContent.trim());
+  //const resultList = Array.from(listItems, (item) => item.textContent.trim());
+  const resultList = Array.from(listItems, (item) => item.innerHTML.trim());
 
   // Clean up the temporary element
   tempElement.remove();
-
+  console.log(resultList);
   return resultList;
 }
+
+
+function extractHref(htmlString) {
+    // Create a temporary element to parse the HTML string
+    var tempElement = document.createElement('div');
+    tempElement.innerHTML = htmlString;
+
+    // Find the first <a> tag inside the temporary element
+    var anchorElement = tempElement.querySelector('a');
+
+    // Check if the <a> tag is found and return its href attribute
+    if (anchorElement) {
+        return anchorElement.getAttribute('href');
+    } else {
+        return null; // Return null if no <a> tag is found
+    }
+}
+
+function extractButton(htmlString) {
+    // Create a temporary element to parse the HTML string
+    var tempElement = document.createElement('div');
+    tempElement.innerHTML = htmlString;
+
+    // Find the first button inside the temporary element
+    var buttonElement = document.querySelector('.btn.btn-success');
+
+    // Check if the button is found and return its href attribute
+    if (buttonElement) {
+
+        return buttonElement.outerHTML;
+    } else {
+        return null; // Return null if no button is found
+    }
+}
+
 
 
 // Prepared button pressed
@@ -312,71 +364,6 @@ function unHideNonBulkRows() {
 
 
 
-
-
-
-
-
-
-
-// Hides any rows that are not BULK stock or TEXT ITEM
-function OLDhideNonBulkRows() {
-  // Get all table rows in the document
-  var rows = document.querySelectorAll('tr');
-
-  // Iterate through each row
-  for (var i = 0; i < rows.length; i++) {
-    // Get the status cell in the current row
-    try {
-
-      var statusCell = rows[i].querySelector('.asset-column');
-
-      // Check if the status cell contains the specified content
-      if (statusCell.innerText.includes('Bulk Stock') || statusCell.innerText.includes('Non-Stock Booking') || statusCell.innerText.includes('Asset Number')) {
-        // Skip this row
-      } else {
-        // Hide the entire row
-        //rows[i].style.display = 'none';
-        rows[i].classList.add("hide-nonbulk");
-      }
-    } catch(err) {
-      //console.log(err);
-    }
-  }
-}
-// Unhides rows that are not BULK stock or TEXT ITEM
-function OLDunHideNonBulkRows() {
-  // Get all table rows in the document
-  var rows = document.querySelectorAll('tr');
-
-  // Iterate through each row
-  for (var i = 0; i < rows.length; i++) {
-    // Get the status cell in the current row
-    try {
-
-      var statusCell = rows[i].querySelector('.asset-column');
-
-      // Check if the status cell contains the specified content
-      if (statusCell.innerText.includes('Bulk Stock') || statusCell.innerText.includes('Non-Stock Booking') || statusCell.innerText.includes('Asset Number')) {
-        // Skip this row
-      } else {
-        // Unhide the entire row
-        //rows[i].style.display = 'table-row';
-        rows[i].classList.remove("hide-nonbulk");
-      }
-    } catch(err) {
-      //console.log(err);
-    }
-  }
-}
-
-
-
-
-
-
-
-
 // Subhires button pressed
 function subhiresButton(){
   var element = document.getElementById("subhires-button");
@@ -506,8 +493,7 @@ function listToastPosts() {
       newList = '<div class="toast-message"><ul>';
       listOfIssueItems.forEach((item) => {
 
-
-        if (item.slice(-33) == "before or during the opportunity."){ // if it's an overdue inspection flag
+        if (item.includes("before or during the opportunity.")){ // if it's an overdue inspection flag
           const badItem = extractAsset(item);
           insertIndex = 1 + indexOfSecondSingleQuote(item);
 
@@ -568,14 +554,31 @@ const observer = new MutationObserver((mutations) => {
     mutation.addedNodes.forEach((node) => {
       if (node.classList?.contains("toast")){
 
+
+
         // Overide the css display properties of the toast container so that it is readable if it overflows the height of the window.
         document.getElementById("toast-container").style.overflowY = "scroll";
         document.getElementById("toast-container").style.maxHeight = "95vh";
 
+        // add the time stamp to the start of the message
         var d = new Date();
         var timeNow = d.toLocaleTimeString();
 
-        node.textContent = "("+timeNow+") " + node.textContent;
+
+        node.querySelectorAll('ul').forEach(function (element) {
+          element.outerHTML = element.innerHTML;
+        });
+        node.querySelectorAll('li').forEach(function (element) {
+          element.outerHTML = element.innerHTML;
+        });
+
+        if (node.innerHTML.includes("freescan")){
+          node.innerHTML = "("+timeNow+") Free Scan was toggled.";
+          node.classList.remove("toast-error");
+          node.classList.add("toast-info");
+        } else {
+          node.innerHTML = "("+timeNow+") " + node.innerHTML;
+        }
       }
     });
 
@@ -587,11 +590,56 @@ const observer = new MutationObserver((mutations) => {
       console.log("Toast message: " + messageText);
 
       // play an error sound for basic fail messages
-      if (messageText.slice(11) == 'Failed to allocate asset(s)' || messageText.slice(11) == 'Failed to mark item(s) as prepared' || messageText.slice(11) == 'Failed to check in item(s)' || messageText.slice(-74) == 'as it does not have an active stock allocation with a sufficient quantity.' || messageText.slice(11) == 'Failed to add container component' ){
+      if (messageText.includes('Failed to allocate asset(s)') || messageText.slice(11) == 'Failed to mark item(s) as prepared' || messageText.slice(11) == 'Failed to check in item(s)' || messageText.slice(-74) == 'as it does not have an active stock allocation with a sufficient quantity.' || messageText.slice(11) == 'Failed to add container component' ){
         error_sound.play();
 
+      } else if (messageText.includes('Free Scan')){
+
+        var freeScanActive = false;
+        // Find the parent div with class "free-scan-input"
+        var freeScanDiv = document.querySelector('.free-scan-input');
+
+        // Check if the parent div is found
+        if (freeScanDiv) {
+            // Find the <a> element with class "slide-button" inside the parent div
+            var slideButton = freeScanDiv.querySelector('a.slide-button');
+
+            // Check if the <a> element is found
+            if (slideButton) {
+                // Get the background color of the <a> element
+                var backgroundColour = window.getComputedStyle(slideButton).backgroundColor;
+                // if it's red, that maens it's off and will now be turned on
+                if (backgroundColour == "rgb(204, 0, 30)"){
+                  freeScanActive = true;
+                }
+            } else {
+                console.log('Slide button not found');
+            }
+        } else {
+            console.log('Parent div with class "free-scan-input" not found');
+        }
+
+
+
+        // find and click the freescan toggle slider
+        var freeScanButton = document.querySelectorAll('label[for="free_scan"][class="checkbox toggle android"]');
+        freeScanButton[0].click();
+
+        if (freeScanActive) {
+          setTimeout(function() {
+            sayWord("Free skann On");
+          }, 1000);
+        } else {
+          setTimeout(function() {
+            sayWord("Free skann Off");
+          }, 1000);
+        }
+
+
+
+
       // Handle errors related to items being already scanned, or just not on the job at all
-    }else if (messageText.slice(11, 50) == 'No available asset could be found using' || messageText.slice(11, 74) == "No allocated or reserved stock allocations could be found using" || messageText.slice(-46) == "has already been selected on this opportunity.") {
+      } else if (messageText.includes('No available asset could be found using') || messageText.slice(11, 74) == "No allocated or reserved stock allocations could be found using" || messageText.slice(-46) == "has already been selected on this opportunity.") {
 
           // check if it's already on the job.
           theAsset = extractAsset(messageText);
@@ -613,7 +661,7 @@ const observer = new MutationObserver((mutations) => {
           }
 
       // Handle messages related to at item being overdue an inspection
-      }else if (messageText.slice(-11) == 'Inspect Now'){
+    }else if (messageText.includes('Inspect Now')){
 
           theAsset = extractAssetToSay(messageText);
           setTimeout(function() {
@@ -712,7 +760,10 @@ function calculateContainerWeights() {
         }
       }
     } catch(err) {
-      console.log(err);
+
+      if (err.name != "TypeError"){ // ignore errors that are caused becase elements don't exist on the page
+        console.log(err);
+      }
     }
   }
 
@@ -739,7 +790,9 @@ function calculateContainerWeights() {
       };
 
     } catch(err) {
-      console.log(err);
+      if (err.name != "TypeError"){ // ignore errors that are caused becase elements don't exist on the page
+        console.log(err);
+      }
     }
   }
 
