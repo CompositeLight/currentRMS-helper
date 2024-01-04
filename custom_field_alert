@@ -8,7 +8,7 @@
 // Custom field alert box FAO Dan Ridd
 // Copy this to the bottom of content.js
 
-var customField = "Client Contact"; // Enter the name of the custom field here.
+var customField = "Example Field"; // Enter the name of the custom field here.
 //
 function findNextSpanByText(text) {
     // Find all span elements with class "field_value"
