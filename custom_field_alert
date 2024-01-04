@@ -8,7 +8,7 @@
 // Custom field alert box FAO Dan Ridd
 // Copy this to the bottom of content.js
 
-var customField = "Example Field"; // Enter the name of the custom field here.
+var customField = "Client Contact"; // Enter the name of the custom field here.
 //
 function findNextSpanByText(text) {
     // Find all span elements with class "field_value"
@@ -46,7 +46,7 @@ if (orderView.length != 0){
 console.log(orderView);
 
 // Check if a matching span was found
-if (orderView && alertSpan1.textContent.trim().length > 0){  // potentially add other or different conditionals here, like alertSpan1.textContent == "This value"
+if (orderView && alertSpan1 && alertSpan1.textContent.trim().length > 0){  // potentially add other or different conditionals here, like alertSpan1.textContent == "This value"
     // potentially add other conditionals here
     alert(alertSpan1.textContent);
 }
