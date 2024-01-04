@@ -20,7 +20,7 @@ This is a work-in-progress Chrome extension to add functionality to the CurrentR
 
 - NEW: 1.13: As requested by Jed: You can now choose the level of alert given in regards to overdue inspections. Full = voice prompt. Short = An additional BOOP sound to give you a clue. Off = No audible warning given (but you still get a visual toast message).
 
-- NEW: 1.13: Helpful Cursor: The cursor will now automatically jump back into the allocation/scan input box after certain actions. For example, expanding or collapsing the tree of items, of selecting one of the option sliders like Mark As Prepared or Free Scan.
+- NEW: 1.13: Helpful Cursor: The cursor will now automatically jump back into the allocation/scan input box after certain actions. For example, expanding or collapsing the tree of items, or selecting one of the option sliders like Mark As Prepared or Free Scan.
 
 - View options: Added tab buttons in Detail View to allow the user to hide Prepared items, hide Sub Rentals, and hide everything except Bulk/Non Stock Items. These hide the rows without effecting the display/sort order. When hiding Prepared Items, the parent item of an unprepared accessory will not be hidden until all its children are prepared.
 
