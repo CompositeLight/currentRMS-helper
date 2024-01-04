@@ -32,8 +32,21 @@ function findNextSpanByText(text) {
 }
 
 var alertSpan1 = findNextSpanByText(customField);
+var orderView = document.querySelectorAll('a[name="activities"][class="anchor"]');
+
+
+
+var orderView = document.querySelectorAll('a[name="activities"][class="anchor"]');
+
+if (orderView.length != 0){
+  orderView = true;
+} else {
+  orderView = false;
+}
+console.log(orderView);
 
 // Check if a matching span was found
-if (alertSpan1.textContent.trim().length > 0) { // potentially add other or different conditionals here, like alertSpan1.textContent == "This value"
+if (orderView && alertSpan1.textContent.trim().length > 0){  // potentially add other or different conditionals here, like alertSpan1.textContent == "This value"
+    // potentially add other conditionals here
     alert(alertSpan1.textContent);
 }
