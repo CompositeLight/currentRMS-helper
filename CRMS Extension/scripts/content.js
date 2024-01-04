@@ -247,6 +247,7 @@ function preparedButton(){
     element.classList.add("turned-on");
     element.innerHTML = "Prepared Hidden";
   }
+  focusInput();
 }
 
 
@@ -314,6 +315,7 @@ function bulkButton(){
     element.classList.add("turned-on");
     element.innerHTML = "Bulk Only";
   }
+  focusInput();
 }
 
 
@@ -390,6 +392,7 @@ function subhiresButton(){
     element.classList.add("turned-on");
     element.innerHTML = "Sub-Rentals Hidden";
   }
+  focusInput();
 }
 
 
