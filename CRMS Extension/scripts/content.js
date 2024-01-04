@@ -9,6 +9,18 @@ preparedHidden = false;
 bulkOnly = false;
 subhiresHidden = false;
 weightUnit = "kgs"; // default to kgs for weight unit
+inspectionAlerts = "";
+
+chrome.storage.local.get(["inspectionAlert"]).then((result) => {
+    inspectionAlerts = result.inspectionAlert;
+    console.log(result.inspectionAlert);
+});
+
+
+
+
+
+
 
 function getWeightUnit() {
         var element = document.getElementById('weight_total');
@@ -521,7 +533,7 @@ function listToastPosts() {
       error_sound.play();
       setTimeout(function() {
         sayWord("Failed to revert.");
-      }, 1000);
+      }, 900);
     } else if (toastPosts.includes("The status of the allocation(s) was successfully reverted")){
       scan_sound.play();
     } else if (toastPosts.includes("Stock Level was successfully created.")){
@@ -532,12 +544,12 @@ function listToastPosts() {
       error_sound.play();
       setTimeout(function() {
         sayWord("Asset number already taken.");
-      }, 1000);
+      }, 900);
     } else if (toastPosts.includes("Please correct the following errors and try again:-The number of allocations must match the item quantity.")){
       error_sound.play();
       setTimeout(function() {
         sayWord("Allocations must add up to the total quantity.");
-      }, 1000);
+      }, 900);
     }
   };
 }
@@ -624,16 +636,16 @@ const observer = new MutationObserver((mutations) => {
         // find and click the freescan toggle slider
         var freeScanButton = document.querySelectorAll('label[for="free_scan"][class="checkbox toggle android"]');
         freeScanButton[0].click();
-        document.getElementById("stock_level_asset_number").focus();
+        focusInput();
 
         if (freeScanActive) {
           setTimeout(function() {
             sayWord("Free skann On");
-          }, 1000);
+          }, 900);
         } else {
           setTimeout(function() {
             sayWord("Free skann Off");
-          }, 1000);
+          }, 900);
         }
 
 
@@ -651,37 +663,62 @@ const observer = new MutationObserver((mutations) => {
             setTimeout(function() {
               sayWord("Already scanned "+theAsset);
               console.log(messageText);
-            }, 1000);
+            }, 900);
           } else {
             // asset isn't on the job at all.
             theAsset = extractAssetToSay(messageText);
             setTimeout(function() {
               sayWord(theAsset +" is not on the job.");
               console.log(messageText);
-            }, 1000);
+            }, 900);
           }
 
       // Handle messages related to at item being overdue an inspection
     }else if (messageText.includes('Inspect Now')){
 
+      switch(inspectionAlerts) {
+        case "full":
           theAsset = extractAssetToSay(messageText);
           setTimeout(function() {
             sayWord("Inspection overdue for asset " + theAsset);
             console.log(messageText);
-          }, 1000);
+          }, 900);
+        break;
+        case "short":
+          setTimeout(function() {
+            short_alert_sound.play();
+            console.log(messageText);
+          }, 400);
+        break;
+        case "off":
+        break;
+        default:
+        // code block
+      }
+
+
+
+
+
+
+
+
+
+
+
 
       // Handle an error where an item cannot be added because it's a container that's already allocated
       }else if (messageText.slice(11) == 'A temporary container cannot be allocated while it has a live allocation on an opportunity'){
             setTimeout(function() {
               sayWord("Container already allocated");
               console.log(messageText);
-      }, 1000);
+      }, 900);
 
     }else if (messageText.slice(11) == 'None of the selected stock allocations are allocated or reserved.'){
           setTimeout(function() {
             sayWord("Cannot prepare item.");
             console.log(messageText);
-    }, 1000);
+    }, 900);
 
       // Handle an error during check-in that is caused by an item already being checked in
       }else if (messageText.slice(11,82) == 'No booked out or part checked in stock allocations could be found using'){
@@ -696,7 +733,7 @@ const observer = new MutationObserver((mutations) => {
                 setTimeout(function() {
                   sayWord("A shortage exists for asset " + theAsset + ". It may be in quarantine.");
                   console.log(messageText);
-                }, 1000);
+                }, 900);
 
       // Handle an error when trying to add an item to a container which is already in a container, or is itself a container
       }else if (messageText.slice(11, 96) == 'No active rental stock level that is not already a container component could be found'){
@@ -704,7 +741,7 @@ const observer = new MutationObserver((mutations) => {
                 setTimeout(function() {
                   sayWord("Asset already containerized.");
                   console.log(messageText);
-                }, 1000);
+                }, 900);
 
 
 
@@ -821,7 +858,7 @@ function calculateContainerWeights() {
 var error_sound = new Audio(chrome.runtime.getURL("sounds/error_sound.wav"));
 var scan_sound = new Audio(chrome.runtime.getURL("sounds/scan_sound.mp3"));
 var alert_sound = new Audio(chrome.runtime.getURL("sounds/alert.wav"));
-
+var short_alert_sound = new Audio(chrome.runtime.getURL("sounds/short_alert.mp3"));
 
 
 
@@ -904,9 +941,60 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 
-// Messages from the extension service worker to trigger changes - this code is for future use
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log("From service-worker:" + message.state);
-  if (message.state == "normal"){
+
+
+// Add an event listener to the Free Scan toggle slider, to make the asset input box focus afterwards
+var freeScanElement = document.querySelectorAll('label[for="free_scan"][class="checkbox toggle android"]');
+freeScanElement[0].addEventListener('click', function(event) {
+  focusInput();
+});
+
+// Add an event listener to the Mark As Prepared toggle slider, to make the asset input box focus afterwards
+var freeScanElement = document.querySelectorAll('label[for="mark_as_prepared"][class="checkbox toggle android"]');
+freeScanElement[0].addEventListener('click', function(event) {
+  focusInput();
+});
+
+
+// Add an event listener to all collapse and expand buttons
+var expandButtons = document.querySelectorAll('button[data-action="expand"], button[data-action="collapse"]');
+
+// loop through each button and add a click event listener
+expandButtons.forEach(function(button) {
+  button.addEventListener("click", function() {
+    // do something when the button is clicked
+    focusInput();
+  });
+});
+
+// function to put the page focus to the scanner input box
+function focusInput(){
+  document.getElementById("stock_level_asset_number").focus();
+}
+
+// auto set "mark as prepared" to on depending on the user setting
+chrome.storage.local.get(["setPrepared"]).then((result) => {
+  if (result.setPrepared != "false"){
+    var preparedButton = document.querySelectorAll('label[for="mark_as_prepared"][class="checkbox toggle android"]');
+    preparedButton[0].click();
+    focusInput();
   }
+});
+
+
+// Messages from the extension service worker to trigger changes
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  console.log("Message received from service-worker.");
+
+  if (message.inpsectionAlerts == "off"){
+    inspectionAlerts = "off";
+    console.log("Inspection Alerts set to OFF");
+  } else if (message.inpsectionAlerts == "short"){
+    inspectionAlerts = "short";
+    console.log("Inspection Alerts set to SHORT");
+  } else if (message.inpsectionAlerts == "full"){
+    inspectionAlerts = "full";
+    console.log("Inspection Alerts set to FULL");
+  }
+  return true;
 });
