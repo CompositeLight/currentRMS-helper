@@ -33,7 +33,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": [ "sounds/error_sound.wav", "sounds/scan_sound.mp3", "sounds/correct.mp3", "sounds/alert.wav"],
+      "resources": [ "sounds/error_sound.wav", "sounds/scan_sound.mp3", "sounds/correct.mp3", "sounds/alert.wav", "sounds/short_alert.mp3"],
       "matches": [
         "*://*/*"
       ]
