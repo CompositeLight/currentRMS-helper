@@ -10,12 +10,50 @@ bulkOnly = false;
 subhiresHidden = false;
 weightUnit = "kgs"; // default to kgs for weight unit
 inspectionAlerts = "";
+multiGlobal = true;
 
 chrome.storage.local.get(["inspectionAlert"]).then((result) => {
     inspectionAlerts = result.inspectionAlert;
-    console.log(result.inspectionAlert);
+    console.log("Inspection alert mode: "+result.inspectionAlert);
 });
 
+chrome.storage.local.get(["multiGlobal"]).then((result) => {
+    multiGlobal = result.inspectionAlert;
+    console.log("Global check-in overide: "+result.multiGlobal);
+});
+
+
+// check if we're in Order View
+var orderView = document.querySelectorAll('a[name="activities"][class="anchor"]');
+if (orderView.length != 0){
+  orderView = true;
+} else {
+  orderView = false;
+}
+
+// check if we're in Detail View
+var detailView = document.querySelectorAll('div[class="tab-pane"][id="quick_prepare"]');
+if (detailView.length != 0){
+  detailView = true;
+} else {
+  detailView = false;
+}
+
+
+
+// check if we're in Global Check-in view
+var globalCheckinView = document.querySelectorAll('div[class="col-sm-12 global_check_ins main-content"]');
+if (globalCheckinView.length != 0){
+  globalCheckinView = true;
+} else {
+  globalCheckinView = false;
+}
+
+
+
+console.log("Order view: "+orderView);
+console.log("Detail view: "+detailView);
+console.log("Global Check-in view: "+globalCheckinView);
 
 
 
@@ -699,17 +737,6 @@ const observer = new MutationObserver((mutations) => {
         // code block
       }
 
-
-
-
-
-
-
-
-
-
-
-
       // Handle an error where an item cannot be added because it's a container that's already allocated
       }else if (messageText.slice(11) == 'A temporary container cannot be allocated while it has a live allocation on an opportunity'){
             setTimeout(function() {
@@ -749,7 +776,7 @@ const observer = new MutationObserver((mutations) => {
 
 
       // Handle myriad messages that are good, and just need a confirmatory "ding"
-    } else if (messageText.slice(11) == 'Allocation successful' || messageText.slice(11) == 'Items successfully marked as prepared' || messageText.slice(11) == 'Items successfully checked in' || messageText.slice(11) == 'Container Component was successfully destroyed. ' || messageText.slice(11) == 'Opportunity Item was successfully destroyed.' || messageText.slice(11) == 'Container component was successfully added' || messageText.slice(11) == 'Opportunity Item was successfully updated.'  || messageText.slice(11) == 'Items successfully booked out.' || messageText.slice(11) == 'Container component was successfully removed'  || messageText.slice(11) == 'Check-in details updated successfully' || messageText.slice(11) == 'Opportunity Item was updated.' || messageText.slice(11) == 'Set container successfully'){
+    } else if (messageText.slice(11) == 'Allocation successful' || messageText.slice(11) == 'Items successfully marked as prepared' || messageText.slice(11) == 'Items successfully checked in' || messageText.slice(11) == 'Container Component was successfully destroyed. ' || messageText.slice(11) == 'Opportunity Item was successfully destroyed.' || messageText.slice(11) == 'Container component was successfully added' || messageText.slice(11) == 'Opportunity Item was successfully updated.'  || messageText.slice(11) == 'Items successfully booked out.' || messageText.slice(11) == 'Container component was successfully removed'  || messageText.slice(11) == 'Check-in details updated successfully' || messageText.slice(11) == 'Opportunity Item was updated.' || messageText.slice(11) == 'Set container successfully' || messageText.includes('Asset(s) successfully checked in')){
         scan_sound.play();
 
       // If any other alert appears, log it so that I can spot it and add it to this code
@@ -762,6 +789,38 @@ const observer = new MutationObserver((mutations) => {
       calculateContainerWeights(); // update container weight values in the side bar
       updateHidings(); // Update changed items that might need to be hidden
     });
+
+
+
+  //////// END OF TOAST SECTION /////////
+
+  ///// START OF GLOBAL CHECK IN SECTION /////
+
+  if (globalCheckinView && multiGlobal) { // if we're in global check in and the overide is on
+    const globalCheckModal = addedNodes.filter((node) => {
+        // Check if node is an HTMLElement and has a querySelector method
+        if (node instanceof HTMLElement && node.querySelector) {
+            // Use querySelector to find the child element with the specified class
+            const childElement = node.querySelector('.btn.btn-primary.pull-right');
+
+            // Check if the child element with the specified class exists
+            return childElement !== null;
+        }
+
+        // Return false if node is not an HTMLElement or lacks querySelector method
+        return false;
+    });
+
+    if (globalCheckModal.length > 0) {
+
+        var selectAllBox = document.querySelectorAll('input[name="asset_select_all"]');
+        selectAllBox[0].click();
+        var checkInButton = document.querySelectorAll('input[name="commit"][value="check-in"]');
+        checkInButton[1].click();
+    }
+  }
+
+
 
   });
 });
@@ -944,48 +1003,48 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 
-try { // try block so that this code only applies in Detail View
+if (detailView){
+  try { // try block in case some ellements may not exist in some circumstances
 
-  // Add an event listener to the Free Scan toggle slider, to make the asset input box focus afterwards
-  var freeScanElement = document.querySelectorAll('label[for="free_scan"][class="checkbox toggle android"]');
-  freeScanElement[0].addEventListener('click', function(event) {
-    focusInput();
-  });
-
-  // Add an event listener to the Mark As Prepared toggle slider, to make the asset input box focus afterwards
-  var freeScanElement = document.querySelectorAll('label[for="mark_as_prepared"][class="checkbox toggle android"]');
-  freeScanElement[0].addEventListener('click', function(event) {
-    focusInput();
-  });
-
-
-  // Add an event listener to all collapse and expand buttons
-  var expandButtons = document.querySelectorAll('button[data-action="expand"], button[data-action="collapse"]');
-
-  // loop through each button and add a click event listener
-  expandButtons.forEach(function(button) {
-    button.addEventListener("click", function() {
-      // do something when the button is clicked
+    // Add an event listener to the Free Scan toggle slider, to make the asset input box focus afterwards
+    var freeScanElement = document.querySelectorAll('label[for="free_scan"][class="checkbox toggle android"]');
+    freeScanElement[0].addEventListener('click', function(event) {
       focusInput();
     });
-  });
 
-  // Add an event listener to all lock/unlock buttons
-  var lockButtons = document.querySelectorAll('a[data-unlock-title="Unlock this group"]');
-
-  // loop through each button and add a click event listener
-  lockButtons.forEach(function(button) {
-    button.addEventListener("click", function() {
-      // do something when the button is clicked
+    // Add an event listener to the Mark As Prepared toggle slider, to make the asset input box focus afterwards
+    var freeScanElement = document.querySelectorAll('label[for="mark_as_prepared"][class="checkbox toggle android"]');
+    freeScanElement[0].addEventListener('click', function(event) {
       focusInput();
     });
-  });
 
-}
-catch(err) {
-  console.log(err);
-}
+    // Add an event listener to all collapse and expand buttons
+    var expandButtons = document.querySelectorAll('button[data-action="expand"], button[data-action="collapse"]');
 
+    // loop through each button and add a click event listener
+    expandButtons.forEach(function(button) {
+      button.addEventListener("click", function() {
+        // do something when the button is clicked
+        focusInput();
+      });
+    });
+
+    // Add an event listener to all lock/unlock buttons
+    var lockButtons = document.querySelectorAll('a[data-unlock-title="Unlock this group"]');
+
+    // loop through each button and add a click event listener
+    lockButtons.forEach(function(button) {
+      button.addEventListener("click", function() {
+        // do something when the button is clicked
+        focusInput();
+      });
+    });
+
+  }
+  catch(err) {
+    console.log(err);
+  }
+}
 
 
 
@@ -996,14 +1055,20 @@ function focusInput(){
   document.getElementById("stock_level_asset_number").focus();
 }
 
+
 // auto set "mark as prepared" to on depending on the user setting
 chrome.storage.local.get(["setPrepared"]).then((result) => {
-  if (result.setPrepared != "false"){
+  if (result.setPrepared != "false" && detailView){
     var preparedButton = document.querySelectorAll('label[for="mark_as_prepared"][class="checkbox toggle android"]');
     preparedButton[0].click();
     focusInput();
   }
 });
+
+
+
+
+
 
 
 // Messages from the extension service worker to trigger changes
@@ -1020,5 +1085,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     inspectionAlerts = "full";
     console.log("Inspection Alerts set to FULL");
   }
+
+  if (message.multiGlobal == "true"){
+    multiGlobal = true;
+    console.log("Global check-in dialog overide set to TRUE");
+  } else if (message.multiGlobal == "false"){
+    multiGlobal = false;
+    console.log("Global check-in dialog overide set to FALSE");
+  }
+
+
+
   return true;
 });
+
