@@ -944,31 +944,52 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 
+try { // try block so that this code only applies in Detail View
 
-
-// Add an event listener to the Free Scan toggle slider, to make the asset input box focus afterwards
-var freeScanElement = document.querySelectorAll('label[for="free_scan"][class="checkbox toggle android"]');
-freeScanElement[0].addEventListener('click', function(event) {
-  focusInput();
-});
-
-// Add an event listener to the Mark As Prepared toggle slider, to make the asset input box focus afterwards
-var freeScanElement = document.querySelectorAll('label[for="mark_as_prepared"][class="checkbox toggle android"]');
-freeScanElement[0].addEventListener('click', function(event) {
-  focusInput();
-});
-
-
-// Add an event listener to all collapse and expand buttons
-var expandButtons = document.querySelectorAll('button[data-action="expand"], button[data-action="collapse"]');
-
-// loop through each button and add a click event listener
-expandButtons.forEach(function(button) {
-  button.addEventListener("click", function() {
-    // do something when the button is clicked
+  // Add an event listener to the Free Scan toggle slider, to make the asset input box focus afterwards
+  var freeScanElement = document.querySelectorAll('label[for="free_scan"][class="checkbox toggle android"]');
+  freeScanElement[0].addEventListener('click', function(event) {
     focusInput();
   });
-});
+
+  // Add an event listener to the Mark As Prepared toggle slider, to make the asset input box focus afterwards
+  var freeScanElement = document.querySelectorAll('label[for="mark_as_prepared"][class="checkbox toggle android"]');
+  freeScanElement[0].addEventListener('click', function(event) {
+    focusInput();
+  });
+
+
+  // Add an event listener to all collapse and expand buttons
+  var expandButtons = document.querySelectorAll('button[data-action="expand"], button[data-action="collapse"]');
+
+  // loop through each button and add a click event listener
+  expandButtons.forEach(function(button) {
+    button.addEventListener("click", function() {
+      // do something when the button is clicked
+      focusInput();
+    });
+  });
+
+  // Add an event listener to all lock/unlock buttons
+  var lockButtons = document.querySelectorAll('a[data-unlock-title="Unlock this group"]');
+
+  // loop through each button and add a click event listener
+  lockButtons.forEach(function(button) {
+    button.addEventListener("click", function() {
+      // do something when the button is clicked
+      focusInput();
+    });
+  });
+
+}
+catch(err) {
+  console.log(err);
+}
+
+
+
+
+
 
 // function to put the page focus to the scanner input box
 function focusInput(){
