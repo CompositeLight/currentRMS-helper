@@ -1,0 +1,39 @@
+// Dan Ridd's custom field alert box
+// This is a basic code for creating an alert popup based on a custom field.
+// Copy this to the bottom of content.js
+
+
+
+
+// Custom field alert box FAO Dan Ridd
+// Copy this to the bottom of content.js
+
+var customField = "Client Contact"; // Enter the name of the custom field here.
+//
+function findNextSpanByText(text) {
+    // Find all span elements with class "field_value"
+    var customFields = document.querySelectorAll('.field_label');
+
+    // Loop through each found element
+    for (var i = 0; i < customFields.length; i++) {
+        // Check if the inner text of the current element matches the specified text
+        if (customFields[i].textContent.trim().includes(text)) {
+            // Get the next sibling element (immediately following span)
+            var nextSpan = customFields[i].nextElementSibling;
+
+            // Check if the next sibling exists and is a span element
+            if (nextSpan && nextSpan.tagName.toLowerCase() === 'span') {
+                return nextSpan;
+            }
+        }
+    }
+    // Return null if no matching element is found
+    return null;
+}
+
+var alertSpan1 = findNextSpanByText(customField);
+
+// Check if a matching span was found
+if (alertSpan1.textContent.trim().length > 0) { // potentially add other or different conditionals here, like alertSpan1.textContent == "This value"
+    alert(alertSpan1.textContent);
+}
