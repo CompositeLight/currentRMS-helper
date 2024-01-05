@@ -1105,11 +1105,6 @@ chrome.storage.local.get(["setPrepared"]).then((result) => {
 });
 
 
-
-
-
-
-
 // Messages from the extension service worker to trigger changes
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log("Message received from service-worker.");
@@ -1133,7 +1128,28 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     console.log("Global check-in dialog overide set to FALSE");
   }
 
-
-
   return true;
 });
+
+
+// inject incercept function into the scan input html
+if (detailView){
+  var formElement = document.getElementById('quick_allocate');
+  // Check if the form element exists
+  if (formElement) {
+    // Update the onsubmit attribute
+    formElement.onsubmit = interceptScan;
+    // Optionally, you can also remove the existing onsubmit attribute
+    // formElement.removeAttribute('onsubmit');
+        console.log('onsubmit attribute updated successfully');
+    } else {
+        console.error('Form element not found');
+    }
+}
+
+
+// intercept function to respond to special scans
+function interceptScan(){
+  alert("test");
+  return false;
+}
