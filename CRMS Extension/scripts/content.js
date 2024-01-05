@@ -646,51 +646,6 @@ const observer = new MutationObserver((mutations) => {
       if (messageText.includes('Failed to allocate asset(s)') || messageText.slice(11) == 'Failed to mark item(s) as prepared' || messageText.slice(11) == 'Failed to check in item(s)' || messageText.slice(-74) == 'as it does not have an active stock allocation with a sufficient quantity.' || messageText.slice(11) == 'Failed to add container component' ){
         error_sound.play();
 
-      } else if (messageText.includes('Free Scan')){
-
-        var freeScanActive = false;
-        // Find the parent div with class "free-scan-input"
-        var freeScanDiv = document.querySelector('.free-scan-input');
-
-        // Check if the parent div is found
-        if (freeScanDiv) {
-            // Find the <a> element with class "slide-button" inside the parent div
-            var slideButton = freeScanDiv.querySelector('a.slide-button');
-
-            // Check if the <a> element is found
-            if (slideButton) {
-                // Get the background color of the <a> element
-                var backgroundColour = window.getComputedStyle(slideButton).backgroundColor;
-                // if it's red, that maens it's off and will now be turned on
-                if (backgroundColour == "rgb(204, 0, 30)"){
-                  freeScanActive = true;
-                }
-            } else {
-                console.log('Slide button not found');
-            }
-        } else {
-            console.log('Parent div with class "free-scan-input" not found');
-        }
-
-
-
-        // find and click the freescan toggle slider
-        var freeScanButton = document.querySelectorAll('label[for="free_scan"][class="checkbox toggle android"]');
-        freeScanButton[0].click();
-        focusInput();
-
-        if (freeScanActive) {
-          setTimeout(function() {
-            sayWord("Free skann On");
-          }, 900);
-        } else {
-          setTimeout(function() {
-            sayWord("Free skann Off");
-          }, 900);
-        }
-
-
-
 
       // Handle errors related to items being already scanned, or just not on the job at all
       } else if (messageText.includes('No available asset could be found using') || messageText.slice(11, 74) == "No allocated or reserved stock allocations could be found using" || messageText.slice(-46) == "has already been selected on this opportunity.") {
@@ -1132,24 +1087,71 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 
-// inject incercept function into the scan input html
-if (detailView){
-  var formElement = document.getElementById('quick_allocate');
-  // Check if the form element exists
-  if (formElement) {
-    // Update the onsubmit attribute
-    formElement.onsubmit = interceptScan;
-    // Optionally, you can also remove the existing onsubmit attribute
-    // formElement.removeAttribute('onsubmit');
-        console.log('onsubmit attribute updated successfully');
-    } else {
-        console.error('Form element not found');
+
+
+
+// Intercept scanning actions to handle special scans without submitting the form
+var allocateScanBox = document.getElementById("stock_level_asset_number")
+
+allocateScanBox.addEventListener("keypress", function(event) {
+  if (event.key === "Enter") {
+    switch(allocateScanBox.value){
+      case "freescan":
+        alert("test");
+        sayWord("Test");
+        event.preventDefault();
+        freeScanToggle();
+        allocateScanBox.value = "";
+        break;
+      case "b":
+        event.preventDefault();
+        alert("b");
+      default:
     }
-}
+  }
+
+});
+
 
 
 // intercept function to respond to special scans
-function interceptScan(){
-  alert("test");
-  return false;
+function freeScanToggle(){
+  var freeScanActive = false;
+  // Find the parent div with class "free-scan-input"
+  var freeScanDiv = document.querySelector('.free-scan-input');
+
+  // Check if the parent div is found
+  if (freeScanDiv) {
+      // Find the <a> element with class "slide-button" inside the parent div
+      var slideButton = freeScanDiv.querySelector('a.slide-button');
+
+      // Check if the <a> element is found
+      if (slideButton) {
+          // Get the background color of the <a> element
+          var backgroundColour = window.getComputedStyle(slideButton).backgroundColor;
+          // if it's red, that maens it's off and will now be turned on
+          if (backgroundColour == "rgb(204, 0, 30)"){
+            freeScanActive = true;
+          }
+      } else {
+          console.log('Slide button not found');
+      }
+  } else {
+      console.log('Parent div with class "free-scan-input" not found');
+  }
+
+  // find and click the freescan toggle slider
+  var freeScanButton = document.querySelectorAll('label[for="free_scan"][class="checkbox toggle android"]');
+  freeScanButton[0].click();
+  focusInput();
+
+  if (freeScanActive) {
+    setTimeout(function() {
+      sayWord("Free skann On");
+    }, 900);
+  } else {
+    setTimeout(function() {
+      sayWord("Free skann Off");
+    }, 900);
+  }
 }
