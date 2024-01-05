@@ -896,6 +896,7 @@ function calculateContainerWeights() {
     }
   }
 
+
   // Output the result into the sidebar if it exists
   if (document.getElementById("containerlist")) {
     var ul = document.getElementById("containerlist");
@@ -935,12 +936,50 @@ listToastPosts();
 
 // add a section to the sidebar if it exists
 try {
-  document.getElementById("sidebar_content")
-  .insertAdjacentHTML("afterend", "<div class='group-side-content'><h3>Container Weights</h3><div><ul  id='containerlist'></ul></div>");
-  getWeightUnit(); // check to see what weight unit the user has set by looking at the total weight field
-  calculateContainerWeights(); // set initial container weigh values in the side bar
-} catch (err){
+  var containerWeightsSection = document.getElementById("sidebar_content");
+ 
+  if (containerWeightsSection) {
+    var htmlContent = `<div class='group-side-content' id='containerWeightsSection'><h3>Container Weights<a class='toggle-button expand-arrow icn-cobra-contract' href='#'></a></h3><div><ul id='containerlist' style='display: block;'></ul></div></div>`;
+ 
+    containerWeightsSection.insertAdjacentHTML("afterend", htmlContent);
+ 
+    var containerWeightsSectionDiv = document.getElementById('containerWeightsSection');
+    var toggleButton = containerWeightsSectionDiv.querySelector('.toggle-button');
+ 
+    // Adjust the display property for the initial state
+    var containerList = document.getElementById('containerlist');
+    containerList.style.display = 'block';
+ 
+    toggleButton.onclick = function (event) {
+      event.preventDefault();
+      if (containerList.style.display === 'none' || containerList.style.display === '') {
+        containerList.style.display = 'block';
+        toggleButton.classList.remove('icn-cobra-expand');
+        toggleButton.classList.add('icn-cobra-contract');
+      } else {
+        containerList.style.display = 'none';
+        toggleButton.classList.remove('icn-cobra-contract');
+        toggleButton.classList.add('icn-cobra-expand');
+      }
+    };
+ 
+    getWeightUnit(); // check to see what weight unit the user has set by looking at the total weight field
+    calculateContainerWeights(); // set initial container weigh values in the side bar
+ 
+    // Add inline style for the toggle-button size
+    toggleButton.style.fontSize = '14px'; // Adjust the size as needed
+  }
+} catch (err) {
+  console.error(err);
 }
+
+
+
+
+
+
+
+
 
 
 
@@ -1098,4 +1137,3 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   return true;
 });
-

@@ -1,4 +1,4 @@
-# currentRMS-helper 1.16
+# currentRMS-helper 1.17
 This is a work-in-progress Chrome extension to add functionality to the CurrentRMS web interface. It was created out of our frustration waiting on "quality of life" modifications to make the user experience better - specifically, as part of warehouse operations. Our warehouse team has found it helpful, so we've decided to share it with others. As it was created with our own in-house work processes in mind, it may or may not work for other users. However, my hope is that others (who are better at coding that I) might take this forward, or even inspire the CurrentRMS team to implement some of the changes within the main product.
 
 **DISCLAIMER: This is a first attempt work-in-progress written by me, an utter rookie in JavaScript. Use at your own risk. This code is in no way affiliated with InspHire Ltd.**
@@ -12,7 +12,14 @@ This is a work-in-progress Chrome extension to add functionality to the CurrentR
 6. Turn on the extension.
 7. Ensure the default / built-in sound scheme is turned off to avoid duplicate sounds.
 
+## Compatibility
+
+Aside from the Chrome Desktop Browser, users have successfully used this extension in Opera, and Android via Kiwi.
+
+
 ## Features
+
+- IMPROVED: 1.17: The container weights section can now be expanded/collapse. Thanks to Jed & the Stage Engage team!
 
 - NEW: 1.16: Added an option to override the dialog box that pops up if you use Global Check-in on an item that is booked out on multiple opportunities. Previously, this box requires interaction which means going back to the computer and disrupts scanning. In practice, it's rare that you would not want to check in the item from all possible opporunitues - because that's the whole point of global check in.
 
@@ -43,7 +50,7 @@ This is a work-in-progress Chrome extension to add functionality to the CurrentR
 - When scanning assets into a container you will receive a verbal warning when trying to scan in an item that already is, or already is in, a container.
 
 - Container weights: Added a section to the info side bar called Container Weights. This gives you a list of all containers currently in use, and the running total of weights in them. This is helpful as a quick reference in the warehouse to see if a crate has been overloaded, or to allow a tech to write the case weight on the road label. Note: In order for the weight of the case/container to be included it needs to be scanned onto the job. For example, if the container is 99008 (one of our laptop cases) the asset 99009 needs to be prepared on the job for the self weight of the that case to be included in the total.
-  
+
 - NEW: As requested in the CRMS wishlist: In Detail View the Free Scan mode can now be toggled by barcode. To do this, create barcode that has the value "freescan" (which typically means you would have "*freescan*"). When scanning this barcode you will hear an error sound as the item "isn't found", but immediately afterwards a voice prompt will declare "free scan on" or "free scan off".
 
 ## Feedback
