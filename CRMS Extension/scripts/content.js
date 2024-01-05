@@ -4,6 +4,7 @@
 
 console.log("CurrentRMS Helper Activated.");
 assetsOnTheJob = [];
+assetsGlobalScanned = [];
 
 preparedHidden = false;
 bulkOnly = false;
@@ -22,8 +23,13 @@ chrome.storage.local.get(["inspectionAlert"]).then((result) => {
 });
 
 chrome.storage.local.get(["multiGlobal"]).then((result) => {
-    multiGlobal = result.inspectionAlert;
-    console.log("Global check-in overide: "+result.multiGlobal);
+    if (result.inspectionAlert == undefined){
+      multiGlobal = true;
+    } else {
+      multiGlobal = result.inspectionAlert;
+    }
+
+    console.log("Global check-in overide: "+multiGlobal);
 });
 
 
@@ -196,6 +202,22 @@ function listAssets() {
     }
   });
 }
+
+// function that scrapes the global check-in page for items listed as being already scanned.
+function listGlobalCheckedItems() {
+  const cells = document.querySelectorAll('.optional-01');
+  // Create an array to store the cell values
+  assetsGlobalScanned = [];
+  cells.forEach((cell) => {
+    // Get the trimmed text content of the cell
+    const cellValue = cell.textContent.trim();
+    assetsGlobalScanned.push(cellValue); // Add the cell value to the array
+  });
+}
+
+
+
+
 
 // This function helps to reformat crazy long lists that sometimes occur.
 function processHtmlToList(html) {
@@ -581,6 +603,8 @@ function listToastPosts() {
       }, 900);
     } else if (toastPosts.includes("The status of the allocation(s) was successfully reverted")){
       scan_sound.play();
+    } else if (toastPosts.includes("Asset(s) successfully reset")){
+      scan_sound.play();
     } else if (toastPosts.includes("Stock Level was successfully created.")){
       scan_sound.play();
     } else if (toastPosts.includes("Allocation successful")){
@@ -650,6 +674,8 @@ const observer = new MutationObserver((mutations) => {
       if (messageText.includes('Failed to allocate asset(s)') || messageText.slice(11) == 'Failed to mark item(s) as prepared' || messageText.slice(11) == 'Failed to check in item(s)' || messageText.slice(-74) == 'as it does not have an active stock allocation with a sufficient quantity.' || messageText.slice(11) == 'Failed to add container component' ){
         error_sound.play();
 
+      } else if (messageText.includes('Free Scan')){
+        //ignore these as they're messages created by the CRMS Helper
 
       // Handle errors related to items being already scanned, or just not on the job at all
       } else if (messageText.includes('No available asset could be found using') || messageText.slice(11, 74) == "No allocated or reserved stock allocations could be found using" || messageText.slice(-46) == "has already been selected on this opportunity.") {
@@ -709,6 +735,36 @@ const observer = new MutationObserver((mutations) => {
             console.log(messageText);
     }, 900);
 
+
+      // Handle an error during global check-in that is caused by a failed scan
+      }else if (messageText.includes("at your active store using the filter options from the settings screen (accessed using the wrench button).")){
+
+          console.log(messageText);
+
+          // check if it's already on the job.
+          theAsset = extractAsset(messageText);
+          listGlobalCheckedItems();
+          if (assetsGlobalScanned.includes(theAsset)){
+            // Means it's already allocated / scanned
+            error_sound.play();
+            setTimeout(function() {
+              //theAsset = extractAssetToSay(messageText);
+              //sayWord("Already scanned "+theAsset);
+              sayWord("Already scanned");
+              console.log(messageText);
+            }, 700);
+          } else {
+            // asset isn't booked out anywhere.
+            error_sound.play();
+          }
+
+
+
+
+
+
+
+
       // Handle an error during check-in that is caused by an item already being checked in
       }else if (messageText.slice(11,82) == 'No booked out or part checked in stock allocations could be found using'){
             // setTimeout(function() {
@@ -718,20 +774,26 @@ const observer = new MutationObserver((mutations) => {
 
       // Handle niche error where an item is not available because it's listed in quarantine
       }else if (messageText.slice(11,52) == 'A shortage exists for the Rental of Asset'){
-                theAsset = extractAssetToSay(messageText);
-                setTimeout(function() {
-                  sayWord("A shortage exists for asset " + theAsset + ". It may be in quarantine.");
-                  console.log(messageText);
-                }, 900);
+        theAsset = extractAssetToSay(messageText);
+        setTimeout(function() {
+          sayWord("A shortage exists for asset " + theAsset + ". It may be in quarantine.");
+          console.log(messageText);
+        }, 900);
 
       // Handle an error when trying to add an item to a container which is already in a container, or is itself a container
       }else if (messageText.slice(11, 96) == 'No active rental stock level that is not already a container component could be found'){
-                theAsset = extractAssetToSay(messageText);
-                setTimeout(function() {
-                  sayWord("Asset already containerized.");
-                  console.log(messageText);
-                }, 900);
+        theAsset = extractAssetToSay(messageText);
+        setTimeout(function() {
+          sayWord("Asset already containerized.");
+          console.log(messageText);
+        }, 900);
 
+      // handle the user hitting enter on an empty input box
+    } else if (messageText.includes("You must select an asset.")) {
+        // Normally redundant except global check in doesn't do error boxes.
+        if (globalCheckinView){
+          error_sound.play();
+        }
 
 
       // Handle myriad messages that are good, and just need a confirmatory "ding"
@@ -1097,23 +1159,24 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // Intercept scanning actions to handle special scans without submitting the form
 var allocateScanBox = document.getElementById("stock_level_asset_number")
 
-allocateScanBox.addEventListener("keypress", function(event) {
-  if (event.key === "Enter") {
-    switch(allocateScanBox.value){
-      case "freescan":
-        event.preventDefault();
-        freeScanToggle();
-        allocateScanBox.value = "";
-        break;
-      case "b":
-        event.preventDefault();
-        alert("b");
-      default:
+if (detailView){
+  allocateScanBox.addEventListener("keypress", function(event) {
+    if (event.key === "Enter") {
+      switch(allocateScanBox.value){
+        case "freescan":
+          event.preventDefault();
+          freeScanToggle();
+          allocateScanBox.value = "";
+          break;
+        case "b":
+          event.preventDefault();
+          alert("b");
+        default:
+      }
     }
-  }
 
-});
-
+  });
+}
 
 
 // intercept function to respond to special scans
@@ -1146,15 +1209,64 @@ function freeScanToggle(){
   var freeScanButton = document.querySelectorAll('label[for="free_scan"][class="checkbox toggle android"]');
   freeScanButton[0].click();
   focusInput();
-  short_alert_sound.play();
+  scan_sound.play();
+
 
   if (freeScanActive) {
+    makeToast("toast-info", "Free Scan turned on.", 3);
     setTimeout(function() {
-      sayWord("Free skann On");
+      sayWord("Free skann Yes");
     }, 400);
   } else {
     setTimeout(function() {
-      sayWord("Free skann Off");
+      makeToast("toast-info", "Free Scan turned off.", 3);
+      sayWord("Free skann No");
     }, 400);
   }
+}
+
+// function to create a new toast message
+// example className entries are toast-success, toast-error, toast-info and toast-warning
+function makeToast(className, text, autoDestroyTime) {
+    // Check if the toast-container div exists
+    var toastContainer = document.getElementById('toast-container');
+
+    // If it doesn't exist, create it at the end of the body
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toast-container';
+        toastContainer.className = 'toast-top-right';
+        toastContainer.style.overflowY = 'scroll';
+        toastContainer.style.maxHeight = '95vh';
+        document.body.appendChild(toastContainer);
+    }
+
+    // Create the new toast div
+    var newToast = document.createElement('div');
+    newToast.className = 'toast ' + className;
+    newToast.setAttribute('aria-live', 'assertive');
+    newToast.style.display = 'block';
+
+    // Create the inner div for the toast message
+    var toastMessage = document.createElement('div');
+    toastMessage.className = 'toast-message';
+    toastMessage.textContent = text;
+
+    // Append the inner div to the toast div
+    newToast.appendChild(toastMessage);
+
+    // Append the toast div to the toast container
+    toastContainer.insertBefore(newToast, toastContainer.firstChild);
+
+    // Add event listener to destroy the toast on click
+    newToast.addEventListener('click', function() {
+        newToast.remove();
+    });
+
+    // Auto destroy the toast after the specified time if autoDestroyTime is provided and greater than 0
+    if (autoDestroyTime && autoDestroyTime > 0) {
+        setTimeout(function() {
+            newToast.remove();
+        }, autoDestroyTime * 1000);
+    }
 }
