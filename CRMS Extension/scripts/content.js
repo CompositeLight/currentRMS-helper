@@ -2,7 +2,7 @@
 // NOTE: This code deals with two types of messages. ToastMessages are the type that appear via websocket message to the page. This includes things like sucess messages when an item is scanned. The other type I have called toastPosts, which appear following a php page refresh. This applies to certain scenarios, like reverting the status on an item. FYI Current calls the dialog boxes in the top corner "toast messages", which is where the toast thing comes from.
 
 
-console.log("CurrentRMS Helper Activated");
+console.log("CurrentRMS Helper Activated.");
 assetsOnTheJob = [];
 
 preparedHidden = false;
