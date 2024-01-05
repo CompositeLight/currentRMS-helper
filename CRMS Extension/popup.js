@@ -1,44 +1,63 @@
-// Function to be executed when a radio button is clicked
-function handleRadioButtonClick(event) {
-  // Access the value of the selected radio button
-  const selectedValue = event.target.value;
-
-
-  // Your code logic based on the selected radio button value
-  console.log(`Selected value: ${selectedValue}`);
-  chrome.runtime.sendMessage({ state: selectedValue });
 
 
 
-}
+// Code for the Mark As Prepared setting:
+chrome.storage.local.get(["setPrepared"]).then((result) => {
+  if (result.setPrepared == "false"){
+    document.querySelector(`input[name="markprepared"][value="false"]`).checked = true;
+  }
+});
 
-// Add a click event listener to all radio buttons with class "w3-radio"
-document.querySelectorAll('.w3-radio').forEach(radioButton => {
-  radioButton.addEventListener('click', handleRadioButtonClick);
+document.querySelectorAll('input[name="markprepared"]').forEach(function(radio) {
+  radio.addEventListener('change', function() {
+    console.log(this.value);
+    //await chrome.storage.session.set({ prepareSet: this.value });
+    chrome.storage.local.set({ "setPrepared": this.value }).then(() => {
+       console.log("Mark as prepared set");
+     });
+    //console.log('Data saved: '+ this.value);
+
+  });
 });
 
 
-// Retrieve stored values from Chrome Storage API and set the radio button selections
-    chrome.storage.sync.get(['viewmode', 'subhires'], function(result) {
-      if (result.viewmode) {
-        document.querySelector(`input[name="viewmode"][value="${result.viewmode}"]`).checked = true;
-        chrome.runtime.sendMessage({ state: result.viewmode });
-      }
-      if (result.subhires) {
-        document.querySelector(`input[name="subhires"][value="${result.subhires}"]`).checked = true;
-        chrome.runtime.sendMessage({ state: result.subhires });
-      }
-    });
 
-    // Add event listeners to store the selected values when radio buttons are changed
-    document.querySelectorAll('input[name="viewmode"]').forEach(function(radio) {
-      radio.addEventListener('change', function() {
-        chrome.storage.sync.set({ 'viewmode': this.value });
-      });
-    });
+// Code for the Announce Inspections setting:
+chrome.storage.local.get(["inspectionAlert"]).then((result) => {
 
-    document.querySelectorAll('input[name="subhires"]').forEach(function(radio) {
-      radio.addEventListener('change', function() {
-        chrome.storage.sync.set({ 'subhires': this.value });
-      });
-    });
+  var selectedOption = "input[name='inspectionalert'][value='" + result.inspectionAlert + "']";
+  document.querySelector(selectedOption).checked = true;
+
+});
+
+document.querySelectorAll('input[name="inspectionalert"]').forEach(function(radio) {
+  radio.addEventListener('change', function() {
+    console.log(this.value);
+    //await chrome.storage.session.set({ prepareSet: this.value });
+    chrome.storage.local.set({ "inspectionAlert": this.value }).then(() => {
+       console.log("Inspection alert set");
+       chrome.runtime.sendMessage({ inpsectionAlerts: this.value });
+     });
+
+  });
+});
+
+// Code for the Global Check-in setting:
+chrome.storage.local.get(["multiGlobal"]).then((result) => {
+
+  var selectedOption = "input[name='multiglobal'][value='" + result.multiGlobal + "']";
+  document.querySelector(selectedOption).checked = true;
+
+});
+
+document.querySelectorAll('input[name="multiglobal"]').forEach(function(radio) {
+  radio.addEventListener('change', function() {
+    console.log(this.value);
+    //await chrome.storage.session.set({ prepareSet: this.value });
+    chrome.storage.local.set({ "multiGlobal": this.value }).then(() => {
+       console.log("Global check-in overide set");
+       chrome.runtime.sendMessage({ multiGlobal: this.value });
+     });
+
+  });
+});

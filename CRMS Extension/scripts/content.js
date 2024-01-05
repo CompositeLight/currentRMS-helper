@@ -13,8 +13,12 @@ inspectionAlerts = "";
 multiGlobal = true;
 
 chrome.storage.local.get(["inspectionAlert"]).then((result) => {
-    inspectionAlerts = result.inspectionAlert;
-    console.log("Inspection alert mode: "+result.inspectionAlert);
+    if (result.inspectionAlert == undefined){
+      inspectionAlerts = "full";
+    } else {
+      inspectionAlerts = result.inspectionAlert;
+    }
+    console.log("Inspection alert mode: "+inspectionAlerts);
 });
 
 chrome.storage.local.get(["multiGlobal"]).then((result) => {
@@ -1097,8 +1101,6 @@ allocateScanBox.addEventListener("keypress", function(event) {
   if (event.key === "Enter") {
     switch(allocateScanBox.value){
       case "freescan":
-        alert("test");
-        sayWord("Test");
         event.preventDefault();
         freeScanToggle();
         allocateScanBox.value = "";
@@ -1144,14 +1146,15 @@ function freeScanToggle(){
   var freeScanButton = document.querySelectorAll('label[for="free_scan"][class="checkbox toggle android"]');
   freeScanButton[0].click();
   focusInput();
+  short_alert_sound.play();
 
   if (freeScanActive) {
     setTimeout(function() {
       sayWord("Free skann On");
-    }, 900);
+    }, 400);
   } else {
     setTimeout(function() {
       sayWord("Free skann Off");
-    }, 900);
+    }, 400);
   }
 }
