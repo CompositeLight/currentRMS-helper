@@ -1,4 +1,4 @@
-# currentRMS-helper 1.18
+# currentRMS-helper 1.19
 This is a work-in-progress Chrome extension to add functionality to the CurrentRMS web interface. It was created out of our frustration waiting on "quality of life" modifications to make the user experience better - specifically, as part of warehouse operations. Our warehouse team has found it helpful, so we've decided to share it with others. As it was created with our own in-house work processes in mind, it may or may not work for other users. However, my hope is that others (who are better at coding that I) might take this forward, or even inspire the CurrentRMS team to implement some of the changes within the main product.
 
 **DISCLAIMER: This is a first attempt work-in-progress written by me, an utter rookie in JavaScript. Use at your own risk. This code is in no way affiliated with InspHire Ltd.**
@@ -17,7 +17,9 @@ This is a work-in-progress Chrome extension to add functionality to the CurrentR
 Aside from the Chrome Desktop Browser, users have successfully used this extension in Opera, and Android via Kiwi.
 
 
-## Features
+## Features / Updates
+
+- FIXED: 1.19: There's a jQuery function to do with autocomplete on the Allocate input box, which was causing issues with 1.18. Specifically, when scanning the "freescan" barcode, sometimes the freescan value would persist in the input, which could mess up your next scan. I've used a somewhat nuclear option to resolve this, but it seems to work ok, and potentially unlocks container scanning activities. 
 
 - IMPROVED: 1.18: The "freescan" set by barcode now get picked up before it's sent to the CRMS servers. This means you no longer hear an error sound.
 

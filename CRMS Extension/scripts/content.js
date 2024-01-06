@@ -654,9 +654,9 @@ const observer = new MutationObserver((mutations) => {
         });
 
         if (node.innerHTML.includes("freescan")){
-          node.innerHTML = "("+timeNow+") Free Scan was toggled.";
-          node.classList.remove("toast-error");
-          node.classList.add("toast-info");
+          node.innerHTML = "("+timeNow+") Free Scan toggle only applies when using Allocate.";
+          //node.classList.remove("toast-error");
+          //node.classList.add("toast-info");
         } else {
           node.innerHTML = "("+timeNow+") " + node.innerHTML;
         }
@@ -1157,26 +1157,49 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 
 // Intercept scanning actions to handle special scans without submitting the form
-var allocateScanBox = document.getElementById("stock_level_asset_number")
 
 if (detailView){
-  allocateScanBox.addEventListener("keypress", function(event) {
-    if (event.key === "Enter") {
-      switch(allocateScanBox.value){
-        case "freescan":
-          event.preventDefault();
-          freeScanToggle();
-          allocateScanBox.value = "";
-          break;
-        case "b":
-          event.preventDefault();
-          alert("b");
-        default:
-      }
-    }
-
-  });
+  //allocateScanBox = document.getElementById("stock_level_asset_number")
+  activeIntercept();
 }
+
+
+
+function activeIntercept(){
+  if (detailView){
+    allocateScanBox = document.getElementById("stock_level_asset_number")
+    allocateScanBox.addEventListener("keypress", function(event) {
+      if (event.key === "Enter") {
+        switch(allocateScanBox.value){
+          case "freescan":
+            event.preventDefault();
+            freeScanToggle();
+            allocateScanBox.value = '';
+            const parentSpan = allocateScanBox.parentNode;
+            var htmlFudge = parentSpan.innerHTML;
+            parentSpan.innerHTML = htmlFudge;
+            //allocateScanBox = document.getElementById("stock_level_asset_number");
+
+            setTimeout(focusInput, 100);
+
+            activeIntercept();
+            //allocateScanBox.textContent = '';
+            //allocateScanBox.value = '';
+
+            break;
+          case "b":
+            event.preventDefault();
+            alert("b");
+          default:
+        }
+      }
+
+    });
+  }
+}
+
+
+
 
 
 // intercept function to respond to special scans
