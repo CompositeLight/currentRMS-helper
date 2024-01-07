@@ -1,4 +1,4 @@
-# currentRMS-helper 1.19
+# currentRMS-helper 1.20
 This is a work-in-progress Chrome extension to add functionality to the CurrentRMS web interface. It was created out of our frustration waiting on "quality of life" modifications to make the user experience better - specifically, as part of warehouse operations. Our warehouse team has found it helpful, so we've decided to share it with others. As it was created with our own in-house work processes in mind, it may or may not work for other users. However, my hope is that others (who are better at coding that I) might take this forward, or even inspire the CurrentRMS team to implement some of the changes within the main product.
 
 **DISCLAIMER: This is a first attempt work-in-progress written by me, an utter rookie in JavaScript. Use at your own risk. This code is in no way affiliated with InspHire Ltd.**
@@ -19,7 +19,17 @@ Aside from the Chrome Desktop Browser, users have successfully used this extensi
 
 ## Features / Updates
 
-- FIXED: 1.19: There's a jQuery function to do with autocomplete on the Allocate input box, which was causing issues with 1.18. Specifically, when scanning the "freescan" barcode, sometimes the freescan value would persist in the input, which could mess up your next scan. I've used a somewhat nuclear option to resolve this, but it seems to work ok, and potentially unlocks container scanning activities. 
+- NEW: 1.20: Different scan sound when you are allocated an asset and it's going into a container. Should this be less subtle a difference?
+- NEW: 1.20: Container Scanning: You can now set, and clear, the value of the Allocate Container Field via scanning. This feature works as follows:
+To set an asset as the Container value: User scans the "*container*"" barcode. User is then prompted to “scan container”. The next scan of an asset will attempt to set that asset as the container, with the following logic:
+1. If the container asset is not currently allocated to the opportunity, the asset will be parsed as a free scanned item. If its allocation is successful, the Container field is set to that asset number.
+2. If 1, but the asset fails to be allocated, the Container field is cleared.
+3. If the asset scanned is already allocated on the opportunity, the Container field will be set to that asset number.
+To cancel this operation, scanning the "*container*" barcode a second time will clear the Container field and return to normal scanning. You can also use this method to clear the Container field (double scan the barcode).
+
+Once a container exists on the opportunity it can be accessed without further use of the container barcode. To do this, simply scan that container’s barcode. The system will report “Container set”, and the scan will not be parsed further (you won’t hear an “already scanned” fail). Scanning the container asset’s barcode again, whilst it is set in the Container field, will clear the Container field. This is similar behaviour to other hire management software; “opening” and “closing” containers.
+
+- FIXED: 1.19: There's a jQuery function to do with autocomplete on the Allocate input box, which was causing issues with 1.18. Specifically, when scanning the "freescan" barcode, sometimes the freescan value would persist in the input, which could mess up your next scan. I've used a somewhat nuclear option to resolve this, but it seems to work ok, and potentially unlocks container scanning activities.
 
 - IMPROVED: 1.18: The "freescan" set by barcode now get picked up before it's sent to the CRMS servers. This means you no longer hear an error sound.
 
@@ -29,7 +39,7 @@ Aside from the Chrome Desktop Browser, users have successfully used this extensi
 
 - IMPROVED: 1.17: The container weights section can now be expanded/collapse. Thanks to Jed & the Stage Engage team!
 
-- NEW: 1.16: Added an option to override the dialog box that pops up if you use Global Check-in on an item that is booked out on multiple opportunities. Previously, this box requires interaction which means going back to the computer and disrupts scanning. In practice, it's rare that you would not want to check in the item from all possible opporunitues - because that's the whole point of global check in.
+- NEW: 1.16: Added an option to override the dialog box that pops up if you use Global Check-in on an item that is booked out on multiple opportunities. Previously, this box requires interaction which means going back to the computer and disrupts scanning. In practice, it's rare that you would not want to check in the item from all possible opportunities - because that's the whole point of global check in.
 
 - NEW: 1.13: Settings popup added. Access this by clicking no the Extensions jigsaw icon in the top corner of Chrome, and then the CurrentRMS Helper rocket icon. You can pin this icon for easier access. The chosen settings are stored between sessions.
 
