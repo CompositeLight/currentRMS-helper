@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "CurrentRMS Helper",
-  "version": "1.19",
+  "version": "1.20",
   "description": "Adding functionality to Current RMS",
   "icons": {
     "16": "images/icon-16.png",
@@ -33,7 +33,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": [ "sounds/error_sound.wav", "sounds/scan_sound.mp3", "sounds/correct.mp3", "sounds/alert.wav", "sounds/short_alert.mp3"],
+      "resources": [ "sounds/error_sound.wav", "sounds/scan_sound.mp3", "sounds/correct.mp3", "sounds/alert.wav", "sounds/short_alert.mp3", "sounds/container_scan_sound.mp3"],
       "matches": [
         "*://*/*"
       ]

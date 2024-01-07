@@ -12,6 +12,11 @@ subhiresHidden = false;
 weightUnit = "kgs"; // default to kgs for weight unit
 inspectionAlerts = "";
 multiGlobal = true;
+containerScan = false;
+scanningContainer = "";
+freeScanReset = false;
+containerData = {};
+containerList = [];
 
 chrome.storage.local.get(["inspectionAlert"]).then((result) => {
     if (result.inspectionAlert == undefined){
@@ -670,12 +675,52 @@ const observer = new MutationObserver((mutations) => {
       // log the message
       console.log("Toast message: " + messageText);
 
-      // play an error sound for basic fail messages
-      if (messageText.includes('Failed to allocate asset(s)') || messageText.slice(11) == 'Failed to mark item(s) as prepared' || messageText.slice(11) == 'Failed to check in item(s)' || messageText.slice(-74) == 'as it does not have an active stock allocation with a sufficient quantity.' || messageText.slice(11) == 'Failed to add container component' ){
-        error_sound.play();
+      // Now respond to  toastMessages depending on their contents
 
-      } else if (messageText.includes('Free Scan')){
-        //ignore these as they're messages created by the CRMS Helper
+      //ignore these as they're messages created by the CRMS Helper makeToast function
+      if (messageText.includes('Free Scan') || messageText.includes('Container cleared.') || messageText.includes('Container set to') || messageText.includes('Now scan the container.') || messageText.includes('Container was not set.')){
+
+      // play an error sound if we failed to allocate / prepare and we were trying to create a container
+      } else if (scanningContainer && (messageText.includes('Failed to allocate asset(s)') || messageText.includes('Failed to mark item(s) as prepared') || messageText.slice(-74) == 'as it does not have an active stock allocation with a sufficient quantity.')){
+        error_sound.play();
+        scanningContainer = "";
+        // clear the current value of container
+        containerBox = document.querySelector('input[type="text"][name="container"]');
+        containerBox.value = "";
+        // restore freeScan to where it was.
+        setFreeScan(freeScanReset);
+        setTimeout(function(){
+          makeToast("toast-info", "Container was not set.", 5);
+          alert_sound.play();
+        }, 500);
+
+
+      // Handle a successful allocation of an item being set as the container
+      } else if (scanningContainer && (messageText.slice(11) == 'Allocation successful' || messageText.slice(11) == 'Items successfully marked as prepared')){
+        scan_sound.play();
+
+        // set the container field to the new asset
+        containerBox = document.querySelector('input[type="text"][name="container"]');
+        containerBox.value = scanningContainer;
+
+        // restore freeScan to where it was.
+        setFreeScan(freeScanReset);
+
+        // make a toast message to tell the user what happened.
+        makeToast("toast-info", "Container was set to " + scanningContainer, 5);
+
+        // clear this value ready for the next scan
+        scanningContainer = "";
+
+        // Report to the user
+        setTimeout(function() {
+          sayWord("Container added and set.");
+          console.log(messageText);
+        }, 900);
+
+      // play an error sound for basic fail messages
+      } else if (messageText.includes('Failed to allocate asset(s)') || messageText.slice(11) == 'Failed to mark item(s) as prepared' || messageText.slice(11) == 'Failed to check in item(s)' || messageText.slice(-74) == 'as it does not have an active stock allocation with a sufficient quantity.' || messageText.slice(11) == 'Failed to add container component' ){
+        error_sound.play();
 
       // Handle errors related to items being already scanned, or just not on the job at all
       } else if (messageText.includes('No available asset could be found using') || messageText.slice(11, 74) == "No allocated or reserved stock allocations could be found using" || messageText.slice(-46) == "has already been selected on this opportunity.") {
@@ -798,7 +843,12 @@ const observer = new MutationObserver((mutations) => {
 
       // Handle myriad messages that are good, and just need a confirmatory "ding"
     } else if (messageText.slice(11) == 'Allocation successful' || messageText.slice(11) == 'Items successfully marked as prepared' || messageText.slice(11) == 'Items successfully checked in' || messageText.slice(11) == 'Container Component was successfully destroyed. ' || messageText.slice(11) == 'Opportunity Item was successfully destroyed.' || messageText.slice(11) == 'Container component was successfully added' || messageText.slice(11) == 'Opportunity Item was successfully updated.'  || messageText.slice(11) == 'Items successfully booked out.' || messageText.slice(11) == 'Container component was successfully removed'  || messageText.slice(11) == 'Check-in details updated successfully' || messageText.slice(11) == 'Opportunity Item was updated.' || messageText.slice(11) == 'Set container successfully' || messageText.includes('Asset(s) successfully checked in')){
+
+      if (detailView && (document.querySelector('input[type="text"][name="container"]').value)){
+        container_scan_sound.play();
+      } else {
         scan_sound.play();
+      }
 
       // If any other alert appears, log it so that I can spot it and add it to this code
       } else {
@@ -856,7 +906,8 @@ const observer = new MutationObserver((mutations) => {
 /////////
 function calculateContainerWeights() {
   // Initialize an object to store container information
-  const containerData = {};
+  containerData = {};
+  containerList = [];
 
   // Get all table rows in the document
   var rows = document.querySelectorAll('tr');
@@ -868,12 +919,16 @@ function calculateContainerWeights() {
 
       var containerCell = rows[i].querySelector('.container-column');
       var thisContainer = containerCell.textContent.trim();
+
+      // add this container to the container list array
+      if (containerList.indexOf(thisContainer) === -1) {
+        containerList.push(thisContainer);
+      }
+
       // Check if the container cell contains the specified content
       if (thisContainer != null && thisContainer.length != 0 && thisContainer != "Container") {
         var thisItemWeight = rows[i].getAttribute('data-weight') * 1; // note the value given for bulk items it already multiplied by the quantity listed
-        //var floatWeight = parseFloat(inputWeight);
-        //var roundedWeight = floatWeight.toFixed(2);
-        //var thisItemWeight = Number(roundedWeight);
+
         if (containerData[thisContainer]){
           containerData[thisContainer] = Number((Number(containerData[thisContainer]) + thisItemWeight).toFixed(2));
         } else {
@@ -887,6 +942,7 @@ function calculateContainerWeights() {
       }
     }
   }
+
 
   // now interate through the rows and spot assets that are also listed as containers
   for (var i = 0; i < rows.length; i++) {
@@ -931,6 +987,7 @@ function calculateContainerWeights() {
       }
     }
   }
+
 }
 
 
@@ -943,6 +1000,7 @@ var error_sound = new Audio(chrome.runtime.getURL("sounds/error_sound.wav"));
 var scan_sound = new Audio(chrome.runtime.getURL("sounds/scan_sound.mp3"));
 var alert_sound = new Audio(chrome.runtime.getURL("sounds/alert.wav"));
 var short_alert_sound = new Audio(chrome.runtime.getURL("sounds/short_alert.mp3"));
+var container_scan_sound = new Audio(chrome.runtime.getURL("sounds/container_scan_sound.mp3"));
 
 
 
@@ -1167,36 +1225,224 @@ if (detailView){
 
 function activeIntercept(){
   if (detailView){
-    allocateScanBox = document.getElementById("stock_level_asset_number")
+    allocateScanBox = document.getElementById("stock_level_asset_number");
+    var parentSpan = allocateScanBox.parentNode;
+    containerBox = document.querySelector('input[type="text"][name="container"]');
     allocateScanBox.addEventListener("keypress", function(event) {
       if (event.key === "Enter") {
-        switch(allocateScanBox.value){
-          case "freescan":
+
+          var myScan = allocateScanBox.value;
+
+          // In the case that we have scanned a *freescan* barcode
+          if (myScan == "freescan"){
             event.preventDefault();
             freeScanToggle();
+
+            // block to clear the allocate box after an intercept
             allocateScanBox.value = '';
-            const parentSpan = allocateScanBox.parentNode;
+            parentSpan = allocateScanBox.parentNode;
             var htmlFudge = parentSpan.innerHTML;
             parentSpan.innerHTML = htmlFudge;
-            //allocateScanBox = document.getElementById("stock_level_asset_number");
+            setTimeout(focusInput, 100); // delayed to avoid the jQuery function messing it up
+            activeIntercept(); // need to re-run because we've just nuked the scan section DOM so the event listener won't work
 
-            setTimeout(focusInput, 100);
 
-            activeIntercept();
-            //allocateScanBox.textContent = '';
-            //allocateScanBox.value = '';
+          // In the case that we have scanned a *container* barcode
+        }else if (myScan == "container"){
+            if (containerScan){
+              // Means the user scanned *container* twice and we want to clear the container field
+              containerScan = false;
+              short_alert_sound.play();
+              sayWord("Container cleared.")
+              containerBox.value = '';
+              event.preventDefault();
+              makeToast("toast-info", "Container cleared.", 5);
 
-            break;
-          case "b":
+              // block to clear the allocate box after an intercept
+              allocateScanBox.value = '';
+              parentSpan = allocateScanBox.parentNode;
+              var htmlFudge = parentSpan.innerHTML;
+              parentSpan.innerHTML = htmlFudge;
+              setTimeout(focusInput, 100); // delayed to avoid the jQuery function messing it up
+              activeIntercept(); // need to re-run because we've just nuked the scan section DOM so the event listener won't work
+
+            } else {
+              // We need to prompt the user to scan a container
+              event.preventDefault();
+              sayWord("Scan container");
+              containerScan = true;
+              makeToast("toast-info", "Now scan the container.", 5);
+              // block to clear the allocate box after an intercept
+              allocateScanBox.value = '';
+              parentSpan = allocateScanBox.parentNode;
+              var htmlFudge = parentSpan.innerHTML;
+              parentSpan.innerHTML = htmlFudge;
+              setTimeout(focusInput, 100); // delayed to avoid the jQuery function messing it up
+              activeIntercept(); // need to re-run because we've just nuked the scan section DOM so the event listener won't work
+            }
+
+
+
+          }else if (containerScan){
+            // we are set to receive a value for the container field.
+            listAssets();
+            if (assetsOnTheJob.includes(allocateScanBox.value)){
+              // the container is already listed on the opportunity
+              event.preventDefault();
+              containerScan = false;
+              scan_sound.play();
+              containerBox.value = allocateScanBox.value;
+              makeToast("toast-info", "Container set to "+containerBox.value, 5);
+              // block to clear the allocate box after an intercept
+              allocateScanBox.value = '';
+              parentSpan = allocateScanBox.parentNode;
+              var htmlFudge = parentSpan.innerHTML;
+              parentSpan.innerHTML = htmlFudge;
+              setTimeout(focusInput, 100); // delayed to avoid the jQuery function messing it up
+              activeIntercept(); // need to re-run because we've just nuked the scan section DOM so the event listener won't work
+
+              setTimeout(sayWord("Container set."), 500);
+
+            } else {
+              // the container is not yet allocated.
+              containerScan = false;
+              freeScanReset = checkFreeScan();
+              if (!freeScanReset){
+                setFreeScan(true);
+              }
+              // set the scanningContainer value to this container and let it go through as a scan to be allocated (don't block default)
+              scanningContainer = allocateScanBox.value;
+            }
+
+          }else if (myScan == containerBox.value) {
+            // we scanned an asset that is already set as the current container, which means "clear the container field"
+            containerScan = false;
+            short_alert_sound.play();
+            sayWord("Container cleared.")
+            containerBox.value = '';
             event.preventDefault();
-            alert("b");
-          default:
-        }
-      }
+            makeToast("toast-info", "Container cleared.", 5);
+
+            // block to clear the allocate box after an intercept
+            allocateScanBox.value = '';
+            parentSpan = allocateScanBox.parentNode;
+            var htmlFudge = parentSpan.innerHTML;
+            parentSpan.innerHTML = htmlFudge;
+            setTimeout(focusInput, 100); // delayed to avoid the jQuery function messing it up
+            activeIntercept(); // need to re-run because we've just nuked the scan section DOM so the event listener won't work
+
+          } else if (containerExists(myScan)) {
+            // we have scanned an asset that is already a container in this opportunity.
+            event.preventDefault();
+            containerScan = false;
+            scan_sound.play();
+            containerBox.value = allocateScanBox.value;
+            makeToast("toast-info", "Container set to "+containerBox.value, 5);
+            // block to clear the allocate box after an intercept
+            allocateScanBox.value = '';
+            parentSpan = allocateScanBox.parentNode;
+            var htmlFudge = parentSpan.innerHTML;
+            parentSpan.innerHTML = htmlFudge;
+            setTimeout(focusInput, 100); // delayed to avoid the jQuery function messing it up
+            activeIntercept(); // need to re-run because we've just nuked the scan section DOM so the event listener won't work
+
+            setTimeout(sayWord("Container set."), 500);
+
+
+          } else if (myScan == "test"){
+
+          // test scan for development purposes
+            event.preventDefault();
+            //setFreeScan(false);
+            sayWord("test");
+
+
+            // block to clear the allocate box after an intercept
+            allocateScanBox.value = '';
+            parentSpan = allocateScanBox.parentNode;
+            var htmlFudge = parentSpan.innerHTML;
+            parentSpan.innerHTML = htmlFudge;
+            setTimeout(focusInput, 100); // delayed to avoid the jQuery function messing it up
+            activeIntercept(); // need to re-run because we've just nuked the scan section DOM so the event listener won't work
+
+
+        } // end if scan block
+
+
+      } // end of if enter key block
 
     });
   }
 }
+
+
+
+function setFreeScan(setting){ // enter true or false as required.
+  var freeScanStatus = false;
+
+  // Find the parent div with class "free-scan-input"
+  var freeScanDiv = document.querySelector('.free-scan-input');
+  // Check if the parent div is found
+  if (freeScanDiv) {
+      // Find the <a> element with class "slide-button" inside the parent div
+      var slideButton = freeScanDiv.querySelector('a.slide-button');
+
+      // Check if the <a> element is found
+      if (slideButton) {
+          // Get the background color of the <a> element
+          var backgroundColour = window.getComputedStyle(slideButton).backgroundColor;
+          // if it's red, that maens it's off
+          if (backgroundColour == "rgb(204, 0, 30)"){
+            freeScanStatus = false;
+          } else {
+            freeScanStatus = true;
+          }
+      } else {
+          console.log('Slide button not found');
+      }
+  } else {
+      console.log('Parent div with class "free-scan-input" not found');
+  }
+  if (setting != freeScanStatus){ // if the current state is not the one we want, we need to toggle it.
+    var freeScanButton = document.querySelectorAll('label[for="free_scan"][class="checkbox toggle android"]');
+    freeScanButton[0].click();
+  }
+}
+
+function checkFreeScan(){ // enter true or false as required.
+  var freeScanStatus = false;
+
+  // Find the parent div with class "free-scan-input"
+  var freeScanDiv = document.querySelector('.free-scan-input');
+  // Check if the parent div is found
+  if (freeScanDiv) {
+      // Find the <a> element with class "slide-button" inside the parent div
+      var slideButton = freeScanDiv.querySelector('a.slide-button');
+
+      // Check if the <a> element is found
+      if (slideButton) {
+          // Get the background color of the <a> element
+          var backgroundColour = window.getComputedStyle(slideButton).backgroundColor;
+          // if it's red, that maens it's off
+          if (backgroundColour == "rgb(204, 0, 30)"){
+            freeScanStatus = false;
+          } else {
+            freeScanStatus = true;
+          }
+      } else {
+          console.log('Slide button not found');
+      }
+  } else {
+      console.log('Parent div with class "free-scan-input" not found');
+  }
+  return freeScanStatus;
+}
+
+
+
+
+
+
 
 
 
@@ -1292,4 +1538,17 @@ function makeToast(className, text, autoDestroyTime) {
             newToast.remove();
         }, autoDestroyTime * 1000);
     }
+}
+
+// Function to check whether a given container exists
+function containerExists(containerName) {
+  return containerList.includes(containerName);
+}
+
+
+
+
+// function to check which view mode we're in in detail view
+function checkDetailView(){
+
 }
