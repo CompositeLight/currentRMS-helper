@@ -19,7 +19,7 @@ Aside from the Chrome Desktop Browser, users have successfully used this extensi
 
 ## Features / Updates
 
-- NEW: 1.20: Different scan sound when you are allocated an asset and it's going into a container. Should this be less subtle a difference?
+- NEW: 1.20: Different scan sound when you are allocating an asset and it's going into a container (ie. there's a value set in the Container box). Should this be less subtle a difference?
 - NEW: 1.20: Container Scanning: You can now set, and clear, the value of the Allocate Container Field via scanning. This feature works as follows:
 To set an asset as the Container value: User scans the "*container*"" barcode. User is then prompted to “scan container”. The next scan of an asset will attempt to set that asset as the container, with the following logic:
 1. If the container asset is not currently allocated to the opportunity, the asset will be parsed as a free scanned item. If its allocation is successful, the Container field is set to that asset number.
