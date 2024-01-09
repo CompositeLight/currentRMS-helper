@@ -607,13 +607,13 @@ function listToastPosts() {
         sayWord("Failed to revert.");
       }, 900);
     } else if (toastPosts.includes("The status of the allocation(s) was successfully reverted")){
-      scan_sound.play();
+      scanSound();
     } else if (toastPosts.includes("Asset(s) successfully reset")){
-      scan_sound.play();
+      scanSound();
     } else if (toastPosts.includes("Stock Level was successfully created.")){
-      scan_sound.play();
+      scanSound();
     } else if (toastPosts.includes("Allocation successful")){
-      scan_sound.play();
+      scanSound();
     } else if (toastPosts.includes("Please correct the following errors and try again:-Asset Number has already been taken")){
       error_sound.play();
       setTimeout(function() {
@@ -697,7 +697,7 @@ const observer = new MutationObserver((mutations) => {
 
       // Handle a successful allocation of an item being set as the container
       } else if (scanningContainer && (messageText.slice(11) == 'Allocation successful' || messageText.slice(11) == 'Items successfully marked as prepared')){
-        scan_sound.play();
+        scanSound();
 
         // set the container field to the new asset
         containerBox = document.querySelector('input[type="text"][name="container"]');
@@ -720,7 +720,8 @@ const observer = new MutationObserver((mutations) => {
 
       // play an error sound for basic fail messages
     } else if (messageText.includes('Failed to allocate asset(s)') || messageText.slice(11) == 'Failed to mark item(s) as prepared' || messageText.slice(11) == 'Failed to check in item(s)' || messageText.slice(-74) == 'as it does not have an active stock allocation with a sufficient quantity.' || messageText.slice(11) == 'Failed to add container component' || messageText.includes('Failed to stock check item')){
-        error_sound.play();
+        //error_sound.play();
+        errorSound();
 
       // Handle errors related to items being already scanned, or just not on the job at all
       } else if (messageText.includes('No available asset could be found using') || messageText.slice(11, 74) == "No allocated or reserved stock allocations could be found using" || messageText.slice(-46) == "has already been selected on this opportunity.") {
@@ -844,15 +845,15 @@ const observer = new MutationObserver((mutations) => {
 
       } else if (messageText.includes('Stock check item successful')) {
         // Normally redundant except global check in doesn't do error boxes.
-        scan_sound.play();
+        scanSound();
 
       // Handle myriad messages that are good, and just need a confirmatory "ding"
       } else if (messageText.slice(11) == 'Allocation successful' || messageText.slice(11) == 'Items successfully marked as prepared' || messageText.slice(11) == 'Items successfully checked in' || messageText.slice(11) == 'Container Component was successfully destroyed. ' || messageText.slice(11) == 'Opportunity Item was successfully destroyed.' || messageText.slice(11) == 'Container component was successfully added' || messageText.slice(11) == 'Opportunity Item was successfully updated.'  || messageText.slice(11) == 'Items successfully booked out.' || messageText.slice(11) == 'Container component was successfully removed'  || messageText.slice(11) == 'Check-in details updated successfully' || messageText.slice(11) == 'Opportunity Item was updated.' || messageText.slice(11) == 'Set container successfully' || messageText.includes('Asset(s) successfully checked in')){
 
         if (detailView && (document.querySelector('input[type="text"][name="container"]').value)){
-          container_scan_sound.play();
+          containerScanSound();
         } else if (!orderView){
-          scan_sound.play();
+          scanSound();
         }
 
       // If any other alert appears, log it so that I can spot it and add it to this code
@@ -932,7 +933,7 @@ function calculateContainerWeights() {
       var thisAsset = assetCell.textContent.trim();
 
       // add this container to the container list array
-      if (containerList.indexOf(thisContainer) === -1) {
+      if (containerList.indexOf(thisContainer) === -1 && thisContainer != null && thisContainer.length != 0) {
         containerList.push(thisContainer);
       }
 
@@ -1013,8 +1014,20 @@ var alert_sound = new Audio(chrome.runtime.getURL("sounds/alert.wav"));
 var short_alert_sound = new Audio(chrome.runtime.getURL("sounds/short_alert.mp3"));
 var container_scan_sound = new Audio(chrome.runtime.getURL("sounds/container_scan_sound.mp3"));
 
+function scanSound(){
+  var thisSound = new Audio(chrome.runtime.getURL("sounds/scan_sound.mp3"));
+  thisSound.play();
+}
 
+function errorSound(){
+  var thisSound = new Audio(chrome.runtime.getURL("sounds/error_sound.wav"));
+  thisSound.play();
+}
 
+function containerScanSound(){
+  var thisSound = new Audio(chrome.runtime.getURL("sounds/container_scan_sound.mp3"));
+  thisSound.play();
+}
 
 
 
@@ -1301,7 +1314,7 @@ function activeIntercept(){
               // the container is already listed on the opportunity
               event.preventDefault();
               containerScan = false;
-              scan_sound.play();
+              scanSound();
               containerBox.value = allocateScanBox.value;
               makeToast("toast-info", "Container set to "+containerBox.value, 5);
               // block to clear the allocate box after an intercept
@@ -1325,7 +1338,7 @@ function activeIntercept(){
               scanningContainer = allocateScanBox.value;
             }
 
-          }else if (myScan == containerBox.value) {
+          }else if (myScan == containerBox.value && containerBox.value != "") {
             // we scanned an asset that is already set as the current container, which means "clear the container field"
             containerScan = false;
             short_alert_sound.play();
@@ -1346,7 +1359,7 @@ function activeIntercept(){
             // we have scanned an asset that is already a container in this opportunity.
             event.preventDefault();
             containerScan = false;
-            scan_sound.play();
+            scanSound();
             containerBox.value = allocateScanBox.value;
             makeToast("toast-info", "Container set to "+containerBox.value, 5);
             // block to clear the allocate box after an intercept
@@ -1489,7 +1502,7 @@ function freeScanToggle(){
   var freeScanButton = document.querySelectorAll('label[for="free_scan"][class="checkbox toggle android"]');
   freeScanButton[0].click();
   focusInput();
-  scan_sound.play();
+  scanSound();
 
 
   if (freeScanActive) {

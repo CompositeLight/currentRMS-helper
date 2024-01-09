@@ -19,6 +19,10 @@ Aside from the Chrome Desktop Browser, users have successfully used this extensi
 
 ## Features / Updates
 
+- IMPROVED: 1.20.2: Hypersonic - Scan and error sounds can now play over the top of each other, whereas before if you scanned while a sound was still playing the latter sound would be blocked.
+
+- FIXED: 1.20.2: Fixed the broken successful scan sound while in Stock Check.
+
 - IMPROVED: 1.20.1: Where a user's work flow involves adding a container to itself, the weights listed in the Containers side bar section now adjust accordingly to give an accurate total weight.
 
 - IMPROVED: 1.20.1: Supersonic - Many sounds have now been made shorter, eg. the scan sound is now just under 1 second in duration (down from just under 2 seconds). The "container scan" sound has now been changed to be more noticeably different in tone.
