@@ -1,4 +1,4 @@
-# currentRMS-helper 1.20
+# currentRMS-helper 1.20.1
 This is a work-in-progress Chrome extension to add functionality to the CurrentRMS web interface. It was created out of our frustration waiting on "quality of life" modifications to make the user experience better - specifically, as part of warehouse operations. Our warehouse team has found it helpful, so we've decided to share it with others. As it was created with our own in-house work processes in mind, it may or may not work for other users. However, my hope is that others (who are better at coding that I) might take this forward, or even inspire the CurrentRMS team to implement some of the changes within the main product.
 
 **DISCLAIMER: This is a first attempt work-in-progress written by me, an utter rookie in JavaScript. Use at your own risk. This code is in no way affiliated with InspHire Ltd.**
@@ -19,7 +19,14 @@ Aside from the Chrome Desktop Browser, users have successfully used this extensi
 
 ## Features / Updates
 
+- IMPROVED: 1.20.1: Where a user's work flow involves adding a container to itself, the weights listed in the Containers side bar section now adjust accordingly to give an accurate total weight.
+
+- IMPROVED: 1.20.1: Supersonic - Many sounds have now been made shorter, eg. the scan sound is now just under 1 second in duration (down from just under 2 seconds). The "container scan" sound has now been changed to be more noticeably different in tone.
+
+- IMPROVED: 1.20.1: Stock check sounds are now handled by the extension (previously the alert sound was going off for everything).
+
 - NEW: 1.20: Different scan sound when you are allocating an asset and it's going into a container (ie. there's a value set in the Container box). Should this be less subtle a difference?
+
 - NEW: 1.20: Container Scanning: You can now set, and clear, the value of the Allocate Container Field via scanning. This feature works as follows:
 To set an asset as the Container value: User scans the "*container*"" barcode. User is then prompted to “scan container”. The next scan of an asset will attempt to set that asset as the container, with the following logic:
 1. If the container asset is not currently allocated to the opportunity, the asset will be parsed as a free scanned item. If its allocation is successful, the Container field is set to that asset number.

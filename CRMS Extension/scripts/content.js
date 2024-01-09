@@ -719,7 +719,7 @@ const observer = new MutationObserver((mutations) => {
         }, 900);
 
       // play an error sound for basic fail messages
-      } else if (messageText.includes('Failed to allocate asset(s)') || messageText.slice(11) == 'Failed to mark item(s) as prepared' || messageText.slice(11) == 'Failed to check in item(s)' || messageText.slice(-74) == 'as it does not have an active stock allocation with a sufficient quantity.' || messageText.slice(11) == 'Failed to add container component' ){
+    } else if (messageText.includes('Failed to allocate asset(s)') || messageText.slice(11) == 'Failed to mark item(s) as prepared' || messageText.slice(11) == 'Failed to check in item(s)' || messageText.slice(-74) == 'as it does not have an active stock allocation with a sufficient quantity.' || messageText.slice(11) == 'Failed to add container component' || messageText.includes('Failed to stock check item')){
         error_sound.play();
 
       // Handle errors related to items being already scanned, or just not on the job at all
@@ -804,12 +804,6 @@ const observer = new MutationObserver((mutations) => {
           }
 
 
-
-
-
-
-
-
       // Handle an error during check-in that is caused by an item already being checked in
       }else if (messageText.slice(11,82) == 'No booked out or part checked in stock allocations could be found using'){
             // setTimeout(function() {
@@ -834,25 +828,40 @@ const observer = new MutationObserver((mutations) => {
         }, 900);
 
       // handle the user hitting enter on an empty input box
-    } else if (messageText.includes("You must select an asset.")) {
+      } else if (messageText.includes("You must select an asset.")) {
         // Normally redundant except global check in doesn't do error boxes.
         if (globalCheckinView){
           error_sound.play();
         }
 
+        // handle the user hitting enter on an empty input box
+      } else if (messageText.includes("The stock level's product does not match the stock check product.")) {
+        // Normally redundant except global check in doesn't do error boxes.
+        setTimeout(function() {
+          sayWord("Out of scope.");
+          console.log(messageText);
+        }, 700);
+
+
+
+
+
 
       // Handle myriad messages that are good, and just need a confirmatory "ding"
-    } else if (messageText.slice(11) == 'Allocation successful' || messageText.slice(11) == 'Items successfully marked as prepared' || messageText.slice(11) == 'Items successfully checked in' || messageText.slice(11) == 'Container Component was successfully destroyed. ' || messageText.slice(11) == 'Opportunity Item was successfully destroyed.' || messageText.slice(11) == 'Container component was successfully added' || messageText.slice(11) == 'Opportunity Item was successfully updated.'  || messageText.slice(11) == 'Items successfully booked out.' || messageText.slice(11) == 'Container component was successfully removed'  || messageText.slice(11) == 'Check-in details updated successfully' || messageText.slice(11) == 'Opportunity Item was updated.' || messageText.slice(11) == 'Set container successfully' || messageText.includes('Asset(s) successfully checked in')){
+      } else if (messageText.slice(11) == 'Allocation successful' || messageText.slice(11) == 'Items successfully marked as prepared' || messageText.slice(11) == 'Items successfully checked in' || messageText.slice(11) == 'Container Component was successfully destroyed. ' || messageText.slice(11) == 'Opportunity Item was successfully destroyed.' || messageText.slice(11) == 'Container component was successfully added' || messageText.slice(11) == 'Opportunity Item was successfully updated.'  || messageText.slice(11) == 'Items successfully booked out.' || messageText.slice(11) == 'Container component was successfully removed'  || messageText.slice(11) == 'Check-in details updated successfully' || messageText.slice(11) == 'Opportunity Item was updated.' || messageText.slice(11) == 'Set container successfully' || messageText.includes('Asset(s) successfully checked in')|| messageText.includes('Stock check item successful')){
 
-      if (detailView && (document.querySelector('input[type="text"][name="container"]').value)){
-        container_scan_sound.play();
-      } else {
-        scan_sound.play();
-      }
+        if (detailView && (document.querySelector('input[type="text"][name="container"]').value)){
+          container_scan_sound.play();
+        } else if (!orderView){
+          scan_sound.play();
+        }
 
       // If any other alert appears, log it so that I can spot it and add it to this code
       } else {
-        alert_sound.play();
+        if (detailView){
+          // play an alert sound if scanning in detail view, just incase it's something important...
+          alert_sound.play();
+        }
         // alert(`Unhandled Alert Message:\n\n${messageText}`);
         console.log("The following message was not handled by CurrentRMS Helper");
         console.log("Sliced 11 messageText:" + messageText.slice(11)); // The bit I'd use to add a handler.
@@ -920,14 +929,17 @@ function calculateContainerWeights() {
       var containerCell = rows[i].querySelector('.container-column');
       var thisContainer = containerCell.textContent.trim();
 
+      var assetCell = rows[i].querySelector('.asset-column');
+      var thisAsset = assetCell.textContent.trim();
+
       // add this container to the container list array
       if (containerList.indexOf(thisContainer) === -1) {
         containerList.push(thisContainer);
       }
 
       // Check if the container cell contains the specified content
-      if (thisContainer != null && thisContainer.length != 0 && thisContainer != "Container") {
-        var thisItemWeight = rows[i].getAttribute('data-weight') * 1; // note the value given for bulk items it already multiplied by the quantity listed
+      if (thisContainer != null && thisContainer.length != 0 && thisContainer != "Container" && thisContainer != thisAsset) {
+        var thisItemWeight = rows[i].getAttribute('data-weight') * 1; // muliply to convert to number. note: the value given for bulk items it already multiplied by the quantity listed
 
         if (containerData[thisContainer]){
           containerData[thisContainer] = Number((Number(containerData[thisContainer]) + thisItemWeight).toFixed(2));
