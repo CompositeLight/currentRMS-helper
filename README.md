@@ -1,4 +1,4 @@
-# currentRMS-helper 1.20.1
+# currentRMS-helper 1.21.0
 This is a work-in-progress Chrome extension to add functionality to the CurrentRMS web interface. It was created out of our frustration waiting on "quality of life" modifications to make the user experience better - specifically, as part of warehouse operations. Our warehouse team has found it helpful, so we've decided to share it with others. As it was created with our own in-house work processes in mind, it may or may not work for other users. However, my hope is that others (who are better at coding that I) might take this forward, or even inspire the CurrentRMS team to implement some of the changes within the main product.
 
 **DISCLAIMER: This is a first attempt work-in-progress written by me, an utter rookie in JavaScript. Use at your own risk. This code is in no way affiliated with InspHire Ltd.**
@@ -19,7 +19,9 @@ Aside from the Chrome Desktop Browser, users have successfully used this extensi
 
 ## Features / Updates
 
-- IMPROVED: 1.20.2: Hypersonic - Scan and error sounds can now play over the top of each other, whereas before if you scanned while a sound was still playing the latter sound would be blocked.
+- NEW 1.21.0: Bulk Quantity Barcodes: The system will now accept bulk barcodes with a quantity value. To use this feature, create a barcode preceeded with the require quanity value surrounded in % symbols. For example, for a barcode that adds 5x of product 90210 the barcode would be "*%5%90210*"
+
+- IMPROVED: 1.20.2: Hypersonic: Scan and error sounds can now play over the top of each other, whereas before if you scanned while a sound was still playing the latter sound would be blocked.
 
 - FIXED: 1.20.2: Fixed the broken successful scan sound while in Stock Check.
 

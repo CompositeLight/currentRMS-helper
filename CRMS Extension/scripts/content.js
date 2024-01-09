@@ -775,6 +775,18 @@ const observer = new MutationObserver((mutations) => {
               console.log(messageText);
       }, 900);
 
+      // Handle an error where an item cannot be added because it's a container that's already allocated
+    }else if (messageText.includes("Quantity is invalid")){
+            setTimeout(function() {
+              sayWord("Quantity invalid.");
+              console.log(messageText);
+      }, 900);
+
+
+
+
+
+
     }else if (messageText.slice(11) == 'None of the selected stock allocations are allocated or reserved.'){
           setTimeout(function() {
             sayWord("Cannot prepare item.");
@@ -1251,7 +1263,8 @@ function activeIntercept(){
   if (detailView){
     allocateScanBox = document.getElementById("stock_level_asset_number");
     var parentSpan = allocateScanBox.parentNode;
-    containerBox = document.querySelector('input[type="text"][name="container"]');
+    var quantityBox = document.querySelector('input[type="text"][name="quantity"]');
+    var containerBox = document.querySelector('input[type="text"][name="container"]');
     allocateScanBox.addEventListener("keypress", function(event) {
       if (event.key === "Enter") {
 
@@ -1304,8 +1317,6 @@ function activeIntercept(){
               setTimeout(focusInput, 100); // delayed to avoid the jQuery function messing it up
               activeIntercept(); // need to re-run because we've just nuked the scan section DOM so the event listener won't work
             }
-
-
 
           }else if (containerScan){
             // we are set to receive a value for the container field.
@@ -1371,6 +1382,35 @@ function activeIntercept(){
             activeIntercept(); // need to re-run because we've just nuked the scan section DOM so the event listener won't work
 
             setTimeout(sayWord("Container set."), 500);
+
+
+
+          } else if (myScan.charAt(0) === '%'){
+            // this is a special scan of a bulk barcode that includes a Quantity
+
+            // Define a regular expression to match the pattern "%{integer}%{rest-of-the-string}"
+            const regex = /^%(\d+)%(.+)$/;
+            // Use the exec() method to extract matches
+            const matches = regex.exec(myScan);
+
+            if (matches) {
+                // matches[1] contains the bulkQuantity, matches[2] contains the bulkAsset
+                const bulkQuantity = parseInt(matches[1], 10);
+
+                if (!isNaN(bulkQuantity)) {
+                    // Check if bulkQuantity is a valid integer
+                    const bulkAsset = matches[2];
+                    quantityBox.value = bulkQuantity;
+                    allocateScanBox.value = bulkAsset;
+                    console.log("bulkQuantity:", bulkQuantity);
+                    console.log("bulkAsset:", bulkAsset);
+                } else {
+                    console.log("Invalid bulkQuantity. It must be an integer.");
+                }
+            } else {
+                console.log("String does not match the expected pattern.");
+            }
+
 
 
           } else if (myScan == "test"){
