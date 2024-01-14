@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "CurrentRMS Helper",
-  "version": "1.21.0",
+  "version": "1.30.0",
   "description": "Adding functionality to Current RMS",
   "icons": {
     "16": "images/icon-16.png",
@@ -14,17 +14,18 @@
   },
 
 
-  "permissions": ["activeTab", "tabs", "scripting", "ttsEngine", "storage"],
+  "permissions": ["activeTab", "tabs", "scripting", "ttsEngine", "storage", "unlimitedStorage"],
 
+  "host_permissions": [
+      "https://api.current-rms.com/"
+    ],
 
 
   "content_scripts": [
     {
-      "js": ["scripts/content.js"],
-      "css": ["style.css"],
-      "matches": [
-        "https://*.current-rms.com/*"
-      ]
+      "matches": ["https://*.current-rms.com/*"],
+      "js": ["scripts/content.js", "scripts/api.js"],
+      "css": ["style.css"]
     }
   ],
   "background": {

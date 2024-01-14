@@ -1,8 +1,8 @@
 
 // NOTE: This code deals with two types of messages. ToastMessages are the type that appear via websocket message to the page. This includes things like sucess messages when an item is scanned. The other type I have called toastPosts, which appear following a php page refresh. This applies to certain scenarios, like reverting the status on an item. FYI Current calls the dialog boxes in the top corner "toast messages", which is where the toast thing comes from.
 
-
 console.log("CurrentRMS Helper Activated.");
+
 assetsOnTheJob = [];
 assetsGlobalScanned = [];
 
@@ -17,7 +17,28 @@ scanningContainer = "";
 freeScanReset = false;
 containerData = {};
 containerList = [];
+detailViewMode = "functions";
+allProducts = {};
+allStock = {};
+storeLocation = "";
 
+
+// Scrape the store name:
+storeLocation = document.getElementById("storelocation").textContent.trim();
+console.log("Store location is: " + storeLocation);
+
+
+// scrape the opportunity ID from the page URL if there is one
+let opportunityID = (function() {
+  const currentUrl = window.location.href;
+  // Use a regular expression to match the opportunity ID in the URL
+  const match = currentUrl.match(/\/opportunities\/(\d+)/);
+    // Check if there is a match and return the opportunity ID (group 1 in the regex)
+  return match ? match[1] : null;
+})();
+
+
+// get the inspection alert setting from local storage
 chrome.storage.local.get(["inspectionAlert"]).then((result) => {
     if (result.inspectionAlert == undefined){
       inspectionAlerts = "full";
@@ -27,18 +48,174 @@ chrome.storage.local.get(["inspectionAlert"]).then((result) => {
     console.log("Inspection alert mode: "+inspectionAlerts);
 });
 
+// get the multi global check in setting from local storage
 chrome.storage.local.get(["multiGlobal"]).then((result) => {
     if (result.inspectionAlert == undefined){
       multiGlobal = true;
     } else {
       multiGlobal = result.inspectionAlert;
     }
-
     console.log("Global check-in overide: "+multiGlobal);
 });
 
 
-// check if we're in Order View
+// Load the all products list from local storage
+chrome.storage.local.get(["allProducts"]).then((result) => {
+    if (result.allProducts == undefined){
+      // If the variable is empty, it might not have been got yet (first use)
+      chrome.storage.local.get(["api-details"]).then((result) => {
+        if (result["api-details"].apiKey){
+          console.log("Products list was not found. Requesting refresh.");
+          chrome.runtime.sendMessage("refreshProducts");
+        } else {
+          console.log("API details have not been entered");
+        }
+      });
+    } else {
+      const allProductsString = result.allProducts;
+      // Parse the JSON string back into an object
+      allProducts = JSON.parse(allProductsString);
+      console.log("Retrieved allProducts from storage:");
+      //console.log(allProducts.products);
+    }
+    //console.log("Global check-in overide: "+multiGlobal);
+});
+
+// Load the stock item list from local storage
+chrome.storage.local.get(["allStock"]).then((result) => {
+    if (result.allStock == undefined){
+      // If the variable is empty, it might not have been got yet (first use)
+      console.log("Stock list was not found. Requesting refresh.");
+      chrome.runtime.sendMessage("refreshProducts");
+    } else {
+      const allStockString = result.allStock;
+      // Parse the JSON string back into an object
+      allStock = JSON.parse(allStockString);
+      console.log("Retrieved allStock from storage:");
+      //console.log(allStock.stock_levels);
+      addDetails();
+
+    }
+    //console.log("Global check-in overide: "+multiGlobal);
+});
+
+
+
+
+
+// Function to add inspector details to the Details page
+function addDetails() {
+  if (detailView){
+    // Find all elements with class "optional-01 asset asset-column"
+    var assetColumns = document.querySelectorAll('td.optional-01.asset.asset-column');
+
+    // Loop through each element to find the one with the matching asset number
+    for (var i = 0; i < assetColumns.length; i++) {
+        if (!assetColumns[i].innerHTML.includes("Sub-Rent Booking") && !assetColumns[i].innerHTML.includes("Non-Stock Booking")){
+
+          var parentRow = assetColumns[i].closest('tr');
+          var nameElement = parentRow.querySelector('.essential.asset.dd-name');
+          var prodName = nameElement.innerText;
+          if (prodName.startsWith("Collapse")) {
+            // Remove the prefix and return the rest of the string
+            prodName = prodName.slice("Collapse\n".length);
+          } else if (prodName.startsWith("Expand")) {
+            // Remove the prefix and return the rest of the string
+            prodName = prodName.slice("Expand\n".length);
+          }
+          const newSpan = document.createElement('span');
+          newSpan.className = 'product-tip';
+          newSpan.innerHTML = '&#128270; &nbsp;';
+          const newSpanId = 'product-tip-'+i;
+          newSpan.id = newSpanId;
+          var nameDiv = nameElement.querySelector('div:last-child');
+          nameDiv.appendChild(newSpan);
+
+          (function (theId, name){
+            // Attach the event listener to the element
+            document.getElementById(theId).addEventListener('click', function() {
+                openProductImageModal(name);
+            });
+          })(newSpanId, prodName);
+
+      }
+
+    }
+  }
+}
+
+
+function getProdWeight(prod){
+  var itemWeight = "0";
+  try {
+    const prodObject = allProducts.products.find(products => products.name === prod);
+    itemWeight = prodObject ? prodObject.weight : null;
+  }
+    catch(err) {
+  }
+  if (itemWeight){
+    return itemWeight;
+  } else {
+    return "?"
+  }
+}
+
+function getProdLocation(prod){
+  var productLocation = "";
+  try {
+
+
+    const prodObject = allStock.stock_levels.filter(stock_levels => stock_levels.item_name === prod && stock_levels.store_name == storeLocation && stock_levels.location !== "");
+    //console.log(prodObject)
+    // Extract the "location" property from each object
+    const locations = prodObject.map(obj => obj.location);
+
+    // Create a string with locations separated by commas
+    const locationsString = locations.join(', ');
+    return locationsString;
+  }
+    catch(err) {
+      console.log(err);
+    return "Location error";
+  }
+
+}
+
+
+function getProdImageUrl(prod){
+  var urlOfIcon = "";
+  try {
+    const prodObject = allProducts.products.find(products => products.name === prod);
+    urlOfIcon = prodObject ? prodObject.icon.url : null;
+  }
+    catch(err) {
+  }
+  if (urlOfIcon){
+    return urlOfIcon
+  } else {
+    return "/assets/ui/product-f16087aa267a8d2b0f689433609f05faba1561eacccf4be8bf9a8052ea4a2fc2.png";
+  }
+}
+
+function openProductImageModal(prodName){
+  console.log(prodName);
+  var theModal = document.getElementById('product-image-modal');
+  var theModalImage = document.getElementById('modal-image');
+  var theModalCaption = document.getElementById('product-modal-caption');
+  var theModalWeightCaption = document.getElementById('product-modal-weight');
+  var theModalLocationCaption = document.getElementById('product-modal-location');
+  const theImageUrl = getProdImageUrl(prodName);
+  const itemWeight = getProdWeight(prodName);
+  const itemLocation = getProdLocation(prodName)
+  theModalImage.src = theImageUrl;
+  theModalCaption.innerHTML = prodName;
+  theModalWeightCaption.innerHTML = itemWeight+" "+weightUnit;
+  theModalLocationCaption.innerHTML = itemLocation + " (" +storeLocation+")";
+  theModal.style.display = 'block';
+}
+
+
+// check if we're in Order or Detail View
 var orderView = document.querySelectorAll('a[name="activities"][class="anchor"]');
 if (orderView.length != 0){
   orderView = true;
@@ -55,7 +232,6 @@ if (detailView.length != 0){
 }
 
 
-
 // check if we're in Global Check-in view
 var globalCheckinView = document.querySelectorAll('div[class="col-sm-12 global_check_ins main-content"]');
 if (globalCheckinView.length != 0){
@@ -64,17 +240,37 @@ if (globalCheckinView.length != 0){
   globalCheckinView = false;
 }
 
-
-
 console.log("Order view: "+orderView);
 console.log("Detail view: "+detailView);
 console.log("Global Check-in view: "+globalCheckinView);
 
+// If in a detail/order/check in view create the modal ready for reference image.
+if (detailView || orderView || globalCheckinView){
+  // Create the modal element
+  const modalElement = document.createElement('div');
+  modalElement.id = 'product-image-modal';
+  modalElement.className = 'product-modal';
+
+  // Create the inner elements
+  modalElement.innerHTML = `
+    <img class="product-modal-content" id="modal-image" src="https://s3.amazonaws.com/current-rms/94ed60d0-735f-0138-9f28-0a907833e252/icons/98/original/xlr-cable.jpg">
+    <div id="product-modal-caption" class="product-modal-caption">Main Warehouse - Bay 12 - Bin 17</div>
+    <div id="product-modal-weight" class="product-modal-caption"></div>
+    <div id="product-modal-location" class="product-modal-caption"></div>
+  `;
+
+  // Append the modal element to the end of the body
+  document.body.appendChild(modalElement);
+
+  // Create event listener to close the modal if clicked
+  modalElement.addEventListener('click', function() {
+      modalElement.style.display = "none";
+  });
+}
 
 
 
-
-
+// function to get the weight units in use
 function getWeightUnit() {
         var element = document.getElementById('weight_total');
         if (element){
@@ -92,8 +288,6 @@ function findClosestLi(element) {
     }
     return element;
 }
-
-
 
 function sayWord(speakWord){
     var msg = new SpeechSynthesisUtterance();
@@ -1100,47 +1294,47 @@ try {
 
 
 // Create control Items
-try {
+if (detailView){
+  try {
 
-  // Create a tab spacer
-  var listItem = document.createElement("li");
-  listItem.classList.add("helper-spacer");
-  listItem.textContent = "_____";
-  var listContainer = document.getElementById("od-function-tabs");
-  listContainer.appendChild(listItem);
+    // Create a tab spacer
+    var listItem = document.createElement("li");
+    listItem.classList.add("helper-spacer");
+    listItem.textContent = "_____";
+    var listContainer = document.getElementById("od-function-tabs");
+    listContainer.appendChild(listItem);
 
-  // Create a tab button for hiding prepared items
-  var listItem = document.createElement("li");
-  listItem.classList.add("helper-btn");
-  listItem.textContent = "Hide Prepared";
-  listItem.id = "prepared-button";
-  var listContainer = document.getElementById("od-function-tabs");
-  listContainer.appendChild(listItem);
+    // Create a tab button for hiding prepared items
+    var listItem = document.createElement("li");
+    listItem.classList.add("helper-btn");
+    listItem.textContent = "Hide Prepared";
+    listItem.id = "prepared-button";
+    var listContainer = document.getElementById("od-function-tabs");
+    listContainer.appendChild(listItem);
 
-  // Create a tab button for Bulk Only
-  var listItem = document.createElement("li");
-  listItem.classList.add("helper-btn");
-  listItem.textContent = "Bulk Only";
-  listItem.id = "bulk-button";
-  var listContainer = document.getElementById("od-function-tabs");
-  listContainer.appendChild(listItem);
+    // Create a tab button for Bulk Only
+    var listItem = document.createElement("li");
+    listItem.classList.add("helper-btn");
+    listItem.textContent = "Bulk Only";
+    listItem.id = "bulk-button";
+    var listContainer = document.getElementById("od-function-tabs");
+    listContainer.appendChild(listItem);
 
-  // Create a tab button for Subhires
-  var listItem = document.createElement("li");
-  listItem.classList.add("helper-btn");
-  listItem.textContent = "Hide Sub-Rentals";
-  listItem.id = "subhires-button";
-  var listContainer = document.getElementById("od-function-tabs");
-  listContainer.appendChild(listItem);
+    // Create a tab button for Subhires
+    var listItem = document.createElement("li");
+    listItem.classList.add("helper-btn");
+    listItem.textContent = "Hide Sub-Rentals";
+    listItem.id = "subhires-button";
+    var listContainer = document.getElementById("od-function-tabs");
+    listContainer.appendChild(listItem);
 
-  document.getElementById("prepared-button").addEventListener("click", preparedButton);
-  document.getElementById("bulk-button").addEventListener("click", bulkButton);
-  document.getElementById("subhires-button").addEventListener("click", subhiresButton);
+    document.getElementById("prepared-button").addEventListener("click", preparedButton);
+    document.getElementById("bulk-button").addEventListener("click", bulkButton);
+    document.getElementById("subhires-button").addEventListener("click", subhiresButton);
 
-} catch (err){
+  } catch (err){
+  }
 }
-
-
 
 // Start observing the body for mutations. This looks out for changes to the webpage, so we can spot toast messages appearing.
 observer.observe(document.body, {
@@ -1189,10 +1383,29 @@ if (detailView){
     // loop through each button and add a click event listener
     lockButtons.forEach(function(button) {
       button.addEventListener("click", function() {
+
         // do something when the button is clicked
         focusInput();
+
       });
     });
+
+    // Add an event listener to Detail View mode buttons
+    var detailModeButtons = document.querySelectorAll('a[class="btn"][data-toggle="tab"]');
+
+    // loop through each button and add a click event listener
+    detailModeButtons.forEach(function(button) {
+      button.addEventListener("click", function() {
+        // do something when the button is clicked
+        detailViewMode = button.lastChild.textContent.toLowerCase().toString().trim();;
+        console.log(detailViewMode);
+      });
+    });
+
+
+
+
+
 
   }
   catch(err) {
@@ -1206,7 +1419,20 @@ if (detailView){
 
 // function to put the page focus to the scanner input box
 function focusInput(){
-  document.getElementById("stock_level_asset_number").focus();
+  switch (detailViewMode) {
+    case "allocate":
+      document.getElementById("stock_level_asset_number").focus();
+      break;
+    case "prepare":
+      document.getElementById("p_stock_level_asset_number").focus();
+      break;
+    case "book out":
+      document.getElementById("bo_stock_level_asset_number").focus();
+      break;
+    case "check-in":
+      document.getElementById("ci_stock_level_asset_number").focus();
+      break;
+  }
 }
 
 
@@ -1420,6 +1646,9 @@ function activeIntercept(){
             //setFreeScan(false);
             sayWord("test");
 
+            // Test code here.
+
+
 
             // block to clear the allocate box after an intercept
             allocateScanBox.value = '';
@@ -1607,12 +1836,4 @@ function makeToast(className, text, autoDestroyTime) {
 // Function to check whether a given container exists
 function containerExists(containerName) {
   return containerList.includes(containerName);
-}
-
-
-
-
-// function to check which view mode we're in in detail view
-function checkDetailView(){
-
 }

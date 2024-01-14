@@ -1,4 +1,4 @@
-# currentRMS-helper 1.21.0
+# currentRMS-helper 1.30.0
 This is a work-in-progress Chrome extension to add functionality to the CurrentRMS web interface. It was created out of our frustration waiting on "quality of life" modifications to make the user experience better - specifically, as part of warehouse operations. Our warehouse team has found it helpful, so we've decided to share it with others. As it was created with our own in-house work processes in mind, it may or may not work for other users. However, my hope is that others (who are better at coding that I) might take this forward, or even inspire the CurrentRMS team to implement some of the changes within the main product.
 
 **DISCLAIMER: This is a first attempt work-in-progress written by me, an utter rookie in JavaScript. Use at your own risk. This code is in no way affiliated with InspHire Ltd.**
@@ -11,6 +11,13 @@ This is a work-in-progress Chrome extension to add functionality to the CurrentR
 5. Select the folder location.
 6. Turn on the extension.
 7. Ensure the default / built-in sound scheme is turned off to avoid duplicate sounds.
+8. To use API based features, go to the CurrentRMS System Setup page and navigate to Integrations > API.
+9. Enable the API and create a new API key.
+10. Paste the API key into the CurrentRMS Helper pop-up field (this key is stored locally on your system, so should only need to be entered once).
+
+** IMPORTANT: As stated by CurrentRMS: "API Keys give read and write access to your Current RMS System. You should keep your keys safe just as you do your username and password - only use them with software and services that you trust. Give each key a unique name so you can clearly identify who you have issued the key to."
+
+THEREFORE: Do not enter your API key unless you have authority to do so. API key information is stored using chrome.storage.local. Though it isn't send anywhere outside of your system (beyond making API calls), it is not encrypted, and is only as safe as your system.**
 
 ## Compatibility
 
@@ -19,7 +26,17 @@ Aside from the Chrome Desktop Browser, users have successfully used this extensi
 
 ## Features / Updates
 
-- NEW 1.21.0: Bulk Quantity Barcodes: The system will now accept bulk barcodes with a quantity value. To use this feature, create a barcode preceeded with the require quanity value surrounded in % symbols. For example, for a barcode that adds 5x of product 90210 the barcode would be "*%5%90210*"
+- NEW: 1.30.0: API connection: There is now a field to enter an API key and subdomain into the CurrentRMS Helper. This unlocks new features, and paves the way for more in the future... See installation instructions above.
+
+- NEW: 1.30.0: Product Inspector (requires API): In detail view you will now see a magnifying glass symbol next to each rental item from your own stock. Clicking on this will bring up a modal image of the product, and also list all locations for that product in the Store (ie. there could be more than one). The item weight is also listed. This information, in combination, should assist warehouse techs in correctly identifying equipment they are unfamiliar with. The information provided is already available within CurrentRMS, but requires clicking away from the scanning page.
+
+- IMPROVED: 1.30.0: Container weights section now deals appropriately with the scenario that a container has been added to itself.
+
+- CHANGED: 1.30.0: Pop up menu slightly reformatted and now includes version info.
+
+- IMPROVED: 1.21.1: More Helpful Cursor: The snap-back-to-the-scan-input-box feature now takes note of which Detail View mode you're in, and resets the cursor into the appropriate box. For example, if you're in Check-In and click to expand the product tree, the cursor focus will snap back to the Check-In input box.
+
+- NEW: 1.21.0: Bulk Quantity Barcodes: The system will now accept bulk barcodes with a quantity value. To use this feature, create a barcode preceeded with the require quanity value surrounded in % symbols. For example, for a barcode that adds 5x of product 90210 the barcode would be "*%5%90210*"
 
 - IMPROVED: 1.20.2: Hypersonic: Scan and error sounds can now play over the top of each other, whereas before if you scanned while a sound was still playing the latter sound would be blocked.
 

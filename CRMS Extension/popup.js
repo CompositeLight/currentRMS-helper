@@ -1,5 +1,8 @@
 
 
+var manifestData = chrome.runtime.getManifest();
+document.getElementById("maifest-version").innerHTML = manifestData.version;
+
 
 // Code for the Mark As Prepared setting:
 chrome.storage.local.get(["setPrepared"]).then((result) => {
@@ -15,16 +18,57 @@ document.querySelectorAll('input[name="markprepared"]').forEach(function(radio) 
     chrome.storage.local.set({ "setPrepared": this.value }).then(() => {
        console.log("Mark as prepared set");
      });
-    //console.log('Data saved: '+ this.value);
-
   });
 });
+
+// Event listener for Force Refresh button
+var refreshButton = document.getElementById("force-refresh-button");
+refreshButton.addEventListener('click', function() {
+  refreshButton.disabled = true;
+  refreshButton.value = "Refreshing...";
+  console.log("Refresh clicked.");
+  // Tell service worker to refresh the list
+  chrome.runtime.sendMessage("refreshProducts");
+});
+
+
+// message listener to reset the button
+chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
+    // Assuming the message contains some data
+    console.log(message);
+    if (message == "apidatawasrefreshed"){
+      refreshButton.disabled = false;
+      refreshButton.value = "Force Refresh";
+    } else if (message == "awaitingstock"){
+      refreshButton.disabled = true;
+      refreshButton.value = "Refreshing stock records...";
+    } else if (message == "awaitingproducts"){
+      refreshButton.disabled = true;
+      refreshButton.value = "Refreshing product records...";
+    }
+
+});
+
+
+
+
+
+
+
+
+// Code for getting the Prepared radio button to match the stored value
+chrome.storage.local.get(["setPrepared"]).then((result) => {
+  if (result.setPrepared == "false"){
+    document.querySelector(`input[name="markprepared"][value="false"]`).checked = true;
+  }
+});
+
+
 
 
 
 // Code for the Announce Inspections setting:
 chrome.storage.local.get(["inspectionAlert"]).then((result) => {
-
   var selectedOption = "input[name='inspectionalert'][value='" + result.inspectionAlert + "']";
   document.querySelector(selectedOption).checked = true;
 
@@ -60,4 +104,41 @@ document.querySelectorAll('input[name="multiglobal"]').forEach(function(radio) {
      });
 
   });
+});
+
+
+
+// API Settings section
+// Get the current API details if stored.
+chrome.storage.local.get(["api-details"]).then((result) => {
+  console.log(result);
+  if (result["api-details"].apiKey){
+    document.getElementById("api-key-input").value = result["api-details"].apiKey;
+  } else {
+    console.log("No API key saved in local storage.");
+  }
+  if (result["api-details"].apiSubdomain){
+    document.getElementById("api-subdomain-input").value = result["api-details"].apiSubdomain;
+  } else {
+    console.log("No API Subdomain saved in local storage.");
+  }
+});
+
+// no add event listener to save api details button
+var setAPIButton = document.getElementById("api-save");
+setAPIButton.addEventListener('click', function() {
+
+  var theApiKey = document.getElementById("api-key-input").value;
+  var theApiSubdomain = document.getElementById("api-subdomain-input").value;
+  var apiDetails = {apiKey: theApiKey, apiSubdomain: theApiSubdomain};
+
+  setAPIButton.disabled = true;
+  setAPIButton.value = "Saving...";
+  chrome.storage.local.set({ "api-details": apiDetails }).then(() => {
+     console.log("API details were saved into local storage.");
+     setAPIButton.disabled = false;
+     setAPIButton.value = "Save API Details";
+   });
+
+
 });

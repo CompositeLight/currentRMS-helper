@@ -3,49 +3,61 @@
   <style>
    body {
      width: 300px;
-     height: 200px;
+     height: auto;
    }
+   .api-key{
+     text-align: center;
+   }
+   .version{
+     font-size: 10px;
+   }
+
  </style>
   <body>
-    <form class="w3-container w3-card-4">
+  <form class="w3-container w3-card-4">
   <h2>CurrentRMS Helper</h2>
-</form>
-<form class="w3-container w3-card-4">
+  <div class="version w3-center">Version: <span id="maifest-version"><span></div>
+<hr>
+
 <label>Mark As Prepared on Page Load</label>
-<p>
 <input class="w3-radio" type="radio" name="markprepared" value="true" checked>
-<label>True</label></p>
-<p>
+<label>True</label>
 <input class="w3-radio" type="radio" name="markprepared" value="false">
-<label>False</label></p>
-</form>
+<label>False</label>
+<hr>
 
-
-</form>
-<form class="w3-container w3-card-4">
-<label>Inspection Alerts</label>
-<p>
+<label>Inspection Alerts</label><br>
 <input class="w3-radio" type="radio" name="inspectionalert" value="full" checked>
-<label>Full</label></p>
-<p>
+<label>Full</label>
+
 <input class="w3-radio" type="radio" name="inspectionalert" value="short">
-<label>Short</label></p>
-<p>
+<label>Short</label>
+
 <input class="w3-radio" type="radio" name="inspectionalert" value="off">
-<label>Off</label></p>
+<label>Off</label>
 
-</form>
+<hr>
 
-</form>
-<form class="w3-container w3-card-4">
 <label>Global Check-in Dialog Override</label>
-<p>
 <input class="w3-radio" type="radio" name="multiglobal" value="true" checked>
-<label>True</label></p>
-<p>
+<label>True</label>
+
 <input class="w3-radio" type="radio" name="multiglobal" value="false">
-<label>False</label></p>
+<label>False</label>
+<hr>
+
+<label>API Product & Stock Snapshot</label>
+<input id="force-refresh-button" class="w3-button w3-block w3-black" type="button" name="refreshProducts" value="Force Refresh">
+<hr>
+<label>API Subdomain</label>
+<input id="api-subdomain-input" class="w3-input w3-border api-key" type="text">
+<label>API Key</label>
+<input id="api-key-input" class="w3-input w3-border api-key" type="password" minlength="20" maxlength="25" name="api-key-input">
+<input id="api-save" class="w3-button w3-block w3-black" value="Save API Details">
+<p>
 </form>
+
+
 
 
 <script src="popup.js"></script>
