@@ -6,6 +6,7 @@ console.log("CurrentRMS Helper Activated.");
 assetsOnTheJob = [];
 assetsGlobalScanned = [];
 
+notesHidden = false;
 preparedHidden = false;
 bulkOnly = false;
 subhiresHidden = false;
@@ -21,6 +22,12 @@ detailViewMode = "functions";
 allProducts = {};
 allStock = {};
 storeLocation = "";
+apiKey="";
+apiSubdomain="";
+
+
+pageNumber = 1;
+let oppData = {opportunity_items:[], meta:[]}
 
 
 // Scrape the store name:
@@ -64,18 +71,20 @@ chrome.storage.local.get(["allProducts"]).then((result) => {
     if (result.allProducts == undefined){
       // If the variable is empty, it might not have been got yet (first use)
       chrome.storage.local.get(["api-details"]).then((result) => {
-        if (result["api-details"].apiKey){
+        if (result["api-details"].apiKey && result["api-details"].apiSubdomain){
           console.log("Products list was not found. Requesting refresh.");
+          makeToast("toast-info", "Products list was not found. Requesting refresh.", 5);
           chrome.runtime.sendMessage("refreshProducts");
         } else {
-          console.log("API details have not been entered");
+          console.log("API details have not found.");
+          makeToast("toast-info", "API details have not found.", 5);
         }
       });
     } else {
       const allProductsString = result.allProducts;
       // Parse the JSON string back into an object
       allProducts = JSON.parse(allProductsString);
-      console.log("Retrieved allProducts from storage:");
+      console.log("Retrieved allProducts from storage.");
       //console.log(allProducts.products);
     }
     //console.log("Global check-in overide: "+multiGlobal);
@@ -93,29 +102,66 @@ chrome.storage.local.get(["allStock"]).then((result) => {
       allStock = JSON.parse(allStockString);
       console.log("Retrieved allStock from storage:");
       //console.log(allStock.stock_levels);
+      chrome.storage.local.get(["api-details"]).then((result) => {
+          if (result["api-details"].apiKey && result["api-details"].apiSubdomain){
+            apiKey = result["api-details"].apiKey;
+            apiSubdomain = result["api-details"].apiSubdomain;
+          } else {
+            console.log("API details have not found.");
+            makeToast("toast-info", "API details have not found.", 5);
+          }
+      });
       addDetails();
 
     }
-    //console.log("Global check-in overide: "+multiGlobal);
 });
 
 
 
 
 
-// Function to add inspector details to the Details page
-function addDetails() {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Function to add inspector details and item descriptions to the Details page
+async function addDetails() {
   if (detailView){
+    await recallApiDetails();
+    pageNumber = 1;
+    var result = await opportunityApiCall(opportunityID);
+    while (oppData.meta.row_count > 0){
+      pageNumber ++;
+      var result = await opportunityApiCall(opportunityID);
+    }
+    console.log(oppData);
+
     // Find all elements with class "optional-01 asset asset-column"
     var assetColumns = document.querySelectorAll('td.optional-01.asset.asset-column');
 
+    var notedOppAssetIds = [];
+    var thisDescription = "";
+
     // Loop through each element to find the one with the matching asset number
     for (var i = 0; i < assetColumns.length; i++) {
+      var parentRow = assetColumns[i].closest('tr');
+      var oppItemId = parentRow.getAttribute("data-oi-id");
+      var parentTableBody = assetColumns[i].closest('tbody');
+      var nameElement = parentRow.querySelector('.essential.asset.dd-name');
+      var prodName = nameElement.innerText;
         if (!assetColumns[i].innerHTML.includes("Sub-Rent Booking") && !assetColumns[i].innerHTML.includes("Non-Stock Booking")){
 
-          var parentRow = assetColumns[i].closest('tr');
-          var nameElement = parentRow.querySelector('.essential.asset.dd-name');
-          var prodName = nameElement.innerText;
           if (prodName.startsWith("Collapse")) {
             // Remove the prefix and return the rest of the string
             prodName = prodName.slice("Collapse\n".length);
@@ -138,11 +184,99 @@ function addDetails() {
             });
           })(newSpanId, prodName);
 
+        } // end of if not sub rent or non stock
+
+      thisDescription = "";
+
+      for (let i = 0; i < oppData.opportunity_items.length; i++) {
+
+        if (oppData.opportunity_items[i].id == oppItemId && oppData.opportunity_items[i].description) {
+        thisDescription = oppData.opportunity_items[i].description;
+
+        }
       }
 
+
+      if (thisDescription && !notedOppAssetIds.includes(oppItemId)){
+        notedOppAssetIds.push(oppItemId);
+        // add item description/note section
+        const numberOfPadElemenets = parentRow.getElementsByClassName("essential padding-column");
+
+        // Count the number of matching elements
+        const padCount = numberOfPadElemenets.length;
+
+        const newNoteRow = document.createElement('tr');
+        newNoteRow.className = 'item-description-row';
+        const padCell = "<td class='essential padding-column'></td>"
+        const padCells = padCell.repeat(1+padCount);
+        newNoteRow.innerHTML = padCells+"<td class='item-description-cell' colspan='1'>"+thisDescription+"</td>";
+        parentTableBody.appendChild(newNoteRow);
+      }
     }
   }
 }
+
+
+
+
+// API Call for addDetails
+function opportunityApiCall(opp){
+  return new Promise(function (resolve, reject) {
+
+    const apiUrl = 'https://api.current-rms.com/api/v1/opportunities/'+opp+'/opportunity_items?page='+pageNumber+'&q[description_present]=1&per_page=100';
+
+    // Options for the fetch request
+    const fetchOptions = {
+      method: 'GET',
+      headers: {
+        'X-SUBDOMAIN': apiSubdomain,
+        'X-AUTH-TOKEN': apiKey,
+      },
+    };
+    // Make the API call
+    fetch(apiUrl, fetchOptions)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        // Handle the API response data here
+        oppData.opportunity_items = oppData.opportunity_items.concat(data.opportunity_items); // merge new page of data into stock_levels
+        oppData.meta = data.meta; // merge new page of data into meta
+        resolve("ok");
+      })
+      .catch(error => {
+        // Handle errors here
+        console.error('Error making API request:', error);
+      });
+  });
+}
+
+
+function recallApiDetails(){
+  return new Promise(function (resolve, reject) {
+  chrome.storage.local.get(["api-details"]).then((result) => {
+    if (result["api-details"].apiKey){
+      apiKey = result["api-details"].apiKey;
+    } else {
+      console.log("No API key saved in local storage.");
+    }
+    if (result["api-details"].apiSubdomain){
+      apiSubdomain = result["api-details"].apiSubdomain;
+    } else {
+      console.log("No API Subdomain saved in local storage.");
+    }
+    resolve();
+  });
+});
+
+}
+
+
+
+
 
 
 function getProdWeight(prod){
@@ -493,6 +627,56 @@ function extractButton(htmlString) {
         return null; // Return null if no button is found
     }
 }
+
+
+
+
+
+
+// Notes button pressed
+function notesButton(){
+  var element = document.getElementById("notes-button");
+  if (notesHidden){
+    notesHidden = false;
+    unhideItemDescriptions();
+    element.classList.remove("turned-on");
+    element.innerHTML = "Hide Notes";
+  } else {
+    notesHidden = true;
+    hideItemDescriptions();
+    element.classList.add("turned-on");
+    element.innerHTML = "Notes Hidden";
+  }
+  focusInput();
+}
+
+// hide item description rows
+function hideItemDescriptions() {
+  // Get all elements with the class "item-description-cell"
+  const elements = document.getElementsByClassName("item-description-row");
+
+  // Iterate through the elements and add the class "hide-description"
+  for (let i = 0; i < elements.length; i++) {
+    elements[i].classList.add("hide-description");
+  }
+}
+
+// unhide item description rows
+function unhideItemDescriptions() {
+  // Get all elements with the class "item-description-cell"
+  const elements = document.getElementsByClassName("item-description-row");
+
+  // Iterate through the elements and add the class "hide-description"
+  for (let i = 0; i < elements.length; i++) {
+    elements[i].classList.remove("hide-description");
+  }
+}
+
+
+
+
+
+
 
 
 
@@ -1286,13 +1470,6 @@ try {
 
 
 
-
-
-
-
-
-
-
 // Create control Items
 if (detailView){
   try {
@@ -1301,6 +1478,14 @@ if (detailView){
     var listItem = document.createElement("li");
     listItem.classList.add("helper-spacer");
     listItem.textContent = "_____";
+    var listContainer = document.getElementById("od-function-tabs");
+    listContainer.appendChild(listItem);
+
+    // Create a tab button for hiding items descriptions
+    var listItem = document.createElement("li");
+    listItem.classList.add("helper-btn");
+    listItem.textContent = "Hide Notes";
+    listItem.id = "notes-button";
     var listContainer = document.getElementById("od-function-tabs");
     listContainer.appendChild(listItem);
 
@@ -1328,6 +1513,7 @@ if (detailView){
     var listContainer = document.getElementById("od-function-tabs");
     listContainer.appendChild(listItem);
 
+    document.getElementById("notes-button").addEventListener("click", notesButton);
     document.getElementById("prepared-button").addEventListener("click", preparedButton);
     document.getElementById("bulk-button").addEventListener("click", bulkButton);
     document.getElementById("subhires-button").addEventListener("click", subhiresButton);

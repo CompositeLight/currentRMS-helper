@@ -1,4 +1,4 @@
-# currentRMS-helper 1.30.1
+# currentRMS-helper 1.30.2
 This is a work-in-progress Chrome extension to add functionality to the CurrentRMS web interface. It was created out of our frustration waiting on "quality of life" modifications to make the user experience better - specifically, as part of warehouse operations. Our warehouse team has found it helpful, so we've decided to share it with others. As it was created with our own in-house work processes in mind, it may or may not work for other users. However, my hope is that others (who are better at coding that I) might take this forward, or even inspire the CurrentRMS team to implement some of the changes within the main product.
 
 **DISCLAIMER: This is a first attempt work-in-progress written by me, an utter rookie in JavaScript. Use at your own risk. This code is in no way affiliated with InspHire Ltd.**
@@ -25,6 +25,8 @@ Aside from the Chrome Desktop Browser, users have successfully used this extensi
 
 
 ## Features / Updates
+
+- NEW/BETA: 1.30.2: Item description notes shown in Detail View. Looking for feedback on how this operates and the way it is displayed.
 
 - IMPROVED: 1.30.1: API errors now create alert pop-ups from the extension. FYI, the current API implementation works on the basis of saving a "snapshot" of the product and stock catalogues to local storage. This (somewhat extreme looking) setup is necessary for several reasons, but mostly it's because the API response time is pretty slow, and to add the functionality I'm seeking would require a LOT of API calls. One thing to watch out for is if you make any changes to your stock or product inventories they will not show up unless you "Force Refresh" the API data. In future I intend to add a check to see if the data needs to be refreshed.
 

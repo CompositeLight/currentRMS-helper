@@ -23,6 +23,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 var apiKey = '';
 var apiSubdomain = '';
 
+
+
+
+
+
 let allStock = {stock_levels:[], meta:[]};
 let allProducts = {products:[], meta:[]}
 let pageNumber = 1;
@@ -46,7 +51,7 @@ async function retreiveCurrentStockList() {
 function recallApiDetails(){
   return new Promise(function (resolve, reject) {
   chrome.storage.local.get(["api-details"]).then((result) => {
-    console.log(result);
+
     if (result["api-details"].apiKey){
       apiKey = result["api-details"].apiKey;
     } else {
@@ -57,8 +62,7 @@ function recallApiDetails(){
     } else {
       console.log("No API Subdomain saved in local storage.");
     }
-    console.log(apiKey);
-    console.log(apiSubdomain);
+
     resolve();
   });
 });
@@ -236,8 +240,6 @@ function getStock(){
 
 async function retrieveApiData(opp) {
     await recallApiDetails();
-    console.log(apiKey);
-    console.log(apiSubdomain);
     // Refresh product list
     var result = await getProducts(opp);
     while (allProducts.meta.row_count > 0){
@@ -293,9 +295,10 @@ async function retrieveApiData(opp) {
 
 
 
-//apiTest("opportunities/361/opportunity_items?&per_page=100&include[]=item_assets");
+//apiTest("opportunities/361/opportunity_items?q[description_present]=1&per_page=100");
 
-function apiTest(urlAFterv1Slash){
+async function apiTest(urlAFterv1Slash){
+  await recallApiDetails();
   const apiUrl = 'https://api.current-rms.com/api/v1/' + urlAFterv1Slash;
   //const apiUrl = 'https://api.current-rms.com/api/v1/opportunities/'+opp+'?include[opportunity_items]=1&page='+pageNumber+'&per_page=100';
   // Options for the fetch request

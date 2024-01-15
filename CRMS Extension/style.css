@@ -112,6 +112,7 @@
 
 .product-tip {
   float: right;
+  cursor: pointer;
 }
 
 /* The Modal (background) */
@@ -156,4 +157,15 @@
   .product-modal-content {
     width: 100%;
   }
+}
+
+
+td.item-description-cell{
+  padding-left:30px;
+  font-style: italic;
+  color: grey;
+}
+
+.hide-description {
+  display: none !important;
 }
