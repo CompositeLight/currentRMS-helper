@@ -100,6 +100,12 @@ function getOpportunityAssets(opp){
         opportunityAssets.meta = data.meta; // merge new page of data into meta
         resolve("ok");
         console.log("Loading stock list page " + pageNumber);
+        var totalRows = (data.meta.total_row_count);
+        var currentRow = (data.meta.page * data.meta.per_page);
+        var progressPercent = Math.floor((currentRow / totalRows) * 100);
+        progressPercent = Math.min(progressPercent, 100);
+        sendProgress(progressPercent);
+        //console.log (progressPercent +"% complete");
         //console.log(data);
 
       })
@@ -163,7 +169,14 @@ function getProducts(opp){
         allProducts.meta = data.meta; // merge new page of data into meta
         resolve("ok");
 
-        console.log("Loading product list page " + pageNumber);
+        //console.log("Loading product list page " + pageNumber);
+        var totalRows = (data.meta.total_row_count);
+        var currentRow = (data.meta.page * data.meta.per_page);
+        var progressPercent = Math.floor((currentRow / totalRows) * 100);
+        progressPercent = Math.min(progressPercent, 100);
+        console.log ("Product List download "+progressPercent +"% complete");
+        sendProgress(progressPercent);
+
 
       })
       .catch(error => {
@@ -203,7 +216,13 @@ function getStock(){
         allStock.meta = data.meta; // merge new page of data into meta
         resolve("ok");
 
-        console.log("Loading stock list page " + pageNumber);
+        //console.log("Loading stock list page " + pageNumber);
+        var totalRows = (data.meta.total_row_count);
+        var currentRow = (data.meta.page * data.meta.per_page);
+        var progressPercent = Math.floor((currentRow / totalRows) * 100);
+        progressPercent = Math.min(progressPercent, 100);
+        console.log ("Stock Level download "+progressPercent +"% complete");
+        sendProgress(progressPercent);
 
       })
       .catch(error => {
@@ -256,7 +275,20 @@ async function retrieveApiData(opp) {
      chrome.storage.local.set({ 'allProducts': allProductsString, 'allStock': allStockString }).then(() => {
         console.log("Stock item list was updated");
       });
+
+
+      // Get the current date and time
+      const currentDate = new Date();
+
+      // Format the date and time as (hh:mm:ss dd:mm:yy)
+      const formattedTime = `${currentDate.getHours()}:${currentDate.getMinutes()}:${currentDate.getSeconds()} ${currentDate.getDate()}/${currentDate.getMonth() + 1}/${currentDate.getFullYear()}`;
+
+      // Store the formatted time in Chrome local storage
+      chrome.storage.local.set({ "apiUpdateTime": formattedTime }, function() {
+          console.log('Current time stored in local storage:', formattedTime);
+      });
       chrome.runtime.sendMessage("apidatawasrefreshed");
+
 }
 
 
@@ -297,4 +329,8 @@ function apiTest(urlAFterv1Slash){
 
 function sendAlert(message){
   chrome.runtime.sendMessage({messageType: "alert", messageText: message});
+}
+
+function sendProgress(percent){
+  chrome.runtime.sendMessage({messageType: "progress", messageProgress: percent});
 }

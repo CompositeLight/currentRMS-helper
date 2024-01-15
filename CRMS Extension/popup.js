@@ -2,7 +2,7 @@
 
 var manifestData = chrome.runtime.getManifest();
 document.getElementById("maifest-version").innerHTML = manifestData.version;
-
+getApiTime();
 
 // Code for the Mark As Prepared setting:
 chrome.storage.local.get(["setPrepared"]).then((result) => {
@@ -45,20 +45,37 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
     } else if (message == "apidatawasrefreshed"){
       refreshButton.disabled = false;
       refreshButton.value = "Force Refresh";
+      getApiTime();
     } else if (message == "awaitingstock"){
       refreshButton.disabled = true;
       refreshButton.value = "Refreshing stock records...";
     } else if (message == "awaitingproducts"){
       refreshButton.disabled = true;
       refreshButton.value = "Refreshing product records...";
+    } else if (message.messageType == "progress"){
+      var progressBar = document.getElementById("api-progress-bar");
+      progressBar.innerHTML = message.messageProgress+"%";
+      progressBar.style.width = message.messageProgress+"%";
+      progressBar.classList.add("w3-green");
+
     }
 
 });
 
 
 
-
-
+// Get time of last API update stored in local storage
+function getApiTime(){
+  chrome.storage.local.get(["apiUpdateTime"]).then((result) => {
+    if (result.apiUpdateTime){
+      var progressBar = document.getElementById("api-progress-bar");
+      progressBar.innerHTML = "Updated: "+result.apiUpdateTime;
+      progressBar.style.width = "100%";
+      progressBar.classList.remove("w3-green");
+      progressBar.classList.remove("w3-white");
+    }
+  });
+}
 
 
 
@@ -68,9 +85,6 @@ chrome.storage.local.get(["setPrepared"]).then((result) => {
     document.querySelector(`input[name="markprepared"][value="false"]`).checked = true;
   }
 });
-
-
-
 
 
 // Code for the Announce Inspections setting:
