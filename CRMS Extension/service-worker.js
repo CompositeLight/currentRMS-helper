@@ -169,6 +169,7 @@ function getProducts(opp){
       .catch(error => {
         // Handle errors here
         console.error('Error making API request:', error);
+        sendAlert('Error making product API request: '+ error);
       });
   });
 }
@@ -208,6 +209,7 @@ function getStock(){
       .catch(error => {
         // Handle errors here
         console.error('Error making API request:', error);
+        sendAlert('Error making stock_level API request: '+ error);
       });
   });
 }
@@ -290,4 +292,9 @@ function apiTest(urlAFterv1Slash){
       // Handle errors here
       console.error('Error making API request:', error);
     });
+}
+
+
+function sendAlert(message){
+  chrome.runtime.sendMessage({messageType: "alert", messageText: message});
 }

@@ -36,7 +36,13 @@ refreshButton.addEventListener('click', function() {
 chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
     // Assuming the message contains some data
     console.log(message);
-    if (message == "apidatawasrefreshed"){
+    if (message.messageType == "alert"){
+      alert(message.messageText);
+      if (message.messageText.includes("API")){
+        refreshButton.disabled = false;
+        refreshButton.value = "Force Refresh";
+      }
+    } else if (message == "apidatawasrefreshed"){
       refreshButton.disabled = false;
       refreshButton.value = "Force Refresh";
     } else if (message == "awaitingstock"){
