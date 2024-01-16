@@ -1307,6 +1307,7 @@ function calculateContainerWeights() {
   // Initialize an object to store container information
   containerData = {};
   containerList = [];
+  itemsInContainers = [];
 
   // Get all table rows in the document
   var rows = document.querySelectorAll('tr');
@@ -1317,26 +1318,43 @@ function calculateContainerWeights() {
     try {
 
       var containerCell = rows[i].querySelector('.container-column');
+      if (containerCell){
       var thisContainer = containerCell.textContent.trim();
-
       var assetCell = rows[i].querySelector('.asset-column');
       var thisAsset = assetCell.textContent.trim();
 
-      // add this container to the container list array
+      // add this container to the container list array if it's not already there
       if (containerList.indexOf(thisContainer) === -1 && thisContainer != null && thisContainer.length != 0) {
         containerList.push(thisContainer);
       }
 
-      // Check if the container cell contains the specified content
-      if (thisContainer != null && thisContainer.length != 0 && thisContainer != "Container" && thisContainer != thisAsset) {
+
+      if (thisContainer != null && thisContainer.length != 0 && thisContainer != "Container") {
+
+
+        // if it's an asset, add it to the items in container list for later.
+        if (!thisAsset.includes("Sub-Rent") && thisAsset != "Group Booking" && thisAsset != "Bulk Stock" && thisAsset != "Non-Stock Booking"){
+        itemsInContainers.push(thisAsset);
+        }
+
+        // get the weight of the item that is in this container
         var thisItemWeight = rows[i].getAttribute('data-weight') * 1; // muliply to convert to number. note: the value given for bulk items it already multiplied by the quantity listed
 
         if (containerData[thisContainer]){
+          // if the container already has a record, add this item to the weight total
           containerData[thisContainer] = Number((Number(containerData[thisContainer]) + thisItemWeight).toFixed(2));
         } else {
+          // if no record exists yet, created one with this item as the initial weight
           containerData[thisContainer] = Number(thisItemWeight.toFixed(2));
         }
       }
+      }
+      console.log("1346:");
+      console.log(containerData);
+      console.log("1348:");
+      console.log(itemsInContainers);
+      //console.log(thisAsset);
+
     } catch(err) {
 
       if (err.name != "TypeError"){ // ignore errors that are caused becase elements don't exist on the page
@@ -1346,15 +1364,23 @@ function calculateContainerWeights() {
   }
 
 
+
+
+
+
+
   // now interate through the rows and spot assets that are also listed as containers
   for (var i = 0; i < rows.length; i++) {
     try {
       var assetCell = rows[i].querySelector('.asset-column');
       var thisAsset = assetCell.textContent.trim();
       if (containerData[thisAsset]){ // the asset listed in a row is also a container listed in the containerData object
+        var containerName = rows[i].querySelector('.container-column').textContent.trim();
+        if (thisAsset != containerName){
         var thisItemWeight = rows[i].getAttribute('data-weight') * 1; // get the weight of the container
-        containerData[thisAsset] = Number((Number(containerData[thisAsset]) + thisItemWeight).toFixed(2)); // add the container weight to the previous total
-        var nameCell = rows[i].querySelector('.dd-name'); // get the name of the container
+          containerData[thisAsset] = Number((Number(containerData[thisAsset]) + thisItemWeight).toFixed(2)); // add the container weight to the previous total
+        }
+        var nameCell = rows[i].querySelector('.dd-name'); // get the name 
         var thisName = nameCell.textContent.trim();
         if (thisName.startsWith("CollapseExpand")) {
           var thisName = thisName.substring(15);
@@ -1440,24 +1466,24 @@ try {
     var toggleButton = containerWeightsSectionDiv.querySelector('.toggle-button');
  
     // Adjust the display property for the initial state
-    var containerList = document.getElementById('containerlist');
-    containerList.style.display = 'block';
+    var containerListElement = document.getElementById('containerlist');
+    containerListElement.style.display = 'block';
  
     toggleButton.onclick = function (event) {
       event.preventDefault();
-      if (containerList.style.display === 'none' || containerList.style.display === '') {
-        containerList.style.display = 'block';
+      if (containerListElement.style.display === 'none' || containerListElement.style.display === '') {
+        containerListElement.style.display = 'block';
         toggleButton.classList.remove('icn-cobra-expand');
         toggleButton.classList.add('icn-cobra-contract');
       } else {
-        containerList.style.display = 'none';
+        containerListElement.style.display = 'none';
         toggleButton.classList.remove('icn-cobra-contract');
         toggleButton.classList.add('icn-cobra-expand');
       }
     };
  
     getWeightUnit(); // check to see what weight unit the user has set by looking at the total weight field
-    calculateContainerWeights(); // set initial container weigh values in the side bar
+    calculateContainerWeights(); // set initial container weigh values in the side bar
  
     // Add inline style for the toggle-button size
     toggleButton.style.fontSize = '14px'; // Adjust the size as needed
