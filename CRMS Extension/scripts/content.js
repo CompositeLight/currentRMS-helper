@@ -188,11 +188,9 @@ async function addDetails() {
 
       thisDescription = "";
 
-      for (let i = 0; i < oppData.opportunity_items.length; i++) {
-
+      for (let i = 0; i < oppData.opportunity_items.length; i++) { // iterate through the oppData to see if there's a description
         if (oppData.opportunity_items[i].id == oppItemId && oppData.opportunity_items[i].description) {
         thisDescription = oppData.opportunity_items[i].description;
-
         }
       }
 
@@ -213,6 +211,48 @@ async function addDetails() {
         parentTableBody.appendChild(newNoteRow);
       }
     }
+
+    // now add group item descriptions
+    var groupRows = document.querySelectorAll('tr.item-group');
+
+
+    // Loop through each element to find the one with the matching asset number
+    for (var i = 0; i < groupRows.length; i++) {
+      var groupListContainer = groupRows[i].closest('li');
+      var oppItemId = groupListContainer.getAttribute("data-group-id");
+
+      thisDescription = "";
+
+      for (let n = 0; n < oppData.opportunity_items.length; n++) {
+        if (oppData.opportunity_items[n].id == oppItemId && oppData.opportunity_items[n].description) {
+        thisDescription = oppData.opportunity_items[n].description;
+        console.log(oppItemId);
+        console.log(oppData.opportunity_items[n].id);
+        console.log(oppData.opportunity_items[n].description);
+        console.log(notedOppAssetIds);
+        }
+      }
+
+      if (thisDescription && !notedOppAssetIds.includes(oppItemId)){
+        notedOppAssetIds.push(oppItemId);
+        // add item description/note section
+        const numberOfPadElemenets = groupRows[i].getElementsByClassName("essential padding-column");
+
+        // Count the number of matching elements
+        const padCount = numberOfPadElemenets.length;
+
+        const newNoteRow = document.createElement('tr');
+        newNoteRow.className = 'item-description-row';
+        const padCell = "<td class='essential padding-column'></td>"
+        const padCells = padCell.repeat(1+padCount);
+        newNoteRow.innerHTML = padCells+"<td class='item-description-cell' colspan='1'>"+thisDescription+"</td>";
+        var parentTableBody = groupRows[i].closest('tbody');
+        parentTableBody.appendChild(newNoteRow);
+      }
+    }
+
+
+
   }
 }
 
@@ -590,7 +630,7 @@ function processHtmlToList(html) {
 
   // Clean up the temporary element
   tempElement.remove();
-  console.log(resultList);
+  //console.log(resultList);
   return resultList;
 }
 
@@ -1349,11 +1389,7 @@ function calculateContainerWeights() {
         }
       }
       }
-      console.log("1346:");
-      console.log(containerData);
-      console.log("1348:");
-      console.log(itemsInContainers);
-      //console.log(thisAsset);
+
 
     } catch(err) {
 
@@ -1380,7 +1416,7 @@ function calculateContainerWeights() {
         var thisItemWeight = rows[i].getAttribute('data-weight') * 1; // get the weight of the container
           containerData[thisAsset] = Number((Number(containerData[thisAsset]) + thisItemWeight).toFixed(2)); // add the container weight to the previous total
         }
-        var nameCell = rows[i].querySelector('.dd-name'); // get the name 
+        var nameCell = rows[i].querySelector('.dd-name'); // get the name
         var thisName = nameCell.textContent.trim();
         if (thisName.startsWith("CollapseExpand")) {
           var thisName = thisName.substring(15);
