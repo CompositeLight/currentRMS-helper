@@ -175,3 +175,54 @@ td.item-description-cell{
   top: 0 !important;
   z-index: 500 !important;
 }
+
+span.loss-warning {
+  background-color: red;
+  color: white;
+  padding: .1em .4em .2em;
+  border-radius: .25em
+}
+
+.popover-help-added{
+  cursor:help;
+}
+
+
+.cost-tooltip {
+  position: relative;
+  display: inline-block;
+  border-bottom: 1px dotted black;
+}
+
+.cost-tooltip .cost-tooltiptext {
+  visibility: hidden;
+  width: 150px;
+  background-color: #555;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px 0;
+  position: absolute;
+  z-index: 1;
+  bottom: 125%;
+  left: 50%;
+  margin-left: -60px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.cost-tooltip .cost-tooltiptext::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #555 transparent transparent transparent;
+}
+
+.cost-tooltip:hover .cost-tooltiptext {
+  visibility: visible;
+  opacity: 1;
+}

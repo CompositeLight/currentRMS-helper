@@ -1,4 +1,4 @@
-# currentRMS-helper 1.30.4
+# currentRMS-helper 1.30.5
 This is a work-in-progress Chrome extension to add functionality to the CurrentRMS web interface. It was created out of our frustration waiting on "quality of life" modifications to make the user experience better - specifically, as part of warehouse operations. Our warehouse team has found it helpful, so we've decided to share it with others. As it was created with our own in-house work processes in mind, it may or may not work for other users. However, my hope is that others (who are better at coding that I) might take this forward, or even inspire the CurrentRMS team to implement some of the changes within the main product.
 
 **DISCLAIMER: This is a first attempt work-in-progress written by me, an utter rookie in JavaScript. Use at your own risk. This code is in no way affiliated with InspHire Ltd.**
@@ -25,6 +25,8 @@ Aside from the Chrome Desktop Browser, users have successfully used this extensi
 
 
 ## Features / Updates
+- FIXED: 1.30.5: Profit Warning: In order view, the total price of a line will highlight in red if the total cost for that line is greater than the amount being charged (ie. It’s making a loss). The pop-up/tool tip that contains charge information for each line total now also features cost and profit/loss figures, and items that didn’t previously have pop-ups (like sales items) now have a tooltip for this purpose. The feature also works for group items where a group deal price has been set and the total combined cost of items inside the deal are greater than the group deal price. This feature involves an opportunity based API call, so you may notice they take a second or two to appear after a page refresh.
+
 - FIXED: 1.30.4: Item description notes in Detail View now appear correctly for group items.
 
 - NEW: 1.30.4: CSS override for Modal Headers so that they're "sticky". This means, on a very long Recent Actions modal for example, the close button never leaves the screen (which is unnecessary and irritating).

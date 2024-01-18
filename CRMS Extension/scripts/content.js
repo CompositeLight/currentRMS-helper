@@ -24,16 +24,20 @@ allStock = {};
 storeLocation = "";
 apiKey="";
 apiSubdomain="";
+lastScan="";
 
 
 pageNumber = 1;
 let oppData = {opportunity_items:[], meta:[]}
 
-
-// Scrape the store name:
-storeLocation = document.getElementById("storelocation").textContent.trim();
-console.log("Store location is: " + storeLocation);
-
+try {
+  // Scrape the store name:
+  storeLocation = document.getElementById("storelocation").textContent.trim();
+  console.log("Store location is: " + storeLocation);
+}
+catch(err) {
+  console.log("Store location not collected.")
+}
 
 // scrape the opportunity ID from the page URL if there is one
 let opportunityID = (function() {
@@ -123,18 +127,6 @@ chrome.storage.local.get(["allStock"]).then((result) => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 // Function to add inspector details and item descriptions to the Details page
 async function addDetails() {
   if (detailView){
@@ -145,7 +137,6 @@ async function addDetails() {
       pageNumber ++;
       var result = await opportunityApiCall(opportunityID);
     }
-    console.log(oppData);
 
     // Find all elements with class "optional-01 asset asset-column"
     var assetColumns = document.querySelectorAll('td.optional-01.asset.asset-column');
@@ -226,10 +217,6 @@ async function addDetails() {
       for (let n = 0; n < oppData.opportunity_items.length; n++) {
         if (oppData.opportunity_items[n].id == oppItemId && oppData.opportunity_items[n].description) {
         thisDescription = oppData.opportunity_items[n].description;
-        console.log(oppItemId);
-        console.log(oppData.opportunity_items[n].id);
-        console.log(oppData.opportunity_items[n].description);
-        console.log(notedOppAssetIds);
         }
       }
 
@@ -253,8 +240,159 @@ async function addDetails() {
 
 
 
+  } else if (orderView){
+    console.log("add Details order view");
+
+    var currencyPrefix = getCurrencySymbol();
+
+    await recallApiDetails();
+    pageNumber = 1;
+    var result = await opportunityApiCall(opportunityID);
+    while (oppData.meta.row_count > 0){
+      pageNumber ++;
+      var result = await opportunityApiCall(opportunityID);
+    }
+
+    for (let n = 0; n < oppData.opportunity_items.length; n++) {
+
+      if (oppData.opportunity_items[n].opportunity_item_type_name != "Group" && !oppData.opportunity_items[n].is_in_deal) {
+        var thisName = oppData.opportunity_items[n].name;
+        var thisID = oppData.opportunity_items[n].id;
+        var thisTotalCharge = parseFloat(oppData.opportunity_items[n].charge_excluding_tax_total);
+        var thisTotalCost = 0.0;
+        for (let i = 0; i < oppData.opportunity_items[n].item_assets.length; i++) {
+          if (oppData.opportunity_items[n].item_assets[i].opportunity_cost){
+            if (oppData.opportunity_items[n].item_assets[i].opportunity_cost.actual_cost != "0.0"){
+              thisTotalCost = thisTotalCost + parseFloat(oppData.opportunity_items[n].item_assets[i].opportunity_cost.actual_cost);
+            } else {
+              thisTotalCost = thisTotalCost + parseFloat(oppData.opportunity_items[n].item_assets[i].opportunity_cost.provisional_cost);
+            }
+          }
+        }
+
+        var thisProfitLoss = (thisTotalCharge - thisTotalCost).toFixed(2);
+        var thisProfitLossString = "";
+        if (thisProfitLoss < 0){
+          thisProfitLossString = "Loss: -"+currencyPrefix+(thisProfitLoss * -1);
+        } else {
+          thisProfitLossString = "Profit: "+currencyPrefix + thisProfitLoss;
+        }
+
+        var liElement = document.querySelector('li.grid-body-row[data-id="'+thisID+'"]');
+        var tdElement = liElement.querySelector('td.total-column.align-right.item-total');
+
+
+        var spanElement = tdElement.querySelector('span');
+        var currentDataContent = "";
+
+        if (spanElement.classList.contains("popover_help")){
+          if (spanElement.hasAttribute("data-original-content")){
+            currentDataContent = spanElement.getAttribute("data-original-content");
+          } else {
+            currentDataContent = spanElement.getAttribute("data-content");
+            spanElement.setAttribute("data-original-content", currentDataContent);
+          }
+
+          var dataContentToAdd = "<br><br>Total Cost: "+currencyPrefix+thisTotalCost.toFixed(2)+"<br>"+thisProfitLossString;
+          // Append a new string to the existing value
+          var newContent = currentDataContent + dataContentToAdd;
+          spanElement.setAttribute("data-content", newContent);
+
+        } else {
+          var oldSpan = spanElement.querySelector('span.cost-tooltiptext');
+          if (oldSpan){
+            oldSpan.remove();
+          }
+          spanElement.classList.add("popover-help-added", "cost-tooltip");
+          //var newContent = "Total Cost: "+thisTotalCost.toFixed(2);
+          var htmlString = '<span class="cost-tooltiptext">Total Charge: '+currencyPrefix+thisTotalCharge.toFixed(2)+'<br>Total Cost: '+currencyPrefix+thisTotalCost.toFixed(2)+'<br>'+thisProfitLossString+'</span>';
+          spanElement.innerHTML += htmlString;
+
+
+        }
+        if (thisTotalCost > thisTotalCharge){
+          spanElement.classList.add("loss-warning");
+        } else {
+          spanElement.classList.remove("loss-warning");
+        }
+
+
+
+      } else if (oppData.opportunity_items[n].opportunity_item_type_name = "Group" && oppData.opportunity_items[n].has_group_deal && !oppData.opportunity_items[n].is_in_deal) {
+        // this means the item is a group with a group discount set
+        var thisID = oppData.opportunity_items[n].id;
+        var thisTotalCharge = parseFloat(oppData.opportunity_items[n].charge_excluding_tax_total);
+        var thisGroupPath = oppData.opportunity_items[n].path;
+        var thisTotalCost = 0.0;
+
+        for (let g = n+1; g < (oppData.opportunity_items.length-n-1); g++) {
+          if (oppData.opportunity_items[g].opportunity_item_type_name != "Group" && oppData.opportunity_items[g].path.startsWith(thisGroupPath)) {
+            for (let i = 0; i < oppData.opportunity_items[g].item_assets.length; i++) {
+              if (oppData.opportunity_items[g].item_assets[i].opportunity_cost){
+                if (oppData.opportunity_items[g].item_assets[i].opportunity_cost.actual_cost != "0.0"){
+                  thisTotalCost = thisTotalCost + parseFloat(oppData.opportunity_items[g].item_assets[i].opportunity_cost.actual_cost);
+                } else {
+                  thisTotalCost = thisTotalCost + parseFloat(oppData.opportunity_items[g].item_assets[i].opportunity_cost.provisional_cost);
+                }
+              }
+            }
+          }
+        }
+
+        var thisProfitLoss = (thisTotalCharge - thisTotalCost).toFixed(2);
+        var thisProfitLossString = "";
+        if (thisProfitLoss < 0){
+          thisProfitLossString = "Loss: -"+currencyPrefix+(thisProfitLoss * -1);
+        } else {
+          thisProfitLossString = "Profit: "+currencyPrefix + thisProfitLoss;
+        }
+        var liElement = document.querySelector('li.grid-body-row[data-id="'+thisID+'"]');
+        var tdElement = liElement.querySelector('td.align-right.group-deal.group-total.total-column');
+        var spanElement = tdElement.querySelector('span');
+
+        var oldSpan = spanElement.querySelector('span.cost-tooltiptext');
+        if (oldSpan){
+          oldSpan.remove();
+        }
+        spanElement.classList.add("cost-tooltip");
+        //var newContent = "Total Cost: "+thisTotalCost.toFixed(2);
+        var htmlString = '<span class="cost-tooltiptext">Total Charge: '+currencyPrefix+thisTotalCharge.toFixed(2)+'<br>Total Cost: '+currencyPrefix+thisTotalCost.toFixed(2)+'<br>'+thisProfitLossString+'</span>';
+        spanElement.innerHTML += htmlString;
+
+
+
+      if (thisTotalCost > thisTotalCharge){
+        spanElement.classList.add("loss-warning");
+      } else {
+        spanElement.classList.remove("loss-warning");
+      }
+
+
+      }// end of if a group with deal set
+    }
+
+
   }
+
+
+
 }
+
+function makeCostPopup(contentString) {
+  console.log(contentString);
+  //<div class=“popover fade left in”>
+	//<div class=“arrow”></div>
+	//<h3 class=“popover-title>Charge detail</h3>
+	//<div class = “popover-content”><h5>Weekly Rate</h5>Weeks : £1.50 x 1<br><br>Rental charge amount: £3.00<br>Surcharge amount: £0.00<br><br>Total Cost: 1.50</div>
+//</div>
+}
+
+
+
+
+
+
+
 
 
 
@@ -263,8 +401,8 @@ async function addDetails() {
 function opportunityApiCall(opp){
   return new Promise(function (resolve, reject) {
 
-    const apiUrl = 'https://api.current-rms.com/api/v1/opportunities/'+opp+'/opportunity_items?page='+pageNumber+'&q[description_present]=1&per_page=100';
-
+    //const apiUrl = 'https://api.current-rms.com/api/v1/opportunities/'+opp+'/opportunity_items?page='+pageNumber+'&q[description_present]=1&per_page=100';
+    const apiUrl = 'https://api.current-rms.com/api/v1/opportunities/'+opp+'/opportunity_items?page='+pageNumber+'&per_page=100';
     // Options for the fetch request
     const fetchOptions = {
       method: 'GET',
@@ -291,6 +429,7 @@ function opportunityApiCall(opp){
         // Handle errors here
         console.error('Error making API request:', error);
       });
+  //console.log(oppData.opportunity_items);
   });
 }
 
@@ -1053,13 +1192,11 @@ const observer = new MutationObserver((mutations) => {
   mutations.forEach((mutation) => {
     //console.log(mutation.addedNodes);
     const addedNodes = Array.from(mutation.addedNodes);
+    //console.log(addedNodes);
     const toastMessages = addedNodes.filter((node) => node.classList?.contains("toast")); // filters the ellements that have appeared on the webpage to spot toast messages
 
     mutation.addedNodes.forEach((node) => {
       if (node.classList?.contains("toast")){
-
-
-
         // Overide the css display properties of the toast container so that it is readable if it overflows the height of the window.
         document.getElementById("toast-container").style.overflowY = "scroll";
         document.getElementById("toast-container").style.maxHeight = "95vh";
@@ -1087,7 +1224,15 @@ const observer = new MutationObserver((mutations) => {
     });
 
     // Respond to each new "toast-message" element
+    var detailsRefreshed = false;
     toastMessages.forEach((toastMessage) => {
+
+      if (orderView && !detailsRefreshed){
+        detailsRefreshed = true;
+        addDetails();
+      }
+
+
       const messageText = toastMessage.textContent;
 
       // log the message
@@ -1116,7 +1261,7 @@ const observer = new MutationObserver((mutations) => {
       // Handle a successful allocation of an item being set as the container
       } else if (scanningContainer && (messageText.slice(11) == 'Allocation successful' || messageText.slice(11) == 'Items successfully marked as prepared')){
         scanSound();
-
+        smartScanSetup(lastScan);
         // set the container field to the new asset
         containerBox = document.querySelector('input[type="text"][name="container"]');
         containerBox.value = scanningContainer;
@@ -1200,11 +1345,6 @@ const observer = new MutationObserver((mutations) => {
               console.log(messageText);
       }, 900);
 
-
-
-
-
-
     }else if (messageText.slice(11) == 'None of the selected stock allocations are allocated or reserved.'){
           setTimeout(function() {
             sayWord("Cannot prepare item.");
@@ -1285,6 +1425,10 @@ const observer = new MutationObserver((mutations) => {
         } else if (!orderView){
           scanSound();
         }
+        if (detailViewMode == "allocate" || detailViewMode == "prepare"){
+          smartScanSetup(lastScan);
+        }
+
 
       // If any other alert appears, log it so that I can spot it and add it to this code
       } else {
@@ -1301,8 +1445,9 @@ const observer = new MutationObserver((mutations) => {
     });
 
 
-
   //////// END OF TOAST SECTION /////////
+
+
 
   ///// START OF GLOBAL CHECK IN SECTION /////
 
@@ -1727,7 +1872,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // Intercept scanning actions to handle special scans without submitting the form
 
 if (detailView){
-  //allocateScanBox = document.getElementById("stock_level_asset_number")
   activeIntercept();
 }
 
@@ -1893,9 +2037,7 @@ function activeIntercept(){
             event.preventDefault();
             //setFreeScan(false);
             sayWord("test");
-
             // Test code here.
-
 
 
             // block to clear the allocate box after an intercept
@@ -1908,7 +2050,9 @@ function activeIntercept(){
 
 
         } // end if scan block
+        // Passed all of that means this is a regular item we're scanning.
 
+        lastScan = myScan; // log the asset ready for potential smart scan
 
       } // end of if enter key block
 
@@ -2084,4 +2228,51 @@ function makeToast(className, text, autoDestroyTime) {
 // Function to check whether a given container exists
 function containerExists(containerName) {
   return containerList.includes(containerName);
+}
+
+// Funtion to get the currency symbol used for the rental charge total in the side bar
+function getCurrencySymbol() {
+  var element = document.getElementById("rental_charge_total");
+
+  if (element) {
+    // Get the innerHTML content
+    var innerHTML = element.innerHTML;
+
+    // Use a regular expression to extract the currency symbol
+    var matches = innerHTML.match(/^[^\d]+/);
+
+    // Check if a match is found
+    if (matches && matches.length > 0) {
+      return matches[0];
+    }
+  }
+  // Return a default value if the element is not found or no match is found
+  return "";
+}
+
+
+
+//// SMART SCAN SECTION - WORK IN PROGRESS
+function smartScanSetup(assetScanned){
+  console.log("Asset just scanned was: " + assetScanned);
+  var tdElements = document.querySelectorAll("td.optional-01.asset.asset-column");
+  // Loop through the elements and find the one with the correct inner text
+  var desiredTdElement = null;
+  for (var i = 0; i < tdElements.length; i++) {
+    console.log(tdElements[i].innerText.trim());
+    if (tdElements[i].innerText.trim() == assetScanned) {
+      desiredTdElement = tdElements[i];
+      break; // Stop the loop once a match is found
+    }
+  }
+
+  var parentRow = desiredTdElement.closest('tr');
+  var oppItemId = parentRow.getAttribute("data-oi-id");
+  console.log("It's opportunity item ID is: " + oppItemId);
+
+  const foundObject = oppData.opportunity_items.find(obj => obj.id == oppItemId);
+  console.log("It's path is:");
+  console.log(foundObject.path);
+  // NOTE: CANT RELY ON oppData because it doesn't refresh on scan....
+
 }
