@@ -1248,7 +1248,16 @@ const observer = new MutationObserver((mutations) => {
   mutations.forEach((mutation) => {
     //console.log(mutation.addedNodes);
     const addedNodes = Array.from(mutation.addedNodes);
-    //console.log(addedNodes);
+    const removedNodes = Array.from(mutation.removedNodes);
+    //console.log(removedNodes);
+
+    // Check if any removed node has the class "modal-backdrop" and "fade" (ie. it's the Quick Picker)
+     const isModalBackdropRemoved = removedNodes.some(node => node.classList && node.classList.contains("modal-backdrop") && node.classList.contains("fade"));
+     if (isModalBackdropRemoved) {
+       addDetails();
+     }
+
+
     const toastMessages = addedNodes.filter((node) => node.classList?.contains("toast")); // filters the ellements that have appeared on the webpage to spot toast messages
 
     mutation.addedNodes.forEach((node) => {
