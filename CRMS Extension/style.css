@@ -226,3 +226,7 @@ span.loss-warning {
   visibility: visible;
   opacity: 1;
 }
+
+.makeItalic {
+  font-style: italic;
+}

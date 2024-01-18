@@ -371,6 +371,62 @@ async function addDetails() {
       }// end of if a group with deal set
     }
 
+    // Sort out listing charged days for serviced items
+    var daysHeader = document.querySelector('td.days-column.align-right');
+    if (daysHeader){
+      console.log("Chargable days yes");
+      var typeColumnSpans = document.querySelectorAll('td.type-column');
+
+      for (let i = 0; i < (typeColumnSpans.length); i++) {
+        if (typeColumnSpans[i].innerText.includes("Service")){
+
+
+          var parentLi = typeColumnSpans[i].closest('li');
+          //var thisItemId = parentLi.getAttribute('data-id');
+          var daysTd = parentLi.querySelector('td.days-column.align-right');
+
+          var popOverSpan = parentLi.querySelector('span.popover_help');
+          var popOverContent = popOverSpan.getAttribute('data-content');
+          console.log(popOverContent);
+          if (popOverContent.startsWith("Days") || popOverContent.startsWith("Hours") || popOverContent.startsWith("Miles") || popOverContent.startsWith("Kilometres")) {
+            var timeSuffix = "";
+            if (popOverContent.startsWith("Hours")){
+              var timeSuffix = "H";
+              daysTd.classList.add("makeItalic");
+            } else if (popOverContent.startsWith("Miles")){
+              var timeSuffix = "Mi";
+              daysTd.classList.add("makeItalic");
+            } else if (popOverContent.startsWith("Kilometres")){
+              var timeSuffix = "km";
+              daysTd.classList.add("makeItalic");
+            } else {
+              daysTd.classList.remove("makeItalic");
+            }
+            // Find the position of the first "<br>"
+            var brPosition = popOverContent.indexOf("<br>");
+            // Check if "<br>" is found
+            if (brPosition !== -1) {
+              // Extract the portion of the string before the first "<br>"
+              popOverContent = popOverContent.substring(0, brPosition);
+              var wordsArray = popOverContent.split(/\s+/);
+              var popOverContent = wordsArray[wordsArray.length - 1];
+              console.log(popOverContent);
+
+              daysTd.innerHTML = popOverContent+timeSuffix;
+            }
+          }
+
+        }
+      }
+
+
+
+
+    }
+
+
+
+
 
   }
 
@@ -429,7 +485,7 @@ function opportunityApiCall(opp){
         // Handle errors here
         console.error('Error making API request:', error);
       });
-  //console.log(oppData.opportunity_items);
+  console.log(oppData.opportunity_items);
   });
 }
 
