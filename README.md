@@ -26,6 +26,10 @@ Aside from the Chrome Desktop Browser, users have successfully used this extensi
 
 ## Features / Updates
 
+- NEW: 1.30.7: Block Quarantined Allocations: There is now a user setting within the pop (on by default) that will prevent items listed in quarantine from being scanned onto a job. If this setting is false quarantined items can be scanned on as normal, but a toast message and verbal warning will alert the user.
+
+- NEW: 1.30.7: In Detail View, clicking on a toast message to close it will now send the input focus back to the appropriate scan box.
+
 - NEW: 1.30.6: In Order View, when "Use Chargable Days" is on, a value will now be entered for Service items. If rate type is set to Hours, the value will be stated as **"8H"**. If rate type is set to Distance in Miles the value will be stated as **"8mi"**, or in Kilometres the value will be stated as **"8km"**.
 
 - FIXED: 1.30.5: Profit Warning: In order view, the total price of a line will highlight in red if the total cost for that line is greater than the amount being charged (ie. It’s making a loss). The pop-up/tool tip that contains charge information for each line total now also features cost and profit/loss figures, and items that didn’t previously have pop-ups (like sales items) now have a tooltip for this purpose. The feature also works for group items where a group deal price has been set and the total combined cost of items inside the deal are greater than the group deal price. This feature involves an opportunity based API call, so you may notice they take a second or two to appear after a page refresh.

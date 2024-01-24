@@ -12,7 +12,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     (async () => {
       // Sends a message to the service worker and receives a response
       chrome.tabs.query({active: true, currentWindow: true}, function(tabs){
-          chrome.tabs.sendMessage(tabs[0].id, {inpsectionAlerts: message.inpsectionAlerts, multiGlobal: message.multiGlobal}, function(response) {});
+          chrome.tabs.sendMessage(tabs[0].id, {inpsectionAlerts: message.inpsectionAlerts, multiGlobal: message.multiGlobal, blockQuarantines: message.blockQuarantines}, function(response) {});
       });
     })();
   }
@@ -22,7 +22,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 var apiKey = '';
 var apiSubdomain = '';
-
 
 
 

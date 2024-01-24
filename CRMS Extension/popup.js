@@ -87,6 +87,7 @@ chrome.storage.local.get(["setPrepared"]).then((result) => {
 });
 
 
+
 // Code for the Announce Inspections setting:
 chrome.storage.local.get(["inspectionAlert"]).then((result) => {
   var selectedOption = "input[name='inspectionalert'][value='" + result.inspectionAlert + "']";
@@ -125,6 +126,34 @@ document.querySelectorAll('input[name="multiglobal"]').forEach(function(radio) {
 
   });
 });
+
+
+// Code for the block scan of quartantines setting:
+chrome.storage.local.get(["blockQuarantines"]).then((result) => {
+  if ("blockQuarantines" in result){
+    console.log(result);
+    var selectedOption = "input[name='blockquarantines'][value='" + result.blockQuarantines + "']";
+    document.querySelector(selectedOption).checked = true;
+  }
+
+});
+
+document.querySelectorAll('input[name="blockquarantines"]').forEach(function(radio) {
+  radio.addEventListener('change', function() {
+    console.log(this.value);
+    //await chrome.storage.session.set({ prepareSet: this.value });
+    chrome.storage.local.set({ "blockQuarantines": this.value }).then(() => {
+       console.log("Block Quarantines option set");
+       chrome.runtime.sendMessage({ blockQuarantines: this.value });
+     });
+
+  });
+});
+
+
+
+
+
 
 
 

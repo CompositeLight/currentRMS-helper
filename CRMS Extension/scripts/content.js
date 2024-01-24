@@ -25,10 +25,15 @@ storeLocation = "";
 apiKey="";
 apiSubdomain="";
 lastScan="";
+blockQuarantines = true;
+
 
 
 pageNumber = 1;
 let oppData = {opportunity_items:[], meta:[]}
+
+quarantineData = {quarantines:[], meta:[]};
+quarantinedItemList = [];
 
 try {
   // Scrape the store name:
@@ -61,13 +66,31 @@ chrome.storage.local.get(["inspectionAlert"]).then((result) => {
 
 // get the multi global check in setting from local storage
 chrome.storage.local.get(["multiGlobal"]).then((result) => {
-    if (result.inspectionAlert == undefined){
+    if (result.multiGlobal == undefined){
       multiGlobal = true;
     } else {
-      multiGlobal = result.inspectionAlert;
+      multiGlobal = result.multiGlobal;
     }
     console.log("Global check-in overide: "+multiGlobal);
 });
+
+// get the blockQuarantines setting from local storage
+chrome.storage.local.get(["blockQuarantines"]).then((result) => {
+    if (result.blockQuarantines == undefined){
+      blockQuarantines = true;
+    } else {
+      blockQuarantines = result.blockQuarantines;
+    }
+    console.log("Global check-in overide: "+blockQuarantines);
+});
+
+
+
+
+
+
+
+
 
 
 // Load the all products list from local storage
@@ -237,6 +260,22 @@ async function addDetails() {
         parentTableBody.appendChild(newNoteRow);
       }
     }
+
+    // Request quaratine list to prevent scans later
+    pageNumber = 1;
+    var result = await quarantineApiCall();
+    while (quarantineData.meta.row_count > 0){
+      pageNumber ++;
+      var result = await quarantineApiCall();
+    }
+
+    quarantinedItemList = [];
+    for (let n = 0; n < quarantineData.quarantines.length; n++) {
+      var thisAsset = quarantineData.quarantines[n].stock_level.asset_number;
+      quarantinedItemList.push(thisAsset);
+    }
+    //console.log(quarantinedItemList);
+    console.log("List of quarantined items was created.");
 
 
 
@@ -434,14 +473,6 @@ async function addDetails() {
 
 }
 
-function makeCostPopup(contentString) {
-  console.log(contentString);
-  //<div class=“popover fade left in”>
-	//<div class=“arrow”></div>
-	//<h3 class=“popover-title>Charge detail</h3>
-	//<div class = “popover-content”><h5>Weekly Rate</h5>Weeks : £1.50 x 1<br><br>Rental charge amount: £3.00<br>Surcharge amount: £0.00<br><br>Total Cost: 1.50</div>
-//</div>
-}
 
 
 
@@ -509,7 +540,42 @@ function recallApiDetails(){
 
 }
 
+// API Call for quarantines
+function quarantineApiCall(){
+  return new Promise(function (resolve, reject) {
 
+    //const apiUrl = 'https://api.current-rms.com/api/v1/opportunities/'+opp+'/opportunity_items?page='+pageNumber+'&q[description_present]=1&per_page=100';
+    const apiUrl = 'https://api.current-rms.com/api/v1/quarantines?page='+pageNumber+'&per_page=100';
+    // Options for the fetch request
+    const fetchOptions = {
+      method: 'GET',
+      headers: {
+        'X-SUBDOMAIN': apiSubdomain,
+        'X-AUTH-TOKEN': apiKey,
+      },
+    };
+    // Make the API call
+    fetch(apiUrl, fetchOptions)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        // Handle the API response data here
+        //console.log(data);
+        quarantineData.quarantines = quarantineData.quarantines.concat(data.quarantines); // merge new page of data into stock_levels
+        quarantineData.meta = data.meta; // merge new page of data into meta
+        resolve("ok");
+      })
+      .catch(error => {
+        // Handle errors here
+        console.error('Error making API request:', error);
+      });
+
+  });
+}
 
 
 
@@ -1263,13 +1329,14 @@ const observer = new MutationObserver((mutations) => {
     mutation.addedNodes.forEach((node) => {
       if (node.classList?.contains("toast")){
         // Overide the css display properties of the toast container so that it is readable if it overflows the height of the window.
-        document.getElementById("toast-container").style.overflowY = "scroll";
-        document.getElementById("toast-container").style.maxHeight = "95vh";
+        var theToastcontainer = document.getElementById("toast-container");
+        theToastcontainer.style.overflowY = "scroll";
+        theToastcontainer.style.maxHeight = "95vh";
+        theToastcontainer.addEventListener("click", focusInput);
 
         // add the time stamp to the start of the message
         var d = new Date();
         var timeNow = d.toLocaleTimeString();
-
 
         node.querySelectorAll('ul').forEach(function (element) {
           element.outerHTML = element.innerHTML;
@@ -1307,6 +1374,13 @@ const observer = new MutationObserver((mutations) => {
 
       //ignore these as they're messages created by the CRMS Helper makeToast function
       if (messageText.includes('Free Scan') || messageText.includes('Container cleared.') || messageText.includes('Container set to') || messageText.includes('Now scan the container.') || messageText.includes('Container was not set.')){
+
+
+        // Error sound and warning if item was flagged as being in quarantine.
+      } else if (messageText.includes('is in quarantine.')){
+          setTimeout(function() {
+            sayWord("Quarantined asset.");
+          }, 800);
 
       // play an error sound if we failed to allocate / prepare and we were trying to create a container
       } else if (scanningContainer && (messageText.includes('Failed to allocate asset(s)') || messageText.includes('Failed to mark item(s) as prepared') || messageText.slice(-74) == 'as it does not have an active stock allocation with a sufficient quantity.')){
@@ -1860,11 +1934,6 @@ if (detailView){
       });
     });
 
-
-
-
-
-
   }
   catch(err) {
     console.log(err);
@@ -1877,19 +1946,21 @@ if (detailView){
 
 // function to put the page focus to the scanner input box
 function focusInput(){
-  switch (detailViewMode) {
-    case "allocate":
-      document.getElementById("stock_level_asset_number").focus();
-      break;
-    case "prepare":
-      document.getElementById("p_stock_level_asset_number").focus();
-      break;
-    case "book out":
-      document.getElementById("bo_stock_level_asset_number").focus();
-      break;
-    case "check-in":
-      document.getElementById("ci_stock_level_asset_number").focus();
-      break;
+  if (detailView){
+    switch (detailViewMode) {
+      case "allocate":
+        document.getElementById("stock_level_asset_number").focus();
+        break;
+      case "prepare":
+        document.getElementById("p_stock_level_asset_number").focus();
+        break;
+      case "book out":
+        document.getElementById("bo_stock_level_asset_number").focus();
+        break;
+      case "check-in":
+        document.getElementById("ci_stock_level_asset_number").focus();
+        break;
+    }
   }
 }
 
@@ -1906,7 +1977,8 @@ chrome.storage.local.get(["setPrepared"]).then((result) => {
 
 // Messages from the extension service worker to trigger changes
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log("Message received from service-worker.");
+  //console.log("Message received from service-worker:");
+  //console.log(message);
 
   if (message.inpsectionAlerts == "off"){
     inspectionAlerts = "off";
@@ -1925,6 +1997,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   } else if (message.multiGlobal == "false"){
     multiGlobal = false;
     console.log("Global check-in dialog overide set to FALSE");
+  }
+  if (message.blockQuarantines == "true"){
+    blockQuarantines = true;
+    console.log("blockQuarantines set to TRUE");
+  } else if (message.blockQuarantines == "false"){
+    blockQuarantines = false;
+    console.log("blockQuarantines set to FALSE");
   }
 
   return true;
@@ -1953,8 +2032,27 @@ function activeIntercept(){
 
           var myScan = allocateScanBox.value;
 
+        if (quarantinedItemList.includes(myScan) && blockQuarantines){
+              // this item is in quarantine
+              event.preventDefault();
+
+              makeToast("toast-error", "Failed to allocate asset(s)");
+              makeToast("toast-error", "Asset "+myScan+" is in quarantine.");
+
+              // block to clear the allocate box after an intercept
+              allocateScanBox.value = '';
+              parentSpan = allocateScanBox.parentNode;
+              var htmlFudge = parentSpan.innerHTML;
+              parentSpan.innerHTML = htmlFudge;
+              setTimeout(focusInput, 100); // delayed to avoid the jQuery function messing it up
+              activeIntercept(); // need to re-run because we've just nuked the scan section DOM so the event listener won't work
+
+          } else if (quarantinedItemList.includes(myScan) && !blockQuarantines){
+                // this item is in quarantine but we're set to allow it through
+                makeToast("toast-error", "Asset "+myScan+" is in quarantine.");
+
           // In the case that we have scanned a *freescan* barcode
-          if (myScan == "freescan"){
+        } else if (myScan == "freescan"){
             event.preventDefault();
             freeScanToggle();
 
