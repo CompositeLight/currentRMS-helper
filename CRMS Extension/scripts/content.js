@@ -25,15 +25,79 @@ storeLocation = "";
 apiKey="";
 apiSubdomain="";
 lastScan="";
+smartScan = false;
+smartScanCandidates = {};
+
 blockQuarantines = true;
-
-
 
 pageNumber = 1;
 let oppData = {opportunity_items:[], meta:[]}
 
 quarantineData = {quarantines:[], meta:[]};
 quarantinedItemList = [];
+
+
+
+
+// check if we're in Order or Detail View
+var orderView = document.querySelectorAll('a[name="activities"][class="anchor"]');
+if (orderView.length != 0){
+  orderView = true;
+} else {
+  orderView = false;
+}
+
+// check if we're in Detail View
+var detailView = document.querySelectorAll('div[class="tab-pane"][id="quick_prepare"]');
+if (detailView.length != 0){
+  detailView = true;
+} else {
+  detailView = false;
+}
+
+
+// check if we're in Global Check-in view
+var globalCheckinView = document.querySelectorAll('div[class="col-sm-12 global_check_ins main-content"]');
+if (globalCheckinView.length != 0){
+  globalCheckinView = true;
+} else {
+  globalCheckinView = false;
+}
+
+console.log("Order view: "+orderView);
+console.log("Detail view: "+detailView);
+console.log("Global Check-in view: "+globalCheckinView);
+
+// If in a detail/order/check in view create the modal ready for reference image.
+if (detailView || orderView || globalCheckinView){
+  // Create the modal element
+  const modalElement = document.createElement('div');
+  modalElement.id = 'product-image-modal';
+  modalElement.className = 'product-modal';
+
+  // Create the inner elements
+  modalElement.innerHTML = `
+    <img class="product-modal-content" id="modal-image" src="https://s3.amazonaws.com/current-rms/94ed60d0-735f-0138-9f28-0a907833e252/icons/98/original/xlr-cable.jpg">
+    <div id="product-modal-caption" class="product-modal-caption">Main Warehouse - Bay 12 - Bin 17</div>
+    <div id="product-modal-weight" class="product-modal-caption"></div>
+    <div id="product-modal-location" class="product-modal-caption"></div>
+  `;
+
+  // Append the modal element to the end of the body
+  document.body.appendChild(modalElement);
+
+  // Create event listener to close the modal if clicked
+  modalElement.addEventListener('click', function() {
+      modalElement.style.display = "none";
+  });
+}
+
+
+
+
+
+
+
 
 try {
   // Scrape the store name:
@@ -81,7 +145,7 @@ chrome.storage.local.get(["blockQuarantines"]).then((result) => {
     } else {
       blockQuarantines = result.blockQuarantines;
     }
-    console.log("Global check-in overide: "+blockQuarantines);
+    console.log("Block Quarantines setting: "+blockQuarantines);
 });
 
 
@@ -91,7 +155,7 @@ chrome.storage.local.get(["blockQuarantines"]).then((result) => {
 
 
 
-
+if (detailView || orderView || globalCheckinView){
 
 // Load the all products list from local storage
 chrome.storage.local.get(["allProducts"]).then((result) => {
@@ -143,6 +207,7 @@ chrome.storage.local.get(["allStock"]).then((result) => {
     }
 });
 
+};
 
 
 
@@ -160,6 +225,11 @@ async function addDetails() {
       pageNumber ++;
       var result = await opportunityApiCall(opportunityID);
     }
+
+
+    console.log("oppData:");
+    console.log(oppData);
+
 
     // Find all elements with class "optional-01 asset asset-column"
     var assetColumns = document.querySelectorAll('td.optional-01.asset.asset-column');
@@ -274,8 +344,11 @@ async function addDetails() {
       var thisAsset = quarantineData.quarantines[n].stock_level.asset_number;
       quarantinedItemList.push(thisAsset);
     }
+
     //console.log(quarantinedItemList);
+    //console.log(quarantineData);
     console.log("List of quarantined items was created.");
+    makeToast("toast-info", "API information loaded.", 5);
 
 
 
@@ -291,6 +364,7 @@ async function addDetails() {
       pageNumber ++;
       var result = await opportunityApiCall(opportunityID);
     }
+
 
     for (let n = 0; n < oppData.opportunity_items.length; n++) {
 
@@ -545,7 +619,7 @@ function quarantineApiCall(){
   return new Promise(function (resolve, reject) {
 
     //const apiUrl = 'https://api.current-rms.com/api/v1/opportunities/'+opp+'/opportunity_items?page='+pageNumber+'&q[description_present]=1&per_page=100';
-    const apiUrl = 'https://api.current-rms.com/api/v1/quarantines?page='+pageNumber+'&per_page=100';
+    const apiUrl = 'https://api.current-rms.com/api/v1/quarantines?page='+pageNumber+'&per_page=100&q[quarantine_type_not_eq]=3';
     // Options for the fetch request
     const fetchOptions = {
       method: 'GET',
@@ -650,58 +724,6 @@ function openProductImageModal(prodName){
 }
 
 
-// check if we're in Order or Detail View
-var orderView = document.querySelectorAll('a[name="activities"][class="anchor"]');
-if (orderView.length != 0){
-  orderView = true;
-} else {
-  orderView = false;
-}
-
-// check if we're in Detail View
-var detailView = document.querySelectorAll('div[class="tab-pane"][id="quick_prepare"]');
-if (detailView.length != 0){
-  detailView = true;
-} else {
-  detailView = false;
-}
-
-
-// check if we're in Global Check-in view
-var globalCheckinView = document.querySelectorAll('div[class="col-sm-12 global_check_ins main-content"]');
-if (globalCheckinView.length != 0){
-  globalCheckinView = true;
-} else {
-  globalCheckinView = false;
-}
-
-console.log("Order view: "+orderView);
-console.log("Detail view: "+detailView);
-console.log("Global Check-in view: "+globalCheckinView);
-
-// If in a detail/order/check in view create the modal ready for reference image.
-if (detailView || orderView || globalCheckinView){
-  // Create the modal element
-  const modalElement = document.createElement('div');
-  modalElement.id = 'product-image-modal';
-  modalElement.className = 'product-modal';
-
-  // Create the inner elements
-  modalElement.innerHTML = `
-    <img class="product-modal-content" id="modal-image" src="https://s3.amazonaws.com/current-rms/94ed60d0-735f-0138-9f28-0a907833e252/icons/98/original/xlr-cable.jpg">
-    <div id="product-modal-caption" class="product-modal-caption">Main Warehouse - Bay 12 - Bin 17</div>
-    <div id="product-modal-weight" class="product-modal-caption"></div>
-    <div id="product-modal-location" class="product-modal-caption"></div>
-  `;
-
-  // Append the modal element to the end of the body
-  document.body.appendChild(modalElement);
-
-  // Create event listener to close the modal if clicked
-  modalElement.addEventListener('click', function() {
-      modalElement.style.display = "none";
-  });
-}
 
 
 
@@ -1373,7 +1395,7 @@ const observer = new MutationObserver((mutations) => {
       // Now respond to  toastMessages depending on their contents
 
       //ignore these as they're messages created by the CRMS Helper makeToast function
-      if (messageText.includes('Free Scan') || messageText.includes('Container cleared.') || messageText.includes('Container set to') || messageText.includes('Now scan the container.') || messageText.includes('Container was not set.')){
+      if (messageText.includes('Free Scan') || messageText.includes('Container cleared.') || messageText.includes('Container set to') || messageText.includes('Now scan the container.') || messageText.includes('Container was not set.') || messageText.includes('API information loaded.')){
 
 
         // Error sound and warning if item was flagged as being in quarantine.
@@ -1400,7 +1422,7 @@ const observer = new MutationObserver((mutations) => {
       // Handle a successful allocation of an item being set as the container
       } else if (scanningContainer && (messageText.slice(11) == 'Allocation successful' || messageText.slice(11) == 'Items successfully marked as prepared')){
         scanSound();
-        smartScanSetup(lastScan);
+        //smartScanSetup(lastScan);
         // set the container field to the new asset
         containerBox = document.querySelector('input[type="text"][name="container"]');
         containerBox.value = scanningContainer;
@@ -1476,6 +1498,10 @@ const observer = new MutationObserver((mutations) => {
               sayWord("Container already allocated");
               console.log(messageText);
       }, 900);
+
+      // Handle a warning about stock shortage
+    }else if (messageText.includes("A shortage exists for the Rental of Product")){
+            // no action required.
 
       // Handle an error where an item cannot be added because it's a container that's already allocated
     }else if (messageText.includes("Quantity is invalid")){
@@ -1565,7 +1591,7 @@ const observer = new MutationObserver((mutations) => {
           scanSound();
         }
         if (detailViewMode == "allocate" || detailViewMode == "prepare"){
-          smartScanSetup(lastScan);
+          //smartScanSetup(lastScan);
         }
 
 
@@ -2036,8 +2062,18 @@ function activeIntercept(){
               // this item is in quarantine
               event.preventDefault();
 
+              const matchingQuarantines = quarantineData.quarantines.filter(quarantines => quarantines.stock_level.asset_number == myScan);
+
+              console.log(matchingQuarantines);
+              if (matchingQuarantines.length > 0){
+                console.log("2068");
+                var quarantineId = matchingQuarantines[0].id;
+                console.log(quarantineId);
+              }
+
+
               makeToast("toast-error", "Failed to allocate asset(s)");
-              makeToast("toast-error", "Asset "+myScan+" is in quarantine.");
+              makeToast("toast-error", "Asset "+myScan+" is in quarantine.<br><br><a class='toast-link' href='https://"+apiSubdomain+".current-rms.com/quarantines/"+quarantineId+"' target='_blank'>View Record</a>");
 
               // block to clear the allocate box after an intercept
               allocateScanBox.value = '';
@@ -2192,17 +2228,12 @@ function activeIntercept(){
                 console.log("String does not match the expected pattern.");
             }
 
-
-
           } else if (myScan == "test"){
-
-          // test scan for development purposes
-            event.preventDefault();
-            //setFreeScan(false);
-            sayWord("test");
+            // test scan for development purposes
             // Test code here.
+            sayWord("test");
 
-
+            event.preventDefault();
             // block to clear the allocate box after an intercept
             allocateScanBox.value = '';
             parentSpan = allocateScanBox.parentNode;
@@ -2210,7 +2241,6 @@ function activeIntercept(){
             parentSpan.innerHTML = htmlFudge;
             setTimeout(focusInput, 100); // delayed to avoid the jQuery function messing it up
             activeIntercept(); // need to re-run because we've just nuked the scan section DOM so the event listener won't work
-
 
         } // end if scan block
         // Passed all of that means this is a regular item we're scanning.
@@ -2222,6 +2252,23 @@ function activeIntercept(){
     });
   }
 }
+
+
+
+// FORCING ALOCATE BOX FOR TESTING
+//var allocateForm = document.querySelector('form[class="form-page"][id="quick_allocate"]');
+//console.log(allocateForm.getAttribute('onsubmit'));
+//allocateForm.setAttribute('onsubmit', '');
+//console.log(allocateForm.getAttribute('onsubmit'));
+//var groupScanInput = document.getElementById("group_scan");
+//groupScanInput.setAttribute('value', '1');
+//document.getElementById("group_scan").value = "1";
+//document.getElementById("group_id").value = "35765";
+//var groupIdInput = document.getElementById("group_id");
+//groupIdInput.setAttribute('value', '35765');
+
+
+
 
 
 
@@ -2367,7 +2414,7 @@ function makeToast(className, text, autoDestroyTime) {
     // Create the inner div for the toast message
     var toastMessage = document.createElement('div');
     toastMessage.className = 'toast-message';
-    toastMessage.textContent = text;
+    toastMessage.innerHTML = text;
 
     // Append the inner div to the toast div
     newToast.appendChild(toastMessage);
@@ -2433,9 +2480,120 @@ function smartScanSetup(assetScanned){
   var oppItemId = parentRow.getAttribute("data-oi-id");
   console.log("It's opportunity item ID is: " + oppItemId);
 
-  const foundObject = oppData.opportunity_items.find(obj => obj.id == oppItemId);
+  var parentLi = parentRow.closest('li');
+  var assetScannedPath = parentLi.getAttribute("data-path");
+  var assetScannedHasChildren = false;
+  if (parentLi.classList.contains("dd-haschildren")){
+    assetScannedHasChildren = true;
+  }
   console.log("It's path is:");
-  console.log(foundObject.path);
-  // NOTE: CANT RELY ON oppData because it doesn't refresh on scan....
+  console.log(assetScannedPath);
+  console.log("It has children:");
+  console.log(assetScannedHasChildren);
 
+  var childElements = parentLi.querySelectorAll("td.optional-01.asset.asset-column");
+  for (var i = 0; i < childElements.length; i++) {
+    console.log(childElements[i].innerText.trim());
+    if (childElements[i].innerText.trim() == "Group Booking") {
+
+      var closestTr = childElements[i].closest('tr');
+      var potentialAccessoryGroupId = closestTr.getAttribute("data-oi-id")
+      var potentialAccessoryItemName = closestTr.querySelector("div.dd-content").innerText;
+      potentialAccessoryItemName = potentialAccessoryItemName.replace(/🔎/g, '');
+      potentialAccessoryItemName = potentialAccessoryItemName.trim();
+      console.log(potentialAccessoryGroupId);
+      console.log(potentialAccessoryItemName);
+      var potentialAssetIds = findAssetNumbersByItemName(potentialAccessoryItemName);
+      console.log(potentialAssetIds);
+      for (var j = 0; j < potentialAssetIds.length; j++) {
+        if (potentialAssetIds[j] != "Group Booking"){
+
+          smartScanCandidates[potentialAssetIds[j]] = potentialAccessoryGroupId;
+        }
+      }
+    }
+  }
+  console.log(smartScanCandidates);
+}
+
+
+
+
+function findAssetNumbersByItemName(itemName) {
+    // Filter the allStock array for objects where item_name matches the provided itemName
+
+    const matchingItems = allStock.stock_levels.filter(stock_levels => stock_levels.item_name === itemName);
+
+    // Map the filtered objects to their asset_number values
+    const assetNumbers = matchingItems.map(stockItem => stockItem.asset_number);
+    return assetNumbers;
+}
+
+
+
+
+
+
+// allocate asset API call
+function allocateAsset(asset){
+  const url = 'https://api.current-rms.com/api/v1/opportunities/'+opportunityID+'/quick_allocate';
+  const headers = {
+    'X-SUBDOMAIN': apiSubdomain,
+    'X-AUTH-TOKEN': apiKey,
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  };
+  const bodyData = {
+    apikey: apiKey,
+    subdomain: apiSubdomain,
+    stock_level_asset_number: asset,
+    quantity: 1,
+    container: "",
+    free_scan: 0,
+    mark_as_prepared: 0,
+    group_scan: 0,
+    group_type: "",
+    group_id: ""
+  };
+  fetch(url, {
+    mode: 'cors',
+    method: 'POST',
+    headers: headers,
+    body: JSON.stringify(bodyData)
+  })
+  .then(response => response.json())
+  .then(data => console.log(data))
+  .catch(error => console.error('Error:', error));
+}
+
+// deallocate API call function - not currently working
+function deallocateAsset(asset){
+  const url = 'https://api.current-rms.com/api/v1/opportunities/'+opportunityID+'/quick_allocate';
+  const headers = {
+    'X-SUBDOMAIN': apiSubdomain,
+    'X-AUTH-TOKEN': apiKey,
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  };
+  const bodyData = {
+    apikey: apiKey,
+    subdomain: apiSubdomain,
+    stock_level_asset_number: asset,
+    quantity: 1,
+    container: "",
+    free_scan: 0,
+    mark_as_prepared: 0,
+    group_scan: 1,
+    group_type: "group_opportunity_item",
+    group_id: "26972"
+  };
+  fetch(url, {
+    mode: 'cors',
+    method: 'POST',
+    headers: headers,
+    body: JSON.stringify(bodyData)
+  })
+  .then(response => response.json())
+  .then(data => console.log(data))
+  .catch(error => console.error('Error:', error));
 }

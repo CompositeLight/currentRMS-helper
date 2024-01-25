@@ -1,4 +1,4 @@
-# currentRMS-helper 1.30.7
+# currentRMS-helper 1.30.8
 This is a work-in-progress Chrome extension to add functionality to the CurrentRMS web interface. It was created out of our frustration waiting on "quality of life" modifications to make the user experience better - specifically, as part of warehouse operations. Our warehouse team has found it helpful, so we've decided to share it with others. As it was created with our own in-house work processes in mind, it may or may not work for other users. However, my hope is that others (who are better at coding that I) might take this forward, or even inspire the CurrentRMS team to implement some of the changes within the main product.
 
 **DISCLAIMER: This is a first attempt work-in-progress written by me, an utter rookie in JavaScript. Use at your own risk. This code is in no way affiliated with InspHire Ltd.**
@@ -25,6 +25,12 @@ Aside from the Chrome Desktop Browser, users have successfully used this extensi
 
 
 ## Features / Updates
+
+- IMPROVED: 1.30.8: Block Quarantine Toast Messages now include a link to go to the quarantine record.
+
+- IMPROVED: 1.30.8: Quarantine API now filters out Sub Rental returns to reduce the size of the list / remove redundant entries.
+
+- IMPROVED: 1.30.8: A toast message now appears to inform the user when the API data has loaded. Prior to this message appearing following a page reload some features (such as blocking quarantined items) may not function.
 
 - NEW: 1.30.7: Block Quarantined Allocations: There is now a user setting within the pop (on by default) that will prevent items listed in quarantine from being scanned onto a job. If this setting is false quarantined items can be scanned on as normal, but a toast message and verbal warning will alert the user.
 

@@ -230,3 +230,7 @@ span.loss-warning {
 .makeItalic {
   font-style: italic;
 }
+
+.toast-link{
+  text-decoration: underline;
+}
