@@ -3,6 +3,7 @@
 var manifestData = chrome.runtime.getManifest();
 document.getElementById("maifest-version").innerHTML = manifestData.version;
 getApiTime();
+getQuarantineTime();
 
 // Code for the Mark As Prepared setting:
 chrome.storage.local.get(["setPrepared"]).then((result) => {
@@ -57,10 +58,29 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
       progressBar.innerHTML = message.messageProgress+"%";
       progressBar.style.width = message.messageProgress+"%";
       progressBar.classList.add("w3-green");
-
+    } else if (message == "quarantinedatarefreshed"){
+      quarantinesRefreshButton.disabled = false;
+      quarantinesRefreshButton.value = "Refresh Quarantines";
+      getQuarantineTime();
     }
 
+
 });
+
+// Event listener for Refresh Quarantines button
+var quarantinesRefreshButton = document.getElementById("quarantines-refresh-button");
+quarantinesRefreshButton.addEventListener('click', function() {
+  quarantinesRefreshButton.disabled = true;
+  quarantinesRefreshButton.value = "Refreshing...";
+  console.log("Refresh Quarantines clicked.");
+  // Tell service worker to refresh the list
+  chrome.runtime.sendMessage("refreshQuarantines");
+});
+
+
+
+
+
 
 
 
@@ -76,6 +96,29 @@ function getApiTime(){
     }
   });
 }
+
+
+function getQuarantineTime(){
+  chrome.storage.local.get(["quarantineUpdateTime"]).then((result) => {
+    if (result.quarantineUpdateTime){
+      var progressBar = document.getElementById("quarantine-progress-bar");
+
+      var updateTime = convertMillisToDateTimeString(result.quarantineUpdateTime);
+
+
+      progressBar.innerHTML = "Updated: "+updateTime;
+      progressBar.style.width = "100%";
+      progressBar.classList.remove("w3-green");
+      progressBar.classList.remove("w3-white");
+    }
+  });
+}
+
+
+
+
+
+
 
 
 
@@ -191,3 +234,23 @@ setAPIButton.addEventListener('click', function() {
 
 
 });
+
+
+
+function convertMillisToDateTimeString(milliseconds) {
+    const date = new Date(milliseconds);
+
+    // Padding function to ensure single-digit numbers are preceded by a 0
+    const pad = (num) => num.toString().padStart(2, '0');
+
+    // Extracting date and time parts
+    const hours = pad(date.getHours());
+    const minutes = pad(date.getMinutes());
+    const seconds = pad(date.getSeconds());
+    const day = pad(date.getDate());
+    const month = pad(date.getMonth() + 1); // Months are zero-indexed
+    const year = date.getFullYear().toString().substr(-2); // Getting last two digits of the year
+
+    // Formatting to "hh:mm:ss dd:mm:yy"
+    return `${hours}:${minutes}:${seconds} ${day}/${month}/${year}`;
+}

@@ -7,6 +7,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message == "refreshProducts"){
     console.log("Product refresh requested");
     retrieveApiData();
+  } else if (message == "refreshQuarantines") {
+    console.log("Quarantines refresh requested.");
+    retreiveQuarantines();
   } else {
 
     (async () => {
@@ -23,14 +26,42 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 var apiKey = '';
 var apiSubdomain = '';
 
-
-
-
-
 let allStock = {stock_levels:[], meta:[]};
-let allProducts = {products:[], meta:[]}
+let allProducts = {products:[], meta:[]};
 let pageNumber = 1;
 var opportunityAssets = {opportunity_items:[], meta:[]};
+let quarantineData = {quarantines:[], meta:[]};
+
+
+checkQuarantineStatus(); // imediately check quarantine info status and update if necessary.
+
+function checkQuarantineStatus(){
+  // get the inspection alert setting from local storage
+  chrome.storage.local.get(["quarantineUpdateTime"]).then((result) => {
+      if (result.quarantineUpdateTime == undefined){
+        console.log("No data set");
+      } else {
+        const timeNow = new Date().getTime();
+        const timeElapsed = timeNow - result.quarantineUpdateTime;
+        console.log("Time since last Quarantine data update (ms): "+timeElapsed);
+        if (timeElapsed > 1800000){ // check every 30 minutes
+          retreiveQuarantines();
+        } else {
+          var timeRemaining = (1800000 - timeElapsed + 10); // reschedule a check when the time expires.
+          setTimeout(() => {
+            checkQuarantineStatus();
+          }, timeRemaining);
+
+        }
+      }
+  });
+
+
+
+}
+
+
+
 
 async function retreiveCurrentStockList() {
     var result = await getStock();
@@ -129,8 +160,6 @@ async function retreiveOpportunityAssets(opp) {
     console.log("API call complete");
     pageNumber = 1;
     console.log(opportunityAssets);
-
-
 
     /// this bit just for testing
     /// end of test block
@@ -335,4 +364,84 @@ function sendAlert(message){
 
 function sendProgress(percent){
   chrome.runtime.sendMessage({messageType: "progress", messageProgress: percent});
+}
+
+
+
+
+// Function to get Quaratine data from the api
+
+// Request quaratine list to prevent scans later
+async function retreiveQuarantines() {
+  await recallApiDetails();
+  quarantineData = {quarantines:[], meta:[]};
+
+  pageNumber = 1;
+  var result = await quarantineApiCall();
+  while (quarantineData.meta.row_count > 0){
+    pageNumber ++;
+    var result = await quarantineApiCall();
+    console.log("Downloading Quarantine data");
+  }
+  console.log("Quarantine data download complete.");
+  pageNumber = 1;
+  var countQuarantines = quarantineData.quarantines.length;
+  console.log(countQuarantines +" quarantine records retrieved.")
+
+
+  // Get the current date and time
+  const currentDate = new Date().getTime();
+
+  //Store the last update time in Chrome local storage
+  chrome.storage.local.set({ "quarantineUpdateTime": currentDate }, function() {
+      console.log('Quarantine Update Time saved in local storage.', currentDate);
+  });
+  checkQuarantineStatus();
+
+  const quarantineDataString = JSON.stringify(quarantineData);
+  chrome.storage.local.set({ 'quarantineData': quarantineDataString }).then(() => {
+     console.log("Quarantine data in local storage was updated");
+   });
+   chrome.runtime.sendMessage("quarantinedatarefreshed");
+}
+
+
+
+
+
+// API Call for quarantines
+function quarantineApiCall(){
+  return new Promise(function (resolve, reject) {
+
+    //const apiUrl = 'https://api.current-rms.com/api/v1/opportunities/'+opp+'/opportunity_items?page='+pageNumber+'&q[description_present]=1&per_page=100';
+    const apiUrl = 'https://api.current-rms.com/api/v1/quarantines?page='+pageNumber+'&per_page=100&q[quarantine_type_not_eq]=3';
+    // Options for the fetch request
+    const fetchOptions = {
+      method: 'GET',
+      headers: {
+        'X-SUBDOMAIN': apiSubdomain,
+        'X-AUTH-TOKEN': apiKey,
+      },
+    };
+    // Make the API call
+    fetch(apiUrl, fetchOptions)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        // Handle the API response data here
+        //console.log(data);
+        quarantineData.quarantines = quarantineData.quarantines.concat(data.quarantines); // merge new page of data into stock_levels
+        quarantineData.meta = data.meta; // merge new page of data into meta
+        resolve("ok");
+      })
+      .catch(error => {
+        // Handle errors here
+        console.error('Error making API request:', error);
+      });
+
+  });
 }

@@ -155,7 +155,9 @@ chrome.storage.local.get(["blockQuarantines"]).then((result) => {
 
 
 
+
 if (detailView || orderView || globalCheckinView){
+
 
 // Load the all products list from local storage
 chrome.storage.local.get(["allProducts"]).then((result) => {
@@ -180,6 +182,32 @@ chrome.storage.local.get(["allProducts"]).then((result) => {
     }
     //console.log("Global check-in overide: "+multiGlobal);
 });
+
+// Load the quarantineData from local storage
+chrome.storage.local.get(["quarantineData"]).then((result) => {
+    if (result.quarantineData == undefined){
+    // If the variable is empty, it might not have been got yet (first use)
+    console.log("Quarantines list was not found.");
+    makeToast("toast-error", "Quarantines list was not found. Feature disabled.");
+  } else {
+    const quarantinesString = result.quarantineData;
+    quarantineData = JSON.parse(quarantinesString);
+    console.log("Retrieved quarantine data from storage");
+    //console.log(quarantineData);
+
+    quarantinedItemList = [];
+    for (let n = 0; n < quarantineData.quarantines.length; n++) {
+      var thisAsset = quarantineData.quarantines[n].stock_level.asset_number;
+      quarantinedItemList.push(thisAsset);
+    }
+    console.log("List of quarantined items was created.");
+
+  }
+});
+
+
+
+
 
 // Load the stock item list from local storage
 chrome.storage.local.get(["allStock"]).then((result) => {
@@ -227,8 +255,8 @@ async function addDetails() {
     }
 
 
-    console.log("oppData:");
-    console.log(oppData);
+    //console.log("oppData:");
+    //console.log(oppData);
 
 
     // Find all elements with class "optional-01 asset asset-column"
@@ -331,23 +359,7 @@ async function addDetails() {
       }
     }
 
-    // Request quaratine list to prevent scans later
-    pageNumber = 1;
-    var result = await quarantineApiCall();
-    while (quarantineData.meta.row_count > 0){
-      pageNumber ++;
-      var result = await quarantineApiCall();
-    }
 
-    quarantinedItemList = [];
-    for (let n = 0; n < quarantineData.quarantines.length; n++) {
-      var thisAsset = quarantineData.quarantines[n].stock_level.asset_number;
-      quarantinedItemList.push(thisAsset);
-    }
-
-    //console.log(quarantinedItemList);
-    //console.log(quarantineData);
-    console.log("List of quarantined items was created.");
     makeToast("toast-info", "API information loaded.", 5);
 
 
@@ -2031,7 +2043,31 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     blockQuarantines = false;
     console.log("blockQuarantines set to FALSE");
   }
+  if (message == "quarantinedatarefreshed"){
+    console.log("Quarantine data was refreshed by the service worker.");
+    // Load the quarantineData from local storage
+    chrome.storage.local.get(["quarantineData"]).then((result) => {
+        if (result.quarantineData == undefined){
+          // If the variable is empty, it might not have been got yet (first use)
+          console.log("Quarantines list was not found.");
+          makeToast("toast-error", "Quarantines list was not found. Feature disabled.");
+        } else {
+          const quarantinesString = result.quarantineData;
+          quarantineData = JSON.parse(quarantinesString);
+          console.log("Retrieved quarantine data from storage");
+          console.log(quarantineData);
 
+          quarantinedItemList = [];
+            for (let n = 0; n < quarantineData.quarantines.length; n++) {
+              var thisAsset = quarantineData.quarantines[n].stock_level.asset_number;
+              quarantinedItemList.push(thisAsset);
+            }
+          console.log("List of quarantined items was created.");
+
+        }
+    });
+
+  }
   return true;
 });
 
