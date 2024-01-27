@@ -26,6 +26,8 @@ Aside from the Chrome Desktop Browser, users have successfully used this extensi
 
 ## Features / Updates
 
+- FIXED: 1.30.10: Fixed an issue that would cause the extension to crash if the product API call and quarantine API call are made at the same time (as happens automatically when a new system has the extension loaded for the first time!)
+
 - IMPROVED: 1.30.9: Feedback has been that the API call for quarantine information is sometimes slow on a page reload and is in a queue behind the opportunity information. The result is that it's possible to scan an item before the API has reported it as in quarantine, so it gets through. To fix this, I've re-written this feature to be something that is checked every 30 minutes - unless triggered manually in the settings pop-up. Users should bear in mind that if an item is taken in or out of quarantine, this status change may not be reflected for up to 30 minutes. Hopefully in a real world scenario this should rarely cause an issue.
 
 - IMPROVED: 1.30.8: Block Quarantine Toast Messages now include a link to go to the quarantine record.
