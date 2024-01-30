@@ -40,6 +40,7 @@ function checkQuarantineStatus(){
   chrome.storage.local.get(["quarantineUpdateTime"]).then((result) => {
       if (result.quarantineUpdateTime == undefined){
         console.log("No data set");
+        retreiveQuarantines();
       } else {
         const timeNow = new Date().getTime();
         const timeElapsed = timeNow - result.quarantineUpdateTime;
