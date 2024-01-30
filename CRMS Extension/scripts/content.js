@@ -2154,7 +2154,7 @@ function activeIntercept(){
         var myScan = allocateScanBox.value;
 
 
-        if (myScan != "revert" && revertScan){
+        if (myScan.toLowerCase() != "revert" && revertScan){
           // we have prompted the user for an item to revert
           event.preventDefault();
           resetScanBox();
@@ -2191,13 +2191,13 @@ function activeIntercept(){
                 makeToast("toast-error", "Asset "+myScan+" is in quarantine.");
 
           // In the case that we have scanned a *freescan* barcode
-        } else if (myScan == "freescan"){
+        } else if (myScan.toLowerCase() == "freescan"){
             event.preventDefault();
             freeScanToggle();
             resetScanBox();
 
           // In the case that we have scanned a *container* barcode
-        }else if (myScan == "container"){
+        }else if (myScan.toLowerCase() == "container"){
             if (containerScan){
               // Means the user scanned *container* twice and we want to clear the container field
               containerScan = false;
@@ -2288,7 +2288,7 @@ function activeIntercept(){
             }
 
 
-          } else if (myScan === 'revert'){
+          } else if (myScan.toLowerCase() === 'revert'){
             // this is a special scan to invoke revert status on an item
             if (revertScan){ // Means double scan of *revert*
               event.preventDefault();
@@ -2307,7 +2307,7 @@ function activeIntercept(){
               resetScanBox();
             }
 
-          } else if (myScan == "test"){
+          } else if (myScan.toLowerCase() == "test"){
             // test scan for development purposes
             // Test code here.
             sayWord("test");
