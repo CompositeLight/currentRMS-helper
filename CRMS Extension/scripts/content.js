@@ -1425,7 +1425,7 @@ const observer = new MutationObserver((mutations) => {
           }, 800);
 
       // play an error sound if we failed to allocate / prepare and we were trying to create a container
-      } else if (scanningContainer && (messageText.includes('Failed to allocate asset(s)') || messageText.includes('Failed to mark item(s) as prepared') || messageText.slice(-74) == 'as it does not have an active stock allocation with a sufficient quantity.')){
+    } else if (scanningContainer && (messageText.includes('Failed to allocate asset(s)') || messageText.includes('Failed to mark item(s) as prepared') || messageText.includes('as it does not have an active stock allocation with a sufficient quantity.') )){
         error_sound.play();
         scanningContainer = "";
         // clear the current value of container
@@ -1440,7 +1440,7 @@ const observer = new MutationObserver((mutations) => {
 
 
       // Handle a successful allocation of an item being set as the container
-      } else if (scanningContainer && (messageText.slice(11) == 'Allocation successful' || messageText.slice(11) == 'Items successfully marked as prepared')){
+    } else if (scanningContainer && (messageText.includes('Allocation successful')  || messageText.includes('Items successfully marked as prepared'))){
         scanSound();
         //smartScanSetup(lastScan);
         // set the container field to the new asset
@@ -1463,12 +1463,12 @@ const observer = new MutationObserver((mutations) => {
         }, 900);
 
       // play an error sound for basic fail messages
-    } else if (messageText.includes('Failed to allocate asset(s)') || messageText.slice(11) == 'Failed to mark item(s) as prepared' || messageText.slice(11) == 'Failed to check in item(s)' || messageText.slice(-74) == 'as it does not have an active stock allocation with a sufficient quantity.' || messageText.slice(11) == 'Failed to add container component' || messageText.includes('Failed to stock check item')){
+    } else if (messageText.includes('Failed to allocate asset(s)') || messageText.includes('Failed to mark item(s) as prepared') || messageText.includes('Failed to check in item(s)')  || messageText.includes('as it does not have an active stock allocation with a sufficient quantity.') || messageText.includes('Failed to add container component')  || messageText.includes('Failed to stock check item')){
         //error_sound.play();
         errorSound();
 
       // Handle errors related to items being already scanned, or just not on the job at all
-      } else if (messageText.includes('No available asset could be found using') || messageText.slice(11, 74) == "No allocated or reserved stock allocations could be found using" || messageText.slice(-46) == "has already been selected on this opportunity.") {
+    } else if (messageText.includes('No available asset could be found using') || messageText.includes("No allocated or reserved stock allocations could be found using")  || messageText.includes("has already been selected on this opportunity.") ) {
 
           // check if it's already on the job.
           theAsset = extractAsset(messageText);
@@ -2349,6 +2349,8 @@ function activeIntercept(){
 function setFreeScan(setting){ // enter true or false as required.
   var freeScanStatus = false;
 
+  // First of all, check the current state of the "free scan" toggle button
+
   // Find the parent div with class "free-scan-input"
   var freeScanDiv = document.querySelector('.free-scan-input');
   // Check if the parent div is found
@@ -2372,13 +2374,14 @@ function setFreeScan(setting){ // enter true or false as required.
   } else {
       console.log('Parent div with class "free-scan-input" not found');
   }
+  // Now click the toggle button if it's not where we want it to be.
   if (setting != freeScanStatus){ // if the current state is not the one we want, we need to toggle it.
     var freeScanButton = document.querySelectorAll('label[for="free_scan"][class="checkbox toggle android"]');
     freeScanButton[0].click();
   }
 }
 
-function checkFreeScan(){ // enter true or false as required.
+function checkFreeScan(){ // checks on the freescan toggle button and returns status true or false
   var freeScanStatus = false;
 
   // Find the parent div with class "free-scan-input"
