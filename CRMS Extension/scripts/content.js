@@ -1,7 +1,11 @@
 
 // NOTE: This code deals with two types of messages. ToastMessages are the type that appear via websocket message to the page. This includes things like sucess messages when an item is scanned. The other type I have called toastPosts, which appear following a php page refresh. This applies to certain scenarios, like reverting the status on an item. FYI Current calls the dialog boxes in the top corner "toast messages", which is where the toast thing comes from.
-
 console.log("CurrentRMS Helper Activated.");
+
+// MAKE THIS VARIABLE true IF YOU WANT TO MUTE THE SUCCESS / FAIL SOUNDS FROM THE EXTENSION //
+muteExtensionSounds = false;
+
+
 
 assetsOnTheJob = [];
 assetsGlobalScanned = [];
@@ -27,6 +31,9 @@ apiSubdomain="";
 lastScan="";
 smartScan = false;
 smartScanCandidates = {};
+revertScan = false;
+
+
 
 blockQuarantines = true;
 
@@ -64,6 +71,8 @@ if (globalCheckinView.length != 0){
   globalCheckinView = false;
 }
 
+
+
 console.log("Order view: "+orderView);
 console.log("Detail view: "+detailView);
 console.log("Global Check-in view: "+globalCheckinView);
@@ -97,8 +106,6 @@ if (detailView || orderView || globalCheckinView){
 
 
 
-
-
 try {
   // Scrape the store name:
   storeLocation = document.getElementById("storelocation").textContent.trim();
@@ -118,15 +125,6 @@ let opportunityID = (function() {
 })();
 
 
-// get the inspection alert setting from local storage
-chrome.storage.local.get(["inspectionAlert"]).then((result) => {
-    if (result.inspectionAlert == undefined){
-      inspectionAlerts = "full";
-    } else {
-      inspectionAlerts = result.inspectionAlert;
-    }
-    console.log("Inspection alert mode: "+inspectionAlerts);
-});
 
 // get the multi global check in setting from local storage
 chrome.storage.local.get(["multiGlobal"]).then((result) => {
@@ -138,21 +136,31 @@ chrome.storage.local.get(["multiGlobal"]).then((result) => {
     console.log("Global check-in overide: "+multiGlobal);
 });
 
-// get the blockQuarantines setting from local storage
-chrome.storage.local.get(["blockQuarantines"]).then((result) => {
-    if (result.blockQuarantines == undefined){
-      blockQuarantines = true;
-    } else {
-      blockQuarantines = result.blockQuarantines;
-    }
-    console.log("Block Quarantines setting: "+blockQuarantines);
-});
 
 
 
+if (detailView){
+  // get the inspection alert setting from local storage
+  chrome.storage.local.get(["inspectionAlert"]).then((result) => {
+      if (result.inspectionAlert == undefined){
+        inspectionAlerts = "full";
+      } else {
+        inspectionAlerts = result.inspectionAlert;
+      }
+      console.log("Inspection alert mode: "+inspectionAlerts);
+  });
 
 
-
+  // get the blockQuarantines setting from local storage
+  chrome.storage.local.get(["blockQuarantines"]).then((result) => {
+      if (result.blockQuarantines == undefined){
+        blockQuarantines = true;
+      } else {
+        blockQuarantines = result.blockQuarantines;
+      }
+      console.log("Block Quarantines setting: "+blockQuarantines);
+  });
+}
 
 
 
@@ -1294,7 +1302,7 @@ function listToastPosts() {
           const badItem = extractAsset(item);
           insertIndex = 1 + indexOfSecondSingleQuote(item);
 
-          const assetName = findAssetName(badItem);
+          var assetName = findAssetName(badItem);
           if (assetName == null){
             assetName = "";
           }
@@ -1427,7 +1435,7 @@ const observer = new MutationObserver((mutations) => {
         setFreeScan(freeScanReset);
         setTimeout(function(){
           makeToast("toast-info", "Container was not set.", 5);
-          alert_sound.play();
+          alertSound();
         }, 500);
 
 
@@ -1494,7 +1502,7 @@ const observer = new MutationObserver((mutations) => {
         break;
         case "short":
           setTimeout(function() {
-            short_alert_sound.play();
+            shortAlertSound();
             console.log(messageText);
           }, 400);
         break;
@@ -1611,7 +1619,7 @@ const observer = new MutationObserver((mutations) => {
       } else {
         if (detailView){
           // play an alert sound if scanning in detail view, just incase it's something important...
-          alert_sound.play();
+          alertSound();
         }
         // alert(`Unhandled Alert Message:\n\n${messageText}`);
         console.log("The following message was not handled by CurrentRMS Helper");
@@ -1781,27 +1789,54 @@ function calculateContainerWeights() {
 
 
 
-// declare what the sounds are
+// declare what the sounds are - now defunct
 var error_sound = new Audio(chrome.runtime.getURL("sounds/error_sound.wav"));
 var scan_sound = new Audio(chrome.runtime.getURL("sounds/scan_sound.mp3"));
 var alert_sound = new Audio(chrome.runtime.getURL("sounds/alert.wav"));
 var short_alert_sound = new Audio(chrome.runtime.getURL("sounds/short_alert.mp3"));
 var container_scan_sound = new Audio(chrome.runtime.getURL("sounds/container_scan_sound.mp3"));
 
+
 function scanSound(){
-  var thisSound = new Audio(chrome.runtime.getURL("sounds/scan_sound.mp3"));
-  thisSound.play();
+  if (!muteExtensionSounds){
+    var thisSound = new Audio(chrome.runtime.getURL("sounds/scan_sound.mp3"));
+    thisSound.play();
+  }
 }
 
 function errorSound(){
-  var thisSound = new Audio(chrome.runtime.getURL("sounds/error_sound.wav"));
-  thisSound.play();
+  if (!muteExtensionSounds){
+    var thisSound = new Audio(chrome.runtime.getURL("sounds/error_sound.wav"));
+    thisSound.play();
+  }
 }
 
 function containerScanSound(){
-  var thisSound = new Audio(chrome.runtime.getURL("sounds/container_scan_sound.mp3"));
-  thisSound.play();
+  if (!muteExtensionSounds){
+    var thisSound = new Audio(chrome.runtime.getURL("sounds/container_scan_sound.mp3"));
+    thisSound.play();
+  }
 }
+
+function alertSound(){
+  if (!muteExtensionSounds){
+    var thisSound = new Audio(chrome.runtime.getURL("sounds/alert.wav"));
+    thisSound.play();
+  }
+}
+
+function shortAlertSound(){
+  if (!muteExtensionSounds){
+    var thisSound = new Audio(chrome.runtime.getURL("sounds/short_alert.mp3"));
+    thisSound.play();
+  }
+}
+
+
+
+
+
+
 
 
 
@@ -1972,6 +2007,15 @@ if (detailView){
       });
     });
 
+
+    chrome.storage.local.get(["allocateDefault"]).then((result) => {
+      if (result.allocateDefault != "false" && detailViewMode == "functions"){
+        var allocateButton = document.querySelector('a.btn[href="#quick_allocate"]');
+        allocateButton.click();
+      }
+    });
+
+
   }
   catch(err) {
     console.log(err);
@@ -2089,12 +2133,43 @@ function activeIntercept(){
     var parentSpan = allocateScanBox.parentNode;
     var quantityBox = document.querySelector('input[type="text"][name="quantity"]');
     var containerBox = document.querySelector('input[type="text"][name="container"]');
+
+    function resetScanBox(){
+      // block to clear the allocate box after an intercept
+      allocateScanBox.value = '';
+      parentSpan = allocateScanBox.parentNode;
+      var htmlFudge = parentSpan.innerHTML;
+      parentSpan.innerHTML = htmlFudge;
+      setTimeout(focusInput, 100); // delayed to avoid the jQuery function messing it up
+      activeIntercept(); // need to re-run because we've just nuked the scan section DOM so the event listener won't work
+    }
+
+
+
+
+
     allocateScanBox.addEventListener("keypress", function(event) {
       if (event.key === "Enter") {
 
-          var myScan = allocateScanBox.value;
+        var myScan = allocateScanBox.value;
 
-        if (quarantinedItemList.includes(myScan) && blockQuarantines){
+
+        if (myScan != "revert" && revertScan){
+          // we have prompted the user for an item to revert
+          event.preventDefault();
+          resetScanBox();
+          listAssets();
+          if (assetsOnTheJob.includes(myScan)){
+            clickAndRevert(myScan);
+            revertScan = false;
+          } else {
+            errorSound();
+            revertScan = false;
+            makeToast("toast-error", "Failed to revert "+myScan+" because it is not currently allocated.");
+            sayWord("Failed to revert. Not on the job.")
+          }
+
+        } else if (quarantinedItemList.includes(myScan) && blockQuarantines){
               // this item is in quarantine
               event.preventDefault();
 
@@ -2110,15 +2185,7 @@ function activeIntercept(){
 
               makeToast("toast-error", "Failed to allocate asset(s)");
               makeToast("toast-error", "Asset "+myScan+" is in quarantine.<br><br><a class='toast-link' href='https://"+apiSubdomain+".current-rms.com/quarantines/"+quarantineId+"' target='_blank'>View Record</a>");
-
-              // block to clear the allocate box after an intercept
-              allocateScanBox.value = '';
-              parentSpan = allocateScanBox.parentNode;
-              var htmlFudge = parentSpan.innerHTML;
-              parentSpan.innerHTML = htmlFudge;
-              setTimeout(focusInput, 100); // delayed to avoid the jQuery function messing it up
-              activeIntercept(); // need to re-run because we've just nuked the scan section DOM so the event listener won't work
-
+              resetScanBox();
           } else if (quarantinedItemList.includes(myScan) && !blockQuarantines){
                 // this item is in quarantine but we're set to allow it through
                 makeToast("toast-error", "Asset "+myScan+" is in quarantine.");
@@ -2127,48 +2194,26 @@ function activeIntercept(){
         } else if (myScan == "freescan"){
             event.preventDefault();
             freeScanToggle();
-
-            // block to clear the allocate box after an intercept
-            allocateScanBox.value = '';
-            parentSpan = allocateScanBox.parentNode;
-            var htmlFudge = parentSpan.innerHTML;
-            parentSpan.innerHTML = htmlFudge;
-            setTimeout(focusInput, 100); // delayed to avoid the jQuery function messing it up
-            activeIntercept(); // need to re-run because we've just nuked the scan section DOM so the event listener won't work
-
+            resetScanBox();
 
           // In the case that we have scanned a *container* barcode
         }else if (myScan == "container"){
             if (containerScan){
               // Means the user scanned *container* twice and we want to clear the container field
               containerScan = false;
-              short_alert_sound.play();
+              shortAlertSound();
               sayWord("Container cleared.")
               containerBox.value = '';
               event.preventDefault();
               makeToast("toast-info", "Container cleared.", 5);
-
-              // block to clear the allocate box after an intercept
-              allocateScanBox.value = '';
-              parentSpan = allocateScanBox.parentNode;
-              var htmlFudge = parentSpan.innerHTML;
-              parentSpan.innerHTML = htmlFudge;
-              setTimeout(focusInput, 100); // delayed to avoid the jQuery function messing it up
-              activeIntercept(); // need to re-run because we've just nuked the scan section DOM so the event listener won't work
-
+              resetScanBox();
             } else {
               // We need to prompt the user to scan a container
               event.preventDefault();
               sayWord("Scan container");
               containerScan = true;
               makeToast("toast-info", "Now scan the container.", 5);
-              // block to clear the allocate box after an intercept
-              allocateScanBox.value = '';
-              parentSpan = allocateScanBox.parentNode;
-              var htmlFudge = parentSpan.innerHTML;
-              parentSpan.innerHTML = htmlFudge;
-              setTimeout(focusInput, 100); // delayed to avoid the jQuery function messing it up
-              activeIntercept(); // need to re-run because we've just nuked the scan section DOM so the event listener won't work
+              resetScanBox();
             }
 
           }else if (containerScan){
@@ -2181,14 +2226,7 @@ function activeIntercept(){
               scanSound();
               containerBox.value = allocateScanBox.value;
               makeToast("toast-info", "Container set to "+containerBox.value, 5);
-              // block to clear the allocate box after an intercept
-              allocateScanBox.value = '';
-              parentSpan = allocateScanBox.parentNode;
-              var htmlFudge = parentSpan.innerHTML;
-              parentSpan.innerHTML = htmlFudge;
-              setTimeout(focusInput, 100); // delayed to avoid the jQuery function messing it up
-              activeIntercept(); // need to re-run because we've just nuked the scan section DOM so the event listener won't work
-
+              resetScanBox();
               setTimeout(sayWord("Container set."), 500);
 
             } else {
@@ -2205,20 +2243,12 @@ function activeIntercept(){
           }else if (myScan == containerBox.value && containerBox.value != "") {
             // we scanned an asset that is already set as the current container, which means "clear the container field"
             containerScan = false;
-            short_alert_sound.play();
+            shortAlertSound();
             sayWord("Container cleared.")
             containerBox.value = '';
             event.preventDefault();
             makeToast("toast-info", "Container cleared.", 5);
-
-            // block to clear the allocate box after an intercept
-            allocateScanBox.value = '';
-            parentSpan = allocateScanBox.parentNode;
-            var htmlFudge = parentSpan.innerHTML;
-            parentSpan.innerHTML = htmlFudge;
-            setTimeout(focusInput, 100); // delayed to avoid the jQuery function messing it up
-            activeIntercept(); // need to re-run because we've just nuked the scan section DOM so the event listener won't work
-
+            resetScanBox();
           } else if (containerExists(myScan)) {
             // we have scanned an asset that is already a container in this opportunity.
             event.preventDefault();
@@ -2226,14 +2256,7 @@ function activeIntercept(){
             scanSound();
             containerBox.value = allocateScanBox.value;
             makeToast("toast-info", "Container set to "+containerBox.value, 5);
-            // block to clear the allocate box after an intercept
-            allocateScanBox.value = '';
-            parentSpan = allocateScanBox.parentNode;
-            var htmlFudge = parentSpan.innerHTML;
-            parentSpan.innerHTML = htmlFudge;
-            setTimeout(focusInput, 100); // delayed to avoid the jQuery function messing it up
-            activeIntercept(); // need to re-run because we've just nuked the scan section DOM so the event listener won't work
-
+            resetScanBox();
             setTimeout(sayWord("Container set."), 500);
 
 
@@ -2264,19 +2287,33 @@ function activeIntercept(){
                 console.log("String does not match the expected pattern.");
             }
 
+
+          } else if (myScan === 'revert'){
+            // this is a special scan to invoke revert status on an item
+            if (revertScan){ // Means double scan of *revert*
+              event.preventDefault();
+              sayWord("Revert cancelled.");
+              revertScan = false;
+              makeToast("toast-info", "Revert scan cancelled.", 5);
+              // block to clear the allocate box after an intercept
+              resetScanBox();
+            } else {
+              // We need to prompt the user to scan the item to be reverted
+              event.preventDefault();
+              sayWord("Scan item to revert");
+              revertScan = true;
+              makeToast("toast-info", "Scan the item to be reverted.", 5);
+              // block to clear the allocate box after an intercept
+              resetScanBox();
+            }
+
           } else if (myScan == "test"){
             // test scan for development purposes
             // Test code here.
             sayWord("test");
 
             event.preventDefault();
-            // block to clear the allocate box after an intercept
-            allocateScanBox.value = '';
-            parentSpan = allocateScanBox.parentNode;
-            var htmlFudge = parentSpan.innerHTML;
-            parentSpan.innerHTML = htmlFudge;
-            setTimeout(focusInput, 100); // delayed to avoid the jQuery function messing it up
-            activeIntercept(); // need to re-run because we've just nuked the scan section DOM so the event listener won't work
+            resetScanBox();
 
         } // end if scan block
         // Passed all of that means this is a regular item we're scanning.
@@ -2302,6 +2339,7 @@ function activeIntercept(){
 //document.getElementById("group_id").value = "35765";
 //var groupIdInput = document.getElementById("group_id");
 //groupIdInput.setAttribute('value', '35765');
+
 
 
 
@@ -2632,4 +2670,36 @@ function deallocateAsset(asset){
   .then(response => response.json())
   .then(data => console.log(data))
   .catch(error => console.error('Error:', error));
+}
+
+
+
+// find and revert an item by asset number
+
+function clickAndRevert(asset){
+  var assetColumns = document.querySelectorAll('td.optional-01.asset.asset-column');
+  var revertFound = false;
+
+  // Loop through each element to find the one with the matching asset number
+  for (var i = 0; i < assetColumns.length; i++) {
+    var parentRow = assetColumns[i].closest('tr');
+    var tickboxElement = parentRow.querySelector('input.item-select');
+    if (assetColumns[i].innerText == asset){
+      if (tickboxElement){
+        tickboxElement.checked = true;
+        revertFound = true;
+      }
+    } else {
+      if (tickboxElement){
+        tickboxElement.checked = false;
+      }
+    }
+  } // end of for assetColumns for loop
+
+  if (revertFound){
+    var revertButton = document.querySelector('a.row-selector[data-confirm="Are you sure you want to revert the status of the selected items?"]');
+    revertButton.removeAttribute("data-confirm");
+    revertButton.click();
+
+  }
 }

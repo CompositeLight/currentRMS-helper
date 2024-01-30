@@ -117,8 +117,24 @@ function getQuarantineTime(){
 
 
 
+// Code for getting the Allocate by Default radio button to match the stored value
+chrome.storage.local.get(["allocateDefault"]).then((result) => {
+  if (result.allocateDefault == "false"){
+    document.querySelector(`input[name="allocatedefault"][value="false"]`).checked = true;
+  }
+});
 
+// Code for watching the Allocate by Default radio buttons for changes and updating local storage
+document.querySelectorAll('input[name="allocatedefault"]').forEach(function(radio) {
+  radio.addEventListener('change', function() {
+    console.log(this.value);
+    //await chrome.storage.session.set({ prepareSet: this.value });
+    chrome.storage.local.set({ "allocateDefault": this.value }).then(() => {
+       console.log("Allocate View by Default setting was changed");
+     });
 
+  });
+});
 
 
 
