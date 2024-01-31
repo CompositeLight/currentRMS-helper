@@ -10,6 +10,28 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   } else if (message == "refreshQuarantines") {
     console.log("Quarantines refresh requested.");
     retreiveQuarantines();
+
+  } else if (message.messageType == "availabilityscape"){
+      console.log("Availability scrape was requested for "+message.messageText);
+      availabilityScrape(message.messageText);
+  } else if (message.messageType == "availabilityscape"){
+      console.log("Availability scrape was requested for "+message.messageText);
+      availabilityScrape(message.messageText);
+
+  } else if (message.action === "closeTab") {
+          // close the scraper tab on demand.
+          chrome.tabs.remove(sender.tab.id);
+
+  } else if (message.messageType === "availabilityData") {
+        // Forward the message to Content Script B
+        chrome.tabs.query({}, function(tabs) {
+            tabs.forEach(function(tab) {
+                chrome.tabs.sendMessage(tab.id, message);
+            });
+        });
+
+
+
   } else {
 
     (async () => {
@@ -22,6 +44,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 ////////
+
+
+
+
+
 
 var apiKey = '';
 var apiSubdomain = '';
@@ -411,8 +438,6 @@ async function retreiveQuarantines() {
 
 
 
-
-
 // API Call for quarantines
 function quarantineApiCall(){
 
@@ -452,4 +477,18 @@ function quarantineApiCall(){
 
     });
 
+}
+
+
+async function availabilityScrape(opp){
+  await recallApiDetails();
+  if (apiSubdomain){
+    var scrapeURL = 'https://'+apiSubdomain+'.current-rms.com/availability/opportunity/'+opp+'?scrape';
+    chrome.tabs.create({
+        url: scrapeURL,
+        active: false
+      }, function(tab) {
+      // You can perform actions here after the tab is created
+    });
+  }
 }

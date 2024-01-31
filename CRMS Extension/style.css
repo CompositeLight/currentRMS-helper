@@ -234,3 +234,28 @@ span.loss-warning {
 .toast-link{
   text-decoration: underline;
 }
+
+
+.availability-count{
+  float: right; /* Push the second span to the right */
+  text-align: right;
+  color: grey;
+  font-style: italic;
+}
+
+.avail-short{
+  color: red !important;
+}
+
+.avail-good{
+  color: green !important;
+}
+
+
+div.float-left{
+  float: left;
+}
+
+div.float-right{
+  float: right;
+}

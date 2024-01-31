@@ -166,6 +166,9 @@ if (detailView){
 
 if (detailView || orderView || globalCheckinView){
 
+//chrome.runtime.sendMessage({messageType: "availabilityscape", messageText: opportunityID});
+
+
 
 // Load the all products list from local storage
 chrome.storage.local.get(["allProducts"]).then((result) => {
@@ -253,6 +256,7 @@ chrome.storage.local.get(["allStock"]).then((result) => {
 
 // Function to add inspector details and item descriptions to the Details page
 async function addDetails() {
+
   if (detailView){
     await recallApiDetails();
     pageNumber = 1;
@@ -374,6 +378,7 @@ async function addDetails() {
 
   } else if (orderView){
     console.log("add Details order view");
+    chrome.runtime.sendMessage({messageType: "availabilityscape", messageText: opportunityID});
 
     var currencyPrefix = getCurrencySymbol();
 
@@ -385,10 +390,9 @@ async function addDetails() {
       var result = await opportunityApiCall(opportunityID);
     }
 
-
     for (let n = 0; n < oppData.opportunity_items.length; n++) {
 
-      if (oppData.opportunity_items[n].opportunity_item_type_name != "Group" && !oppData.opportunity_items[n].is_in_deal) {
+      if (oppData.opportunity_items[n].opportunity_item_type_name != "Group" && !oppData.opportunity_items[n].is_in_deal && oppData.opportunity_items[n].opportunity_item_type_name != false) {
         var thisName = oppData.opportunity_items[n].name;
         var thisID = oppData.opportunity_items[n].id;
         var thisTotalCharge = parseFloat(oppData.opportunity_items[n].charge_excluding_tax_total);
@@ -414,6 +418,9 @@ async function addDetails() {
         var liElement = document.querySelector('li.grid-body-row[data-id="'+thisID+'"]');
         var tdElement = liElement.querySelector('td.total-column.align-right.item-total');
 
+        if (!tdElement){
+          console.log("issue finding td element for "+thisName);
+        }
 
         var spanElement = tdElement.querySelector('span');
         var currentDataContent = "";
@@ -2112,6 +2119,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     });
 
   }
+
+  if (message.messageType == "availabilityData"){
+      console.log("Availability data was delivered");
+      //console.log(message.messageData);
+      addAvailability(message.messageData);
+
+  }
+
+
   return true;
 });
 
@@ -2705,4 +2721,66 @@ function clickAndRevert(asset){
     revertButton.click();
 
   }
+}
+
+function addAvailability(data) {
+    console.log("Adding availability information");
+    // Get all div elements with class 'dd-content'
+    var divs = document.querySelectorAll('div.dd-content');
+
+    // Iterate through each div
+    divs.forEach(function(div) {
+        // Check if the div's innerText is a key in the data object
+        if (data.hasOwnProperty(div.innerText.trim())) {
+            // Find the parent row of the div
+            var parentRow = div.closest('tr');
+            if (parentRow) {
+                // Find the 'status-column' cell within the parent row
+                var statusCell = parentRow.querySelector('.status-column');
+                if (statusCell) {
+                    // Find the 'availability-count' span within the 'status-column' cell
+                    var availabilitySpan = statusCell.querySelector('.availability-count');
+
+                    // If the 'availability-count' span exists, update its innerText
+                    if (availabilitySpan) {
+                      var avail = data[div.innerText.trim()];
+                      if (avail < 0){
+                        availabilitySpan.classList.add("avail-short");
+                        availabilitySpan.classList.remove("avail-good");
+                      } else {
+                        availabilitySpan.classList.remove("avail-short");
+                        availabilitySpan.classList.add("avail-good");
+                      }
+                      availabilitySpan.innerText = avail;
+                    } else {
+                        // If the 'availability-count' span does not exist, create it, append it to the status cell, and set its value
+                        availabilitySpan = document.createElement('span');
+                        availabilitySpan.className = 'availability-count';
+                        var avail = data[div.innerText.trim()];
+
+                        if (avail < 0){
+                          availabilitySpan.classList.add("avail-short");
+                          availabilitySpan.classList.remove("avail-good");
+                        } else {
+                          availabilitySpan.classList.remove("avail-short");
+                          availabilitySpan.classList.add("avail-good");
+                        }
+
+                        availabilitySpan.innerText = avail;
+                        statusCell.appendChild(availabilitySpan);
+                    }
+                }
+            }
+        }
+    });
+    // Find the first 'td' cell with the class 'status-column'
+    var statusCell = document.querySelector('td.status-column');
+
+    // Check if the cell exists
+    if (statusCell) {
+        // Replace the innerHTML of the cell
+        statusCell.innerHTML = '<div class="float-left">Status</div><div class="float-right">Avail</div>';
+    } else {
+        console.log('No "status-column" cell found.');
+    }
 }

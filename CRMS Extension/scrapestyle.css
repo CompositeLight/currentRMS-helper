@@ -1,0 +1,19 @@
+.block-out {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    z-index: 1500;
+    pointer-events: auto; /* Prevent clicks on content underneath */
+
+    /* Flexbox to center the content */
+    display: flex;
+    align-items: center; /* Vertical centering */
+    justify-content: center; /* Horizontal centering */
+    color: white; /* White text color */
+    font-size: 4em; /* Larger text size */
+    text-align: center; /* Center text alignment */
+    padding: 20px; /* Padding for text */
+}
