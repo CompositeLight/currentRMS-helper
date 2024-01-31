@@ -255,21 +255,24 @@ chrome.storage.local.get(["allStock"]).then((result) => {
 
 
 // Function to add inspector details and item descriptions to the Details page
-async function addDetails() {
+async function addDetails(mode) {
 
   if (detailView){
-    await recallApiDetails();
-    pageNumber = 1;
-    var result = await opportunityApiCall(opportunityID);
-    while (oppData.meta.row_count > 0){
-      pageNumber ++;
-      var result = await opportunityApiCall(opportunityID);
-    }
 
+    if (!mode){
+      await recallApiDetails();
+      pageNumber = 1;
+      var result = await opportunityApiCall(opportunityID);
+      while (oppData.meta.row_count > 0){
+        pageNumber ++;
+        var result = await opportunityApiCall(opportunityID);
+      }
+    } else {
+      console.log("Running offline addDetails");
+    }
 
     //console.log("oppData:");
     //console.log(oppData);
-
 
     // Find all elements with class "optional-01 asset asset-column"
     var assetColumns = document.querySelectorAll('td.optional-01.asset.asset-column');
@@ -283,6 +286,14 @@ async function addDetails() {
       var oppItemId = parentRow.getAttribute("data-oi-id");
       var parentTableBody = assetColumns[i].closest('tbody');
       var nameElement = parentRow.querySelector('.essential.asset.dd-name');
+      var nameDiv = nameElement.querySelector('div:last-child');
+      // Find the span with class 'product-tip' within nameDiv
+      var productTip = nameDiv.querySelector('span.product-tip');
+      // If the element exists, remove it
+      if (productTip) {
+          productTip.remove();
+      }
+
       var prodName = nameElement.innerText;
         if (!assetColumns[i].innerHTML.includes("Sub-Rent Booking") && !assetColumns[i].innerHTML.includes("Non-Stock Booking")){
 
@@ -293,12 +304,13 @@ async function addDetails() {
             // Remove the prefix and return the rest of the string
             prodName = prodName.slice("Expand\n".length);
           }
+
           const newSpan = document.createElement('span');
           newSpan.className = 'product-tip';
           newSpan.innerHTML = '&#128270; &nbsp;';
           const newSpanId = 'product-tip-'+i;
           newSpan.id = newSpanId;
-          var nameDiv = nameElement.querySelector('div:last-child');
+
           nameDiv.appendChild(newSpan);
 
           (function (theId, name){
@@ -1375,8 +1387,11 @@ const observer = new MutationObserver((mutations) => {
 
     const toastMessages = addedNodes.filter((node) => node.classList?.contains("toast")); // filters the ellements that have appeared on the webpage to spot toast messages
 
+
+
     mutation.addedNodes.forEach((node) => {
       if (node.classList?.contains("toast")){
+
         // Overide the css display properties of the toast container so that it is readable if it overflows the height of the window.
         var theToastcontainer = document.getElementById("toast-container");
         theToastcontainer.style.overflowY = "scroll";
@@ -1449,6 +1464,7 @@ const observer = new MutationObserver((mutations) => {
       // Handle a successful allocation of an item being set as the container
     } else if (scanningContainer && (messageText.includes('Allocation successful')  || messageText.includes('Items successfully marked as prepared'))){
         scanSound();
+        addDetails(true);
         //smartScanSetup(lastScan);
         // set the container field to the new asset
         containerBox = document.querySelector('input[type="text"][name="container"]');
@@ -1611,7 +1627,7 @@ const observer = new MutationObserver((mutations) => {
 
       // Handle myriad messages that are good, and just need a confirmatory "ding"
       } else if (messageText.slice(11) == 'Allocation successful' || messageText.slice(11) == 'Items successfully marked as prepared' || messageText.slice(11) == 'Items successfully checked in' || messageText.slice(11) == 'Container Component was successfully destroyed. ' || messageText.slice(11) == 'Opportunity Item was successfully destroyed.' || messageText.slice(11) == 'Container component was successfully added' || messageText.slice(11) == 'Opportunity Item was successfully updated.'  || messageText.slice(11) == 'Items successfully booked out.' || messageText.slice(11) == 'Container component was successfully removed'  || messageText.slice(11) == 'Check-in details updated successfully' || messageText.slice(11) == 'Opportunity Item was updated.' || messageText.slice(11) == 'Set container successfully' || messageText.includes('Asset(s) successfully checked in')){
-
+        addDetails(true);
         if (detailView && (document.querySelector('input[type="text"][name="container"]').value)){
           containerScanSound();
         } else if (!orderView){
@@ -1619,6 +1635,7 @@ const observer = new MutationObserver((mutations) => {
         }
         if (detailViewMode == "allocate" || detailViewMode == "prepare"){
           //smartScanSetup(lastScan);
+
         }
 
 
