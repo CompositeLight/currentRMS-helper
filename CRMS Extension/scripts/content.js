@@ -344,6 +344,16 @@ async function addDetails(mode) {
         const padCell = "<td class='essential padding-column'></td>"
         const padCells = padCell.repeat(1+padCount);
         newNoteRow.innerHTML = padCells+"<td class='item-description-cell' colspan='1'>"+thisDescription+"</td>";
+
+        // Check if there's already a note row
+        var oldNote = parentTableBody.querySelector('tr.item-description-row');
+        // If the element exists, remove it
+        if (oldNote) {
+          oldNote.remove();
+        }
+
+
+
         parentTableBody.appendChild(newNoteRow);
       }
     }
@@ -379,6 +389,15 @@ async function addDetails(mode) {
         const padCells = padCell.repeat(1+padCount);
         newNoteRow.innerHTML = padCells+"<td class='item-description-cell' colspan='1'>"+thisDescription+"</td>";
         var parentTableBody = groupRows[i].closest('tbody');
+
+        // Check if there's already a note row
+        var oldNote = parentTableBody.querySelector('tr.item-description-row');
+        // If the element exists, remove it
+        if (oldNote) {
+          oldNote.remove();
+        }
+
+
         parentTableBody.appendChild(newNoteRow);
       }
     }
