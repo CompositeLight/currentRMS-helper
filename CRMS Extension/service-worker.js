@@ -13,7 +13,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   } else if (message.messageType == "availabilityscape"){
       console.log("Availability scrape was requested for "+message.messageText);
-      availabilityScrape(message.messageText);
+      availabilityScrape(message.messageText, message.messageStartDate, message.messageEndDate);
   } else if (message.messageType == "availabilityscape"){
       console.log("Availability scrape was requested for "+message.messageText);
       availabilityScrape(message.messageText);
@@ -480,10 +480,16 @@ function quarantineApiCall(){
 }
 
 
-async function availabilityScrape(opp){
+async function availabilityScrape(opp, start, end){
   await recallApiDetails();
   if (apiSubdomain){
-    var scrapeURL = 'https://'+apiSubdomain+'.current-rms.com/availability/opportunity/'+opp+'?scrape';
+    console.log(start);
+    console.log(end);
+    const timeStart = start.split(' ')[1].replace(':', '');
+    const timeEnd = end.split(' ')[1].replace(':', '');
+
+    var scrapeURL = 'https://'+apiSubdomain+'.current-rms.com/availability/opportunity/'+opp+'?'+timeStart+'&'+timeEnd+'&scrape';
+    console.log(scrapeURL);
     chrome.tabs.create({
         url: scrapeURL,
         active: false

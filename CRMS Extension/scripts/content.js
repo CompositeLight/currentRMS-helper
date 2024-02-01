@@ -409,7 +409,35 @@ async function addDetails(mode) {
 
   } else if (orderView){
     console.log("add Details order view");
-    chrome.runtime.sendMessage({messageType: "availabilityscape", messageText: opportunityID});
+
+    // get the start date and time
+    const thisSidebar = document.getElementById("sidebar_content");
+    const spans = thisSidebar.querySelectorAll('span');
+    // Iterate over each <span>
+    let startDateValue = null;
+    let endDateValue = null;
+    spans.forEach((span, index) => {
+        // Check if the text content of this <span> is 'Start Date:'
+        if (span.textContent.trim() === 'Start Date:') {
+            // The next sibling element should be the <span> with the date
+            const nextSpan = spans[index + 1];
+            if (nextSpan) {
+                startDateValue = nextSpan.textContent.trim();
+            }
+        } else if (span.textContent.trim() === 'End Date:') {
+            // The next sibling element should be the <span> with the date
+            const nextSpan = spans[index + 1];
+            if (nextSpan) {
+                endDateValue = nextSpan.textContent.trim();
+            }
+        }
+    });
+
+    //console.log(startDateValue);
+    //console.log(endDateValue);
+
+
+    chrome.runtime.sendMessage({messageType: "availabilityscape", messageText: opportunityID, messageStartDate:startDateValue, messageEndDate:endDateValue});
 
     var currencyPrefix = getCurrencySymbol();
 
@@ -2766,34 +2794,24 @@ function addAvailability(data) {
 
     // Iterate through each div
     divs.forEach(function(div) {
-        // Check if the div's innerText is a key in the data object
-        if (data.hasOwnProperty(div.innerText.trim())) {
-            // Find the parent row of the div
-            var parentRow = div.closest('tr');
-            if (parentRow) {
-                // Find the 'status-column' cell within the parent row
-                var statusCell = parentRow.querySelector('.status-column');
-                if (statusCell) {
-                    // Find the 'availability-count' span within the 'status-column' cell
-                    var availabilitySpan = statusCell.querySelector('.availability-count');
+        var theProd = div.querySelector('a');
+        if (theProd){
 
-                    // If the 'availability-count' span exists, update its innerText
-                    if (availabilitySpan) {
-                      var avail = data[div.innerText.trim()];
-                      if (avail < 0){
-                        availabilitySpan.classList.add("avail-short");
-                        availabilitySpan.classList.remove("avail-good");
-                      } else {
-                        availabilitySpan.classList.remove("avail-short");
-                        availabilitySpan.classList.add("avail-good");
-                      }
-                      availabilitySpan.innerText = avail;
-                    } else {
-                        // If the 'availability-count' span does not exist, create it, append it to the status cell, and set its value
-                        availabilitySpan = document.createElement('span');
-                        availabilitySpan.className = 'availability-count';
-                        var avail = data[div.innerText.trim()];
 
+          // Check if the div's innerText is a key in the data object
+          if (data.hasOwnProperty(theProd.innerText.trim())) {
+              // Find the parent row of the div
+              var parentRow = div.closest('tr');
+              if (parentRow) {
+                  // Find the 'status-column' cell within the parent row
+                  var statusCell = parentRow.querySelector('.status-column');
+                  if (statusCell) {
+                      // Find the 'availability-count' span within the 'status-column' cell
+                      var availabilitySpan = statusCell.querySelector('.availability-count');
+
+                      // If the 'availability-count' span exists, update its innerText
+                      if (availabilitySpan) {
+                        var avail = data[theProd.innerText.trim()];
                         if (avail < 0){
                           availabilitySpan.classList.add("avail-short");
                           availabilitySpan.classList.remove("avail-good");
@@ -2801,14 +2819,32 @@ function addAvailability(data) {
                           availabilitySpan.classList.remove("avail-short");
                           availabilitySpan.classList.add("avail-good");
                         }
-
                         availabilitySpan.innerText = avail;
-                        statusCell.appendChild(availabilitySpan);
-                    }
-                }
-            }
+                      } else {
+                          // If the 'availability-count' span does not exist, create it, append it to the status cell, and set its value
+                          availabilitySpan = document.createElement('span');
+                          availabilitySpan.className = 'availability-count';
+                          var avail = data[theProd.innerText.trim()];
+
+                          if (avail < 0){
+                            availabilitySpan.classList.add("avail-short");
+                            availabilitySpan.classList.remove("avail-good");
+                          } else {
+                            availabilitySpan.classList.remove("avail-short");
+                            availabilitySpan.classList.add("avail-good");
+                          }
+
+                          availabilitySpan.innerText = avail;
+                          statusCell.appendChild(availabilitySpan);
+                      }
+                  }
+              }
+          }
         }
     });
+
+
+
     // Find the first 'td' cell with the class 'status-column'
     var statusCell = document.querySelector('td.status-column');
 
