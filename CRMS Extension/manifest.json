@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "CurrentRMS Helper",
-  "version": "1.30.18",
+  "version": "1.30.19",
   "description": "Adding functionality to Current RMS, one reduced click at a time.",
   "icons": {
     "16": "images/icon-16.png",
@@ -23,15 +23,30 @@
 
   "content_scripts": [
     {
-      "matches": ["https://*.current-rms.com/*"],
-      "exclude_matches": ["https://*.current-rms.com/availability/opportunity/*"],
-      "js": ["scripts/content.js", "scripts/api.js"],
-      "css": ["style.css"]
+    "matches": ["https://*.current-rms.com/*"],
+    "exclude_matches": [
+      "https://*.current-rms.com/availability/opportunity/*",
+      "https://*.current-rms.com/opportunity_items/*",
+      "https://*.current-rms.com/products/*",
+      "https://*.current-rms.com/opportunities/*view=c"
+    ],
+    "js": ["scripts/content.js", "scripts/api.js"],
+    "css": ["style.css"]
     },
     {
       "matches": ["https://*.current-rms.com/availability/opportunity/*"],
       "js": ["scripts/availabilityscrape.js"],
       "css": ["scrapestyle.css"]
+    },
+    {
+      "matches": ["https://*.current-rms.com/opportunity_items/*/edit?rp=*"],
+      "js": ["scripts/removeasset.js"],
+      "css": ["scrapestyle.css"]
+    },
+    {
+      "matches": ["https://*.current-rms.com/opportunities/*view=c"],
+      "js": ["scripts/costsview.js"],
+      "css": ["style.css"]
     }
   ],
   "background": {

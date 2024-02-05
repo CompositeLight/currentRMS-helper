@@ -1,4 +1,4 @@
-# currentRMS-helper 1.30.18
+# currentRMS-helper 1.30.19
 This is a work-in-progress Chrome extension to add functionality to the CurrentRMS web interface. It was created out of our frustration waiting on "quality of life" modifications to make the user experience better - specifically, as part of warehouse operations. Our warehouse team has found it helpful, so we've decided to share it with others. As it was created with our own in-house work processes in mind, it may or may not work for other users. However, my hope is that others (who are better at coding that I) might take this forward, or even inspire the CurrentRMS team to implement some of the changes within the main product.
 
 **DISCLAIMER: This is a first attempt work-in-progress written by me, an utter rookie in JavaScript. Use at your own risk. This code is in no way affiliated with InspHire Ltd.**
@@ -25,6 +25,20 @@ Aside from the Chrome Desktop Browser, users have successfully used this extensi
 
 
 ## Features / Updates
+
+- NEW: 1.30.19: Cost View: Service items now show their cost duration in the days column. A tool-tip over this value reveals days charged and days costed. If there is a mismatch between the 'days' costed and 'days' charged the entry is shown as [daysCosted/daysCharged], and the text turns red to draw attention to the issue. If the charge type doesn't match the cost type (eg. charging per day, but costed by hour) the value is highlighted in amber.
+
+- NEW: 1.30.19: Cost View: Groups now show their total cost. This is particularly useful when sorted by Resource prior to creating a PO.
+
+- NEW: 1.30.19: Overridden CSS for the Costs view page to prevent the quantity column from vanishing(!)
+
+- NEW: 1.30.19: Remove By Scan: Much requested by warehouses that go straight to Prepared, this works the same as the *revert* scan (which is still in place), but instead of reverting by one step the asset will be completely removed, regardless of it's status. BE AWARE: This even works for items that have been Booked Out, so use wisely. Due to the auto-play limitations of Chrome, it is not possible to play a sound before user interaction with a page. For this reason there is no audible confirmation that a Remove has been successful - just a toast message.
+
+- IMPROVED: 1.30.19: The Detail View "hide" buttons are now laid out on their own row in the GUI to prevent conflict with the standard tab buttons.
+
+- FIXED: 1.30.19: Cost Tooltips for Sales items now appear to the left, so as to not be clipped off if the item is at the very top of the list.
+
+- FIXED: 1.30.19: The side-bar containers list was including the magnifying glass emoji at the end of container names.
 
 - IMPROVED: 1.30.18: Availability counts now reflect your system setting for Availability Period, up to 1/4 day.
 

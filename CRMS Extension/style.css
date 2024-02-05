@@ -204,22 +204,22 @@ span.loss-warning {
   padding: 5px 0;
   position: absolute;
   z-index: 1;
-  bottom: 125%;
-  left: 50%;
-  margin-left: -60px;
+  top: -5px;
+  right: 110%;
+
   opacity: 0;
   transition: opacity 0.3s;
 }
 
 .cost-tooltip .cost-tooltiptext::after {
-  content: "";
+  content: " ";
   position: absolute;
-  top: 100%;
-  left: 50%;
-  margin-left: -5px;
+  top: 25%;
+  left: 100%; /* To the right of the tooltip */
+  margin-top: -5px;
   border-width: 5px;
   border-style: solid;
-  border-color: #555 transparent transparent transparent;
+  border-color: transparent transparent transparent black;
 }
 
 .cost-tooltip:hover .cost-tooltiptext {
@@ -258,4 +258,75 @@ div.float-left{
 
 div.float-right{
   float: right;
+}
+
+.helper-control-panel{
+  padding-right: 15px;
+  padding-left: 15px;
+}
+
+.quantity-column{
+  display: table-cell !important;
+}
+
+.cost-warning{
+  color: red;
+}
+
+.mismatch-warning{
+  color: DarkOrange;
+}
+
+
+.days-tooltip {
+  position: relative;
+  display: inline-block;
+  border-bottom: 1px dotted black;
+}
+
+.days-tooltip .days-tooltiptext {
+  visibility: hidden;
+  width: 150px;
+  background-color: #555;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px 0;
+  position: absolute;
+  z-index: 1;
+  top: -5px;
+  right: 130%;
+
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.days-tooltip .days-tooltiptext::after {
+  content: " ";
+  position: absolute;
+  top: 25%;
+  left: 100%; /* To the right of the tooltip */
+  margin-top: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: transparent transparent transparent black;
+}
+
+.days-tooltip:hover .days-tooltiptext {
+  visibility: visible;
+  opacity: 1;
+}
+
+
+
+.cost-group-total{
+  float:right;
+  padding-right: 5px;
+  font-weight: normal;
+  color: grey;
+  font-size: 14px;
+}
+
+.cost-group-name{
+  float: left;
 }

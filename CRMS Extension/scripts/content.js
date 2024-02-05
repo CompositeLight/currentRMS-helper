@@ -32,7 +32,7 @@ lastScan="";
 smartScan = false;
 smartScanCandidates = {};
 revertScan = false;
-
+removeScan = false;
 
 
 blockQuarantines = true;
@@ -435,7 +435,6 @@ async function addDetails(mode) {
 
     //console.log(startDateValue);
     //console.log(endDateValue);
-
 
     chrome.runtime.sendMessage({messageType: "availabilityscape", messageText: opportunityID, messageStartDate:startDateValue, messageEndDate:endDateValue});
 
@@ -1484,7 +1483,7 @@ const observer = new MutationObserver((mutations) => {
       // Now respond to  toastMessages depending on their contents
 
       //ignore these as they're messages created by the CRMS Helper makeToast function
-      if (messageText.includes('Free Scan') || messageText.includes('Container cleared.') || messageText.includes('Container set to') || messageText.includes('Now scan the container.') || messageText.includes('Container was not set.') || messageText.includes('API information loaded.')){
+      if (messageText.includes('Free Scan') || messageText.includes('Container cleared.') || messageText.includes('Container set to') || messageText.includes('Now scan the container.') || messageText.includes('Container was not set.') || messageText.includes('API information loaded.') || messageText.includes('was removed from the opportunity.')){
 
 
         // Error sound and warning if item was flagged as being in quarantine.
@@ -1820,8 +1819,13 @@ function calculateContainerWeights() {
         var nameCell = rows[i].querySelector('.dd-name'); // get the name
         var thisName = nameCell.textContent.trim();
         if (thisName.startsWith("CollapseExpand")) {
-          var thisName = thisName.substring(15);
+          thisName = thisName.substring(15);
         }
+        const magnifyingGlassEmoji = "🔎";
+        if (thisName.endsWith(magnifyingGlassEmoji)) {
+          thisName = thisName.substring(0, thisName.length - magnifyingGlassEmoji.length);
+        }
+
         var newName = thisAsset + "___" + thisName;
 
         // create the new entry with name included
@@ -1918,44 +1922,45 @@ listToastPosts();
 
 
 // add a section to the sidebar if it exists
-try {
-  var containerWeightsSection = document.getElementById("sidebar_content");
- 
-  if (containerWeightsSection) {
-    var htmlContent = `<div class='group-side-content' id='containerWeightsSection'><h3>Container Weights<a class='toggle-button expand-arrow icn-cobra-contract' href='#'></a></h3><div><ul id='containerlist' style='display: block;'></ul></div></div>`;
- 
-    containerWeightsSection.insertAdjacentHTML("afterend", htmlContent);
- 
-    var containerWeightsSectionDiv = document.getElementById('containerWeightsSection');
-    var toggleButton = containerWeightsSectionDiv.querySelector('.toggle-button');
- 
-    // Adjust the display property for the initial state
-    var containerListElement = document.getElementById('containerlist');
-    containerListElement.style.display = 'block';
- 
-    toggleButton.onclick = function (event) {
-      event.preventDefault();
-      if (containerListElement.style.display === 'none' || containerListElement.style.display === '') {
-        containerListElement.style.display = 'block';
-        toggleButton.classList.remove('icn-cobra-expand');
-        toggleButton.classList.add('icn-cobra-contract');
-      } else {
-        containerListElement.style.display = 'none';
-        toggleButton.classList.remove('icn-cobra-contract');
-        toggleButton.classList.add('icn-cobra-expand');
-      }
-    };
- 
-    getWeightUnit(); // check to see what weight unit the user has set by looking at the total weight field
-    calculateContainerWeights(); // set initial container weigh values in the side bar
- 
-    // Add inline style for the toggle-button size
-    toggleButton.style.fontSize = '14px'; // Adjust the size as needed
-  }
-} catch (err) {
-  console.error(err);
+if (detailView){
+  try {
+    var containerWeightsSection = document.getElementById("sidebar_content");
+   
+    if (containerWeightsSection) {
+      var htmlContent = `<div class='group-side-content' id='containerWeightsSection'><h3>Container Weights<a class='toggle-button expand-arrow icn-cobra-contract' href='#'></a></h3><div><ul id='containerlist' style='display: block;'></ul></div></div>`;
+   
+      containerWeightsSection.insertAdjacentHTML("afterend", htmlContent);
+   
+      var containerWeightsSectionDiv = document.getElementById('containerWeightsSection');
+      var toggleButton = containerWeightsSectionDiv.querySelector('.toggle-button');
+   
+      // Adjust the display property for the initial state
+      var containerListElement = document.getElementById('containerlist');
+      containerListElement.style.display = 'block';
+   
+      toggleButton.onclick = function (event) {
+        event.preventDefault();
+        if (containerListElement.style.display === 'none' || containerListElement.style.display === '') {
+          containerListElement.style.display = 'block';
+          toggleButton.classList.remove('icn-cobra-expand');
+          toggleButton.classList.add('icn-cobra-contract');
+        } else {
+          containerListElement.style.display = 'none';
+          toggleButton.classList.remove('icn-cobra-contract');
+          toggleButton.classList.add('icn-cobra-expand');
+        }
+      };
+   
+      getWeightUnit(); // check to see what weight unit the user has set by looking at the total weight field
+      calculateContainerWeights(); // set initial container weigh values in the side bar
+   
+      // Add inline style for the toggle-button size
+      toggleButton.style.fontSize = '14px'; // Adjust the size as needed
+    }
+  } catch (err) {
+    console.error(err);
+  }
 }
-
 
 
 
@@ -1964,19 +1969,45 @@ try {
 if (detailView){
   try {
 
+    // start of new gui
+
+    var titleRow = document.getElementById("opportunity_items_title");
+
+    console.log(titleRow.innerHTML);
+
+    // Create a new row element
+    let newElement = document.createElement('div');
+    newElement.classList.add("row");
+    newElement.classList.add("sticky");
+    // Insert `newElement` after `referenceElement`
+    titleRow.insertAdjacentElement('afterend', newElement);
+
+    let newDiv = document.createElement('div');
+    newDiv.classList.add("pull-right");
+    newDiv.classList.add("control-links");
+    newDiv.classList.add("helper-control-panel");
+    //newDiv.innerHTML = "Testing 123";
+    newDiv.id = 'helper-control-panel';
+    newElement.appendChild(newDiv);
+
+
+
+    // end of new gui
+
     // Create a tab spacer
-    var listItem = document.createElement("li");
-    listItem.classList.add("helper-spacer");
-    listItem.textContent = "_____";
-    var listContainer = document.getElementById("od-function-tabs");
-    listContainer.appendChild(listItem);
+    //var listItem = document.createElement("li");
+    //listItem.classList.add("helper-spacer");
+    //listItem.textContent = "_____";
+    //var listContainer = document.getElementById("od-function-tabs");
+    var listContainer = document.getElementById("helper-control-panel");
+    //listContainer.appendChild(listItem);
 
     // Create a tab button for hiding items descriptions
     var listItem = document.createElement("li");
     listItem.classList.add("helper-btn");
     listItem.textContent = "Hide Notes";
     listItem.id = "notes-button";
-    var listContainer = document.getElementById("od-function-tabs");
+    //var listContainer = document.getElementById("od-function-tabs");
     listContainer.appendChild(listItem);
 
     // Create a tab button for hiding prepared items
@@ -1984,7 +2015,7 @@ if (detailView){
     listItem.classList.add("helper-btn");
     listItem.textContent = "Hide Prepared";
     listItem.id = "prepared-button";
-    var listContainer = document.getElementById("od-function-tabs");
+    //var listContainer = document.getElementById("od-function-tabs");
     listContainer.appendChild(listItem);
 
     // Create a tab button for Bulk Only
@@ -1992,7 +2023,7 @@ if (detailView){
     listItem.classList.add("helper-btn");
     listItem.textContent = "Bulk Only";
     listItem.id = "bulk-button";
-    var listContainer = document.getElementById("od-function-tabs");
+    //var listContainer = document.getElementById("od-function-tabs");
     listContainer.appendChild(listItem);
 
     // Create a tab button for Subhires
@@ -2000,7 +2031,7 @@ if (detailView){
     listItem.classList.add("helper-btn");
     listItem.textContent = "Hide Sub-Rentals";
     listItem.id = "subhires-button";
-    var listContainer = document.getElementById("od-function-tabs");
+    //var listContainer = document.getElementById("od-function-tabs");
     listContainer.appendChild(listItem);
 
     document.getElementById("notes-button").addEventListener("click", notesButton);
@@ -2009,6 +2040,7 @@ if (detailView){
     document.getElementById("subhires-button").addEventListener("click", subhiresButton);
 
   } catch (err){
+    console.log(err);
   }
 }
 
@@ -2118,6 +2150,18 @@ function focusInput(){
 }
 
 
+//check with Service Worker to see if we have a new message waiting...
+chrome.runtime.sendMessage({messageType: "check"}, function(response) {
+  console.log("Response from service worker:", response.removedAsset);
+  console.log(response);
+  if (response.removedAsset){
+    var announce = "The asset "+response.removedAsset+" was removed from the opportunity.";
+    makeToast("toast-success", announce, 5);
+  }
+});
+
+
+
 // auto set "mark as prepared" to on depending on the user setting
 chrome.storage.local.get(["setPrepared"]).then((result) => {
   if (result.setPrepared != "false" && detailView){
@@ -2191,8 +2235,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   }
 
-
-  return true;
+  sendResponse({message: "received"});
+  //return true;
 });
 
 
@@ -2248,6 +2292,22 @@ function activeIntercept(){
             makeToast("toast-error", "Failed to revert "+myScan+" because it is not currently allocated.");
             sayWord("Failed to revert. Not on the job.")
           }
+
+        } else if (myScan.toLowerCase() != "remove" && removeScan){
+            // we have prompted the user for an item to revert
+            event.preventDefault();
+            resetScanBox();
+            listAssets();
+            if (assetsOnTheJob.includes(myScan)){
+              removeAsset(myScan);
+              removeScan = false;
+            } else {
+              errorSound();
+              removeScan = false;
+              makeToast("toast-error", "Failed to remove "+myScan+" because it is not currently allocated.");
+              sayWord("Failed to remove. Not on the job.");
+            }
+
 
         } else if (quarantinedItemList.includes(myScan) && blockQuarantines){
               // this item is in quarantine
@@ -2387,6 +2447,26 @@ function activeIntercept(){
               resetScanBox();
             }
 
+          } else if (myScan.toLowerCase() === 'remove'){
+            // this is a special scan to invoke remove on an item
+            if (removeScan){ // Means double scan of *revert*
+              event.preventDefault();
+              sayWord("Remove cancelled.");
+              removeScan = false;
+              makeToast("toast-info", "Remove scan cancelled.", 5);
+              // block to clear the allocate box after an intercept
+              resetScanBox();
+            } else {
+              // We need to prompt the user to scan the item to be reverted
+              event.preventDefault();
+              sayWord("Scan item to remove");
+              removeScan = true;
+              makeToast("toast-info", "Scan the item to be removed.", 5);
+              // block to clear the allocate box after an intercept
+              resetScanBox();
+            }
+
+
           } else if (myScan.toLowerCase() == "test"){
             // test scan for development purposes
             // Test code here.
@@ -2395,7 +2475,7 @@ function activeIntercept(){
             event.preventDefault();
             resetScanBox();
 
-        } // end if scan block
+          } // end if scan block
         // Passed all of that means this is a regular item we're scanning.
 
         lastScan = myScan; // log the asset ready for potential smart scan
@@ -2855,4 +2935,29 @@ function addAvailability(data) {
     } else {
         console.log('No "status-column" cell found.');
     }
+}
+
+
+
+function removeAsset(assetToRemove){
+  var assetColumns = document.querySelectorAll('td.optional-01.asset.asset-column');
+  var removeFound = false;
+
+  // Loop through each element to find the one with the matching asset number
+  for (var i = 0; i < assetColumns.length; i++) {
+
+      if (assetColumns[i].innerText == assetToRemove){
+          removeFound = true;
+          var parentRow = assetColumns[i].closest('tr');
+          var editButton = parentRow.querySelector('a[data-rp="true"]');
+          if (editButton) {
+            // Append "&remove-" to the href attribute of the <a> element
+            editButton.href += "&"+assetToRemove+"&remove";
+            editButton.click();
+          } else {
+            console.log("Error: Couldn't find the edit button for asset "+ assetToRemove);
+          }
+          break;
+      }
+  } // end of for assetColumns for loop
 }

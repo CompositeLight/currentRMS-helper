@@ -1,10 +1,26 @@
 
+var removed = "";
+
 // handler for incoming messages from other js code (like content.js or popup.js)
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log(message);
-  sendResponse({ message: "Background js received your message" });
+  //if (removed){
+  //  sendResponse({ message: "Background js received your message", removedAsset: removed});
+  //} else {
+  //  sendResponse({ message: "Background js received your message" });
+  //}
+  if (message.messageType == "removal"){
+    console.log(sender);
+    console.log("removeasset.js has removed:");
+    console.log(message.removedAsset);
+    removed = message.removedAsset;
 
-  if (message == "refreshProducts"){
+  } else if (message.messageType == "check"){
+    console.log("Check received");
+    sendResponse({removedAsset: removed});
+    removed = "";
+
+  } else if (message == "refreshProducts"){
     console.log("Product refresh requested");
     retrieveApiData();
   } else if (message == "refreshQuarantines") {
