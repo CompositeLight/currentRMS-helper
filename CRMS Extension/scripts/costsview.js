@@ -203,7 +203,7 @@ async function costDetails(){
     pageNumber ++;
     var result = await opportunityApiCall(opportunityID);
   }
-  console.log(oppData.opportunity_items);
+  //console.log(oppData.opportunity_items);
 
   theList = document.getElementById("nestable-grid");
   var assetBodies = document.querySelectorAll('tbody');
@@ -240,7 +240,7 @@ async function costDetails(){
 
 
 
-        console.log("Item "+thisID+" ("+thisItemName+") is a "+thisType+" with a unit charge of "+thisUnitCharge+" and a total charge of "+ thisChargeTotal+" based on "+ thisChargeableDays + " days. But we are charging for "+thisDaysCosted+ " days. The charge type is "+thisChargeServiceRateType+" and the cost type is "+thisCostServiceRateType);
+        //console.log("Item "+thisID+" ("+thisItemName+") is a "+thisType+" with a unit charge of "+thisUnitCharge+" and a total charge of "+ thisChargeTotal+" based on "+ thisChargeableDays + " days. But we are charging for "+thisDaysCosted+ " days. The charge type is "+thisChargeServiceRateType+" and the cost type is "+thisCostServiceRateType);
 
 
 
