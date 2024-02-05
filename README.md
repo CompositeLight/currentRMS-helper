@@ -26,6 +26,8 @@ Aside from the Chrome Desktop Browser, users have successfully used this extensi
 
 ## Features / Updates
 
+- IMPROVED: 1.30.21: The Avail column in Order View is now positioned to the right of Quantity (this is a more natural position for experienced users of the stock GUI).
+
 - FIXED: 1.30.20: Cost view days data now handles Manual Cost Items appropriately.
 
 - FIXED: 1.30.20: Cost view data refreshes when items are edited.

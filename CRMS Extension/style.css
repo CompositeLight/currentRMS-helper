@@ -330,3 +330,16 @@ div.float-right{
 .cost-group-name{
   float: left;
 }
+
+.status-column{
+  width: 80px !important;
+}
+
+.quantity-column{
+  width: 95px !important;
+  padding-left: 5px;
+}
+
+.force-left{
+  text-align: left !important;
+}

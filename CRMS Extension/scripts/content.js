@@ -2870,6 +2870,13 @@ function clickAndRevert(asset){
 function addAvailability(data) {
     console.log("Adding availability information");
     // Get all div elements with class 'dd-content'
+
+
+    document.querySelectorAll('td.quantity-column.align-right').forEach(function(element) {
+      element.classList.add("force-left");
+    });
+
+
     var divs = document.querySelectorAll('div.dd-content');
 
     // Iterate through each div
@@ -2884,7 +2891,7 @@ function addAvailability(data) {
               var parentRow = div.closest('tr');
               if (parentRow) {
                   // Find the 'status-column' cell within the parent row
-                  var statusCell = parentRow.querySelector('.status-column');
+                  var statusCell = parentRow.querySelector('.quantity-column');
                   if (statusCell) {
                       // Find the 'availability-count' span within the 'status-column' cell
                       var availabilitySpan = statusCell.querySelector('.availability-count');
@@ -2926,14 +2933,14 @@ function addAvailability(data) {
 
 
     // Find the first 'td' cell with the class 'status-column'
-    var statusCell = document.querySelector('td.status-column');
+    var statusCell = document.querySelector('td.quantity-column');
 
     // Check if the cell exists
     if (statusCell) {
         // Replace the innerHTML of the cell
-        statusCell.innerHTML = '<div class="float-left">Status</div><div class="float-right">Avail</div>';
+        statusCell.innerHTML = '<div class="float-left">Qty</div><div class="float-right">Avail</div>';
     } else {
-        console.log('No "status-column" cell found.');
+        console.log('No "quantity-column" cell found.');
     }
 }
 
