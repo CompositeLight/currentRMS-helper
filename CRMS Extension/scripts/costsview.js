@@ -323,6 +323,13 @@ async function costDetails(){
     }
   }
 
+  document.querySelectorAll('td.quantity-column.align-right').forEach(function(element) {
+    element.classList.add("force-left");
+
+  });
+
+
+
 
 }
 

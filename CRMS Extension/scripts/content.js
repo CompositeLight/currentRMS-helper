@@ -2871,12 +2871,6 @@ function addAvailability(data) {
     console.log("Adding availability information");
     // Get all div elements with class 'dd-content'
 
-
-    document.querySelectorAll('td.quantity-column.align-right').forEach(function(element) {
-      element.classList.add("force-left");
-    });
-
-
     var divs = document.querySelectorAll('div.dd-content');
 
     // Iterate through each div
@@ -2894,10 +2888,12 @@ function addAvailability(data) {
                   var statusCell = parentRow.querySelector('.quantity-column');
                   if (statusCell) {
                       // Find the 'availability-count' span within the 'status-column' cell
-                      var availabilitySpan = statusCell.querySelector('.availability-count');
+                      var availabilityCell = parentRow.querySelector('.availability-column');
+
 
                       // If the 'availability-count' span exists, update its innerText
-                      if (availabilitySpan) {
+                      if (availabilityCell) {
+                        var availabilitySpan = availabilityCell.querySelector('.availability-count');
                         var avail = data[theProd.innerText.trim()];
                         if (avail < 0){
                           availabilitySpan.classList.add("avail-short");
@@ -2921,11 +2917,65 @@ function addAvailability(data) {
                             availabilitySpan.classList.add("avail-good");
                           }
 
+
+                          // Create a new <td> element
+                          const newTd = document.createElement('td');
+                          newTd.classList.add("align-right", "availability-column");
+                          // Insert the new <td> immediately after the existing <td>
+                          // However, since <td> must be a child of <tr>, ensure to adjust accordingly
+                          if (statusCell && statusCell.parentNode) {
+                              statusCell.insertAdjacentElement('afterend', newTd);
+                          }
+
                           availabilitySpan.innerText = avail;
-                          statusCell.appendChild(availabilitySpan);
+                          newTd.appendChild(availabilitySpan);
                       }
                   }
               }
+          } else { // it's not a product with availability, so we need to add an empty availablity cell.
+            // Find the parent row of the div
+            var parentRow = div.closest('tr');
+            if (parentRow) {
+                // Find the 'status-column' cell within the parent row
+                var statusCell = parentRow.querySelector('.quantity-column');
+                var availabilityCell = parentRow.querySelector('.availability-column');
+                if (!availabilityCell) {
+
+                  // Create a new <td> element
+                  const newTd = document.createElement('td');
+                  newTd.classList.add("align-right", "availability-column");
+                  // Insert the new <td> immediately after the existing <td>
+                  // However, since <td> must be a child of <tr>, ensure to adjust accordingly
+                  if (statusCell && statusCell.parentNode) {
+                      statusCell.insertAdjacentElement('afterend', newTd);
+                  }
+
+
+                }
+            }
+          }
+        } else {
+          var theProd = div.querySelector('div.editable.item-name');
+          if (theProd){
+            // it's a text item, so we need to add an empty availablity cell.
+            // Find the parent row of the div
+            var parentRow = div.closest('tr');
+            if (parentRow) {
+              // Find the 'status-column' cell within the parent row
+              var statusCell = parentRow.querySelector('.quantity-column');
+              var availabilityCell = parentRow.querySelector('.availability-column');
+              if (!availabilityCell) {
+                // Create a new <td> element
+                const newTd = document.createElement('td');
+                newTd.classList.add("align-right", "availability-column");
+                // Insert the new <td> immediately after the existing <td>
+                // However, since <td> must be a child of <tr>, ensure to adjust accordingly
+                if (statusCell && statusCell.parentNode) {
+                  statusCell.insertAdjacentElement('afterend', newTd);
+                }
+              }
+            }
+
           }
         }
     });
@@ -2933,15 +2983,29 @@ function addAvailability(data) {
 
 
     // Find the first 'td' cell with the class 'status-column'
-    var statusCell = document.querySelector('td.quantity-column');
+    var quantityHeaderCell = document.querySelector('td.quantity-column');
 
-    // Check if the cell exists
-    if (statusCell) {
-        // Replace the innerHTML of the cell
-        statusCell.innerHTML = '<div class="float-left">Qty</div><div class="float-right">Avail</div>';
-    } else {
-        console.log('No "quantity-column" cell found.');
+    var availabilityHeaderCell = document.getElementById("availability-header-cell");
+
+    if (!availabilityHeaderCell){
+      const newTd = document.createElement('td');
+      newTd.id = "availability-header-cell";
+      newTd.innerText = "Avail";
+      newTd.classList.add("align-right", "availability-column");
+      if (quantityHeaderCell && quantityHeaderCell.parentNode) {
+          quantityHeaderCell.insertAdjacentElement('afterend', newTd);
+      }
+      quantityHeaderCell.innerText = "Qty";
     }
+
+    document.querySelectorAll('td.quantity-column.align-right').forEach(function(element) {
+      element.classList.remove("align-right");
+      element.classList.add("align-center");
+    });
+
+
+
+
 }
 
 

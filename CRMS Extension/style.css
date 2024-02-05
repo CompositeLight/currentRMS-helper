@@ -336,10 +336,20 @@ div.float-right{
 }
 
 .quantity-column{
-  width: 95px !important;
-  padding-left: 5px;
+  width: 65px !important;
+
 }
 
 .force-left{
   text-align: left !important;
+  padding-left: 5px;
+}
+
+.editable-special{
+
+}
+
+
+.availability-column{
+  width: 50px;
 }
