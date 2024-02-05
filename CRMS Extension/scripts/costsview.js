@@ -203,7 +203,7 @@ async function costDetails(){
     pageNumber ++;
     var result = await opportunityApiCall(opportunityID);
   }
-  //console.log(oppData.opportunity_items);
+  console.log(oppData.opportunity_items);
 
   theList = document.getElementById("nestable-grid");
   var assetBodies = document.querySelectorAll('tbody');
@@ -212,73 +212,82 @@ async function costDetails(){
     if (thisProd.id){ // the tr id contains the opporunity cost Id reference
       //console.log(thisProd.id); // ignore rows that don't have a cost reference
       var thisID = findItemIdByOpportunityCostId(thisProd.id); // find which opp item contains this cost id
-      //console.log("Cost item "+thisProd.id+" relates to opportunity item: "+thisID);
-      for (let item of oppData.opportunity_items) { // now use that opp item id to find the the other data
-        // Check if the current item's 'id' matches the given topLevelId
-        if (item.id == thisID) {
-          // If a match is found, return the 'transaction_type_name' of the item
-          var thisItemName = item.name;
-          var thisType = item.transaction_type_name;
-          var thisUnitCharge = item.unit_charge;
-          var thisChargeTotal = item.charge_amount;
-          var thisChargeableDays = parseFloat(item.chargeable_days);
-          thisChargeableDays = parseFloat(thisChargeableDays.toFixed(1));
-          var thisChargeServiceRateType = item.service_rate_type_name;
-          var thisCostServiceRateType = findChargedTypeByOpportunityCostId(thisProd.id);
+
+        if (thisID){ // if the cost item is listed against a line in the opportunity data
+        //console.log("Cost item "+thisProd.id+" relates to opportunity item: "+thisID);
+        for (let item of oppData.opportunity_items) { // now use that opp item id to find the the other data
+          // Check if the current item's 'id' matches the given topLevelId
+          if (item.id == thisID) {
+            // If a match is found, return the 'transaction_type_name' of the item
+            var thisItemName = item.name;
+            var thisType = item.transaction_type_name;
+            var thisUnitCharge = item.unit_charge;
+            var thisChargeTotal = item.charge_amount;
+            var thisChargeableDays = parseFloat(item.chargeable_days);
+            thisChargeableDays = parseFloat(thisChargeableDays.toFixed(1));
+            var thisChargeServiceRateType = item.service_rate_type_name;
+            var thisCostServiceRateType = findChargedTypeByOpportunityCostId(thisProd.id);
 
 
-          break;
-        }
-
-      }
-
-      var thisDaysCosted = findDaysChargedByOpportunityCostId(thisProd.id);
-      thisDaysCosted = parseFloat(thisDaysCosted);
-      thisDaysCosted = parseFloat(thisDaysCosted.toFixed(1));
-
-
-
-      //console.log("Item "+thisID+" ("+thisItemName+") is a "+thisType+" with a unit charge of "+thisUnitCharge+" and a total charge of "+ thisChargeTotal+" based on "+ thisChargeableDays + " days. But we are charging for "+thisDaysCosted+ " days. The charge type is "+thisChargeServiceRateType+" and the cost type is "+thisCostServiceRateType);
-
-
-
-      if (thisType == "Service"){
-        var daysBox = assetBodies[n].querySelector('td.optional-04.align-right.days-column');
-        var thisDays = daysBox.getAttribute("data-value");
-
-        if (thisDaysCosted == thisChargeableDays || (thisChargeServiceRateType != thisCostServiceRateType)){
-          //daysBox.innerText = thisDaysCosted;
-          const newSpan = document.createElement('span');
-
-          newSpan.classList.add("popover-help-added", "days-tooltip");
-
-          var htmlString = (thisChargeableDays +'<span class="days-tooltiptext">'+thisCostServiceRateType+'s Costed: '+ thisDaysCosted +'<br>'+thisChargeServiceRateType+'s Charged: '+ thisChargeableDays +'</span>');
-          newSpan.innerHTML += htmlString;
-          daysBox.appendChild(newSpan);
-          if (thisChargeServiceRateType != thisCostServiceRateType){
-            daysBox.classList.add("mismatch-warning");
+            break;
           }
 
-
-
-
-
-
-
-
-        } else {
-
-          const newSpan = document.createElement('span');
-
-          newSpan.classList.add("popover-help-added", "days-tooltip");
-
-          var htmlString = (thisDaysCosted + "/" + thisChargeableDays +'<span class="days-tooltiptext">'+thisCostServiceRateType+'s Costed: '+ thisDaysCosted +'<br>'+thisChargeServiceRateType+'s Charged: '+ thisChargeableDays +'</span>');
-          newSpan.innerHTML += htmlString;
-          daysBox.appendChild(newSpan);
-          daysBox.classList.add("cost-warning");
-
-
         }
+
+        var thisDaysCosted = findDaysChargedByOpportunityCostId(thisProd.id);
+        thisDaysCosted = parseFloat(thisDaysCosted);
+        thisDaysCosted = parseFloat(thisDaysCosted.toFixed(1));
+
+
+
+        console.log("Item "+thisID+" ("+thisItemName+") is a "+thisType+" with a unit charge of "+thisUnitCharge+" and a total charge of "+ thisChargeTotal+" based on "+ thisChargeableDays + " days. But we are charging for "+thisDaysCosted+ " days. The charge type is "+thisChargeServiceRateType+" and the cost type is "+thisCostServiceRateType);
+
+
+
+        if (thisType == "Service"){
+          var daysBox = assetBodies[n].querySelector('td.optional-04.align-right.days-column');
+          var thisDays = daysBox.getAttribute("data-value");
+
+          if (thisDaysCosted == thisChargeableDays || (thisChargeServiceRateType != thisCostServiceRateType)){
+
+
+            var oldSpan = daysBox.querySelector('span.cost-popover-help-added.days-tooltip');
+            if (oldSpan){
+              oldSpan.remove();
+            }
+
+            const newSpan = document.createElement('span');
+
+            newSpan.classList.add("popover-help-added", "days-tooltip");
+
+            var htmlString = (thisChargeableDays +'<span class="days-tooltiptext">'+thisCostServiceRateType+'s Costed: '+ thisDaysCosted +'<br>'+thisChargeServiceRateType+'s Charged: '+ thisChargeableDays +'</span>');
+            newSpan.innerHTML += htmlString;
+            daysBox.appendChild(newSpan);
+            if (thisChargeServiceRateType != thisCostServiceRateType){
+              daysBox.classList.add("mismatch-warning");
+            }
+
+          } else {
+
+            var oldSpan = daysBox.querySelector('span.popover-help-added.days-tooltip');
+            if (oldSpan){
+              oldSpan.remove();
+            }
+
+            const newSpan = document.createElement('span');
+
+            newSpan.classList.add("popover-help-added", "days-tooltip");
+
+            var htmlString = (thisDaysCosted + "/" + thisChargeableDays +'<span class="days-tooltiptext">'+thisCostServiceRateType+'s Costed: '+ thisDaysCosted +'<br>'+thisChargeServiceRateType+'s Charged: '+ thisChargeableDays +'</span>');
+            newSpan.innerHTML += htmlString;
+            daysBox.appendChild(newSpan);
+            daysBox.classList.add("cost-warning");
+
+
+          }
+        }
+      } else { // this means a cost ID exists, but it isn't in the opp.data, so assume it's a manual cost entry.
+        // Do nothing here?
       }
 
     } else if (thisProd.classList.contains("item-group")){ // the tr id contains the opporunity cost Id reference)
@@ -293,7 +302,22 @@ async function costDetails(){
 
 
       var thisGroupDiv = thisProd.querySelector("div.dd-content.group-name");
-      var thisGroupName = thisGroupDiv.innerText;
+
+      var thisoldGroupName = thisGroupDiv.querySelector('span.cost-group-name');
+      if (thisoldGroupName){
+        var thisGroupName = thisoldGroupName.innerText;
+        thisoldGroupName.remove();
+      } else {
+        var thisGroupName = thisGroupDiv.innerText;
+      }
+
+      var thisoldGroupTotal = thisGroupDiv.querySelector('span.cost-group-total');
+      if (thisoldGroupTotal){
+        thisoldGroupTotal.remove();
+      }
+
+      thisGroupDiv.innerHTML = "";
+
       thisGroupDiv.innerHTML = "<span class='cost-group-name'>"+thisGroupName +"</span><span class='cost-group-total'>("+currencyPrefix+thisGroupTotal.toFixed(2)+") &#8681;</span>";
 
     }
@@ -301,3 +325,44 @@ async function costDetails(){
 
 
 }
+
+
+
+// function that looks for any changes to the webpage once it has loaded, and triggers responses if these are relevant.
+const observer = new MutationObserver((mutations) => {
+  mutations.forEach((mutation) => {
+    //console.log("Added:");
+    //console.log(mutation.addedNodes);
+    const addedNodes = Array.from(mutation.addedNodes);
+    //const removedNodes = Array.from(mutation.removedNodes);
+    //console.log("Removed:");
+    //console.log(removedNodes);
+
+    // Check if any removed node has the class "modal-backdrop" and "fade" (ie. it's the Quick Picker)
+
+    mutation.addedNodes.forEach((node) => {
+      if (node.classList?.contains("toast")){
+        console.log("Refreshing details");
+        costDetails();
+
+      }
+    });
+
+
+
+  });
+});
+
+// Start observing the body for mutations. This looks out for changes to the webpage, so we can spot toast messages appearing.
+observer.observe(document.body, {
+  childList: true,
+  subtree: true,
+  characterData: true
+});
+
+// Stop observing when the extension is disabled or uninstalled
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.message === "stopObserver") {
+    observer.disconnect();
+  }
+});
