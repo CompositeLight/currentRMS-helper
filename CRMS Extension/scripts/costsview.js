@@ -145,6 +145,86 @@ function findChargedTypeByOpportunityCostId(opportunityCostId) {
 }
 
 
+function parseMoneyInputToFloat(input){
+  var thisVal = input.replace(/,/g, '');
+  return parseFloat(thisVal);
+}
+
+
+function formatCurrency(value, currencySymbol) {
+  // Mapping of currency symbols/abbreviations to locales and currency codes
+  const currencyInfo = {
+    "$": { locale: "en-US", currency: "USD" }, // Default for dollar, used by multiple countries
+    "A$": { locale: "en-AU", currency: "AUD" },
+    "₼": { locale: "az-AZ", currency: "AZN" },
+    "ب.د": { locale: "ar-BH", currency: "BHD" },
+    "P": { locale: "en-BW", currency: "BWP" },
+    "R$": { locale: "pt-BR", currency: "BRL" },
+    "£": { locale: "en-GB", currency: "GBP" },
+    "C$": { locale: "en-CA", currency: "CAD" },
+    "Fr": { locale: "fr-CF", currency: "XAF" },
+    "CLP$": { locale: "es-CL", currency: "CLP" },
+    "¥": { locale: "zh-CN", currency: "CNY" },
+    "COL$": { locale: "es-CO", currency: "COP" },
+    "kn": { locale: "hr-HR", currency: "HRK" },
+    "Kč": { locale: "cs-CZ", currency: "CZK" },
+    "kr.": { locale: "da-DK", currency: "DKK" },
+    "RD$": { locale: "es-DO", currency: "DOP" },
+    "€": { locale: "de-DE", currency: "EUR" },
+    "FJ$": { locale: "en-FJ", currency: "FJD" },
+    "₵": { locale: "en-GH", currency: "GHS" },
+    "Q": { locale: "es-GT", currency: "GTQ" },
+    "L": { locale: "es-HN", currency: "HNL" },
+    "HK$": { locale: "zh-HK", currency: "HKD" },
+    "Ft": { locale: "hu-HU", currency: "HUF" },
+    "kr": { locale: "is-IS", currency: "ISK" },
+    "₹": { locale: "en-IN", currency: "INR" },
+    "Rp": { locale: "id-ID", currency: "IDR" },
+    "₪": { locale: "he-IL", currency: "ILS" },
+    "J$": { locale: "en-JM", currency: "JMD" },
+    "JD": { locale: "ar-JO", currency: "JOD" },
+    "KSh": { locale: "en-KE", currency: "KES" },
+    "د.ك": { locale: "ar-KW", currency: "KWD" },
+    "RM": { locale: "ms-MY", currency: "MYR" },
+    "MVR": { locale: "dv-MV", currency: "MVR" },
+    "₨": { locale: "en-MU", currency: "MUR" },
+    "MX$": { locale: "es-MX", currency: "MXN" },
+    "د.م.": { locale: "ar-MA", currency: "MAD" },
+    "MT": { locale: "pt-MZ", currency: "MZN" },
+    "NT$": { locale: "zh-TW", currency: "TWD" },
+    "NZ$": { locale: "en-NZ", currency: "NZD" },
+    "₦": { locale: "en-NG", currency: "NGN" },
+    "kr": { locale: "no-NO", currency: "NOK" },
+    "₱": { locale: "en-PH", currency: "PHP" },
+    "zł": { locale: "pl-PL", currency: "PLN" },
+    "QR": { locale: "ar-QA", currency: "QAR" },
+    "lei": { locale: "ro-RO", currency: "RON" },
+    "₽": { locale: "ru-RU", currency: "RUB" },
+    "SR": { locale: "ar-SA", currency: "SAR" },
+    "S$": { locale: "en-SG", currency: "SGD" },
+    "R": { locale: "en-ZA", currency: "ZAR" },
+    "₩": { locale: "ko-KR", currency: "KRW" },
+    "₺": { locale: "tr-TR", currency: "TRY" },
+    "د.ت": { locale: "ar-TN", currency: "TND" },
+    "฿": { locale: "th-TH", currency: "THB" },
+    "TT$": { locale: "en-TT", currency: "TTD" },
+    "₴": { locale: "uk-UA", currency: "UAH" },
+    "د.إ": { locale: "ar-AE", currency: "AED" },
+    "US$": { locale: "en-US", currency: "USD" },
+    "USh": { locale: "en-UG", currency: "UGX" },
+    "₫": { locale: "vi-VN", currency: "VND" },
+  };
+
+  // Determine the currency and locale from the mapping
+  const info = currencyInfo[currencySymbol] || currencyInfo["$"]; // Fallback to USD for unrecognized symbols
+  const formatter = new Intl.NumberFormat(info.locale, {
+    style: 'currency',
+    currency: info.currency,
+    currencyDisplay: 'narrowSymbol'
+  });
+
+  return formatter.format(value);
+}
 
 
 
@@ -251,7 +331,7 @@ async function costDetails(){
           if (thisDaysCosted == thisChargeableDays || (thisChargeServiceRateType != thisCostServiceRateType)){
 
 
-            var oldSpan = daysBox.querySelector('span.cost-popover-help-added.days-tooltip');
+            var oldSpan = daysBox.querySelector('span.popover-help-added.days-tooltip');
             if (oldSpan){
               oldSpan.remove();
             }
@@ -297,7 +377,7 @@ async function costDetails(){
       var thisGroupTotal = 0.0;
       for (let i = 0; i < thisGroupCostTotalCells.length; i++) {
         thisGroupCellCostSpan = thisGroupCostTotalCells[i].querySelector('span[data-original-title="Cost detail"]');
-        thisGroupTotal += parseFloat(thisGroupCellCostSpan.innerText);
+        thisGroupTotal += parseMoneyInputToFloat(thisGroupCellCostSpan.innerText);
       }
 
 
@@ -318,7 +398,12 @@ async function costDetails(){
 
       thisGroupDiv.innerHTML = "";
 
-      thisGroupDiv.innerHTML = "<span class='cost-group-name'>"+thisGroupName +"</span><span class='cost-group-total'>("+currencyPrefix+thisGroupTotal.toFixed(2)+") &#8681;</span>";
+      var thisFinalTotal = thisGroupTotal.toFixed(2);
+      var thisFinalTotalString = formatCurrency(thisFinalTotal, currencyPrefix);
+
+
+
+      thisGroupDiv.innerHTML = "<span class='cost-group-name'>"+thisGroupName +"</span><span class='cost-group-total'>("+thisFinalTotalString+") &#8681;</span>";
 
     }
   }
