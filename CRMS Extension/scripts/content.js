@@ -33,6 +33,7 @@ smartScan = false;
 smartScanCandidates = {};
 revertScan = false;
 removeScan = false;
+addDetailsRunning = false;
 
 
 blockQuarantines = true;
@@ -256,7 +257,9 @@ chrome.storage.local.get(["allStock"]).then((result) => {
 
 // Function to add inspector details and item descriptions to the Details page
 async function addDetails(mode) {
+  if (!addDetailsRunning){
 
+  addDetailsRunning = true;
   if (detailView){
 
     if (!mode){
@@ -628,8 +631,8 @@ async function addDetails(mode) {
 
   }
 
-
-
+  addDetailsRunning = false;
+}
 }
 
 

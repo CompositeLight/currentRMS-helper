@@ -1,5 +1,6 @@
 
 var removed = "";
+var iAmScraping = false;
 
 // handler for incoming messages from other js code (like content.js or popup.js)
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -29,16 +30,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   } else if (message.messageType == "availabilityscape"){
       console.log("Availability scrape was requested for "+message.messageText);
-      availabilityScrape(message.messageText, message.messageStartDate, message.messageEndDate);
-  } else if (message.messageType == "availabilityscape"){
-      console.log("Availability scrape was requested for "+message.messageText);
-      availabilityScrape(message.messageText);
+      if (iAmScraping){
+        console.log("Request denied as a scrape is already in progress");
+      } else {
+        iAmScraping = true;
+        availabilityScrape(message.messageText, message.messageStartDate, message.messageEndDate);
+      }
 
   } else if (message.action === "closeTab") {
           // close the scraper tab on demand.
           chrome.tabs.remove(sender.tab.id);
 
   } else if (message.messageType === "availabilityData") {
+        iAmScraping = false;
         // Forward the message to Content Script B
         chrome.tabs.query({}, function(tabs) {
             tabs.forEach(function(tab) {
@@ -499,8 +503,8 @@ function quarantineApiCall(){
 async function availabilityScrape(opp, start, end){
   await recallApiDetails();
   if (apiSubdomain){
-    console.log(start);
-    console.log(end);
+    //console.log(start);
+    //console.log(end);
     const timeStart = start.split(' ')[1].replace(':', '');
     const timeEnd = end.split(' ')[1].replace(':', '');
 
