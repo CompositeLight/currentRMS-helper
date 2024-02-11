@@ -11,6 +11,10 @@
     display: none !important;
 }
 
+.hide-nonsub{
+    display: none !important;
+}
+
 
 .message-zone{
   display: inline;

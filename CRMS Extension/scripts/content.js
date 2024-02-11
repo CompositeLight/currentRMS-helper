@@ -14,6 +14,7 @@ notesHidden = false;
 preparedHidden = false;
 bulkOnly = false;
 subhiresHidden = false;
+nonsubsHidden = false;
 weightUnit = "kgs"; // default to kgs for weight unit
 inspectionAlerts = "";
 multiGlobal = true;
@@ -1186,6 +1187,24 @@ function hideNonBulkRows() {
   var opportunityList = document.getElementById("opportunity_item_assets_body");
   // Check if the list exists
   if (opportunityList) {
+
+    // first hide groups that contains no bulk at all.
+    // Get all li in the document
+    var lis = opportunityList.querySelectorAll('li');
+    for (var n = 0; n < lis.length; n++) {
+      var containsBulk = false;
+      var liStatusCells = lis[n].querySelectorAll('.asset-column');
+      for (var s = 0; s < liStatusCells.length; s++) {
+        if (liStatusCells[s].innerText.includes('Bulk Stock') || liStatusCells[s].innerText.includes('Non-Stock Booking') || liStatusCells[s].innerText.includes('Asset Number')){
+        containsBulk = true;
+        }
+      }
+      if (!containsBulk){
+        lis[n].classList.add('hide-nonbulk')
+      }
+    }
+
+
     // Get all table rows in the document
     var rows = opportunityList.querySelectorAll('tr');
 
@@ -1199,9 +1218,10 @@ function hideNonBulkRows() {
           // Skip this row
         } else {
           // Hide the entire row
-          //rows[i].style.display = 'none';
-          var thisItem = statusCell.closest("table");
-          thisItem.classList.add('hide-nonbulk');
+
+          //var thisItem = statusCell.closest("table");
+          //thisItem.classList.add('hide-nonbulk');
+          rows[i].classList.add('hide-nonbulk');
         }
       } catch(err) {
         //console.log(err);
@@ -1219,7 +1239,7 @@ function unHideNonBulkRows() {
   // Check if the list exists
   if (opportunityList) {
     // Get all table rows in the document
-    var lists = opportunityList.querySelectorAll('table.hide-nonbulk');
+    var lists = opportunityList.querySelectorAll('.hide-nonbulk');
 
     // Iterate through each row
     for (var i = 0; i < lists.length; i++) {
@@ -1252,9 +1272,6 @@ function subhiresButton(){
   }
   focusInput();
 }
-
-
-
 
 
 // Hide subrent bookings
@@ -1311,6 +1328,107 @@ function unHideSubHires() {
 
 
 
+// Subhires button pressed
+function nonsubsButton(){
+  console.log("run");
+  var element = document.getElementById("nonsubs-button");
+  console.log("hiding non subs");
+  if (nonsubsHidden) {
+    nonsubsHidden = false;
+    unHideNonSubs();
+    element.classList.remove("turned-on");
+    element.innerHTML = "Sub-Rents Only";
+  } else {
+    nonsubsHidden = true;
+    hideNonSubs();
+    element.classList.add("turned-on");
+    element.innerHTML = "Non-Subs Hidden";
+    console.log("hiding non subs");
+  }
+  focusInput();
+}
+
+
+// Hide subrent bookings
+function hideNonSubs() {
+
+  // Find the <ol> with id "opportunity_item_assets_body"
+  var opportunityList = document.getElementById("opportunity_item_assets_body");
+  // Check if the list exists
+  if (opportunityList) {
+
+    // first hide groups that contains no sub hires at all.
+    // Get all li in the document
+    var lis = opportunityList.querySelectorAll('li');
+    for (var n = 0; n < lis.length; n++) {
+      var containsSubs = false;
+      var liStatusCells = lis[n].querySelectorAll('.asset-column');
+      for (var s = 0; s < liStatusCells.length; s++) {
+        if (liStatusCells[s].innerText.includes('Sub-Rent Booking')){
+        containsSubs = true;
+        }
+      }
+      if (!containsSubs){
+        lis[n].classList.add('hide-nonsub')
+      }
+    }
+
+
+    // Get all table rows in the document
+    var rows = opportunityList.querySelectorAll('tr');
+
+    // Iterate through each row
+    for (var i = 0; i < rows.length; i++) {
+      // Get the status cell in the current row
+      try {
+
+        var statusCell = rows[i].querySelector('.asset-column');
+
+        // Check if the status cell contains the specified content
+        if (statusCell.innerText.includes('Sub-Rent Booking') || statusCell.innerText.includes('Asset Number')) {
+          //Skip this item
+        } else{
+          rows[i].classList.add('hide-nonsub');
+        }
+      } catch(err) {
+        //console.log(err);
+      }
+    }
+  }
+}
+
+
+// Unhide subrent bookings
+function unHideNonSubs() {
+
+  // Find the <ol> with id "opportunity_item_assets_body"
+  var opportunityList = document.getElementById("opportunity_item_assets_body");
+  // Check if the list exists
+  if (opportunityList) {
+    // Get all table rows in the document
+    var lists = opportunityList.querySelectorAll('.hide-nonsub');
+
+    // Iterate through each row
+    for (var i = 0; i < lists.length; i++) {
+      // Get the status cell in the current row
+      try {
+        lists[i].classList.remove('hide-nonsub');
+      } catch(err) {
+        console.log(err);
+      }
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
 function updateHidings(){
   if (preparedHidden){
     hidePrepared();
@@ -1320,6 +1438,9 @@ function updateHidings(){
   }
   if (subhiresHidden){
     hideSubhires();
+  }
+  if (nonsubsHidden){
+    hideNonSubs();
   }
 }
 
@@ -2029,11 +2150,22 @@ if (detailView){
     //var listContainer = document.getElementById("od-function-tabs");
     listContainer.appendChild(listItem);
 
-    // Create a tab button for Subhires
+    // Create a tab button for hiding Subhires
     var listItem = document.createElement("li");
     listItem.classList.add("helper-btn");
     listItem.textContent = "Hide Sub-Rentals";
     listItem.id = "subhires-button";
+
+    //var listContainer = document.getElementById("od-function-tabs");
+    listContainer.appendChild(listItem);
+
+    // Create a tab button for hiding only non Subhires
+    var listItem = document.createElement("li");
+    listItem.classList.add("helper-btn");
+    listItem.textContent = "Hide Non-Subs";
+    listItem.id = "nonsubs-button";
+
+
     //var listContainer = document.getElementById("od-function-tabs");
     listContainer.appendChild(listItem);
 
@@ -2041,6 +2173,7 @@ if (detailView){
     document.getElementById("prepared-button").addEventListener("click", preparedButton);
     document.getElementById("bulk-button").addEventListener("click", bulkButton);
     document.getElementById("subhires-button").addEventListener("click", subhiresButton);
+    document.getElementById("nonsubs-button").addEventListener("click", nonsubsButton);
 
   } catch (err){
     console.log(err);
