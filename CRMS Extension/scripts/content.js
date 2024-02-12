@@ -15,6 +15,7 @@ preparedHidden = false;
 bulkOnly = false;
 subhiresHidden = false;
 nonsubsHidden = false;
+nonShortsHidden = false;
 weightUnit = "kgs"; // default to kgs for weight unit
 inspectionAlerts = "";
 multiGlobal = true;
@@ -1263,12 +1264,12 @@ function subhiresButton(){
     subhiresHidden = false;
     unHideSubHires();
     element.classList.remove("turned-on");
-    element.innerHTML = "Hide Sub-Rentals";
+    element.innerHTML = "Hide Sub-Rents";
   } else {
     subhiresHidden = true;
     hideSubHires();
     element.classList.add("turned-on");
-    element.innerHTML = "Sub-Rentals Hidden";
+    element.innerHTML = "Sub-Rents Hidden";
   }
   focusInput();
 }
@@ -1330,7 +1331,6 @@ function unHideSubHires() {
 
 // Subhires button pressed
 function nonsubsButton(){
-  console.log("run");
   var element = document.getElementById("nonsubs-button");
   console.log("hiding non subs");
   if (nonsubsHidden) {
@@ -1420,6 +1420,117 @@ function unHideNonSubs() {
   }
 }
 
+
+
+
+
+
+// Shortages only button pressed
+function nonShortsButton(){
+  var element = document.getElementById("nonshorts-button");
+  if (nonShortsHidden) {
+    nonShortsHidden = false;
+    unHideNonShorts();
+    element.classList.remove("turned-on");
+    element.innerHTML = "Shorts Only";
+  } else {
+    nonShortsHidden = true;
+    hideNonShorts();
+    element.classList.add("turned-on");
+    element.innerHTML = "Shorts Only";
+    console.log("hiding non shorts");
+  }
+  focusInput();
+}
+
+
+// Hide subrent bookings
+function hideNonShorts() {
+
+  // Find the <ol> with id "opportunity_item_assets_body"
+  var opportunityList = document.getElementById("opportunity_item_assets_body");
+  // Check if the list exists
+  if (opportunityList) {
+
+    // first hide groups that contains no sub hires at all.
+    // Get all li in the document
+    var lis = opportunityList.querySelectorAll('li');
+    for (var n = 0; n < lis.length; n++) {
+      var containsShorts = false;
+      var liStatusCells = lis[n].querySelectorAll('tr');
+      for (var s = 0; s < liStatusCells.length; s++) {
+        if (liStatusCells[s].classList.contains('shortage')){
+        containsShorts = true;
+        }
+      }
+      if (!containsShorts){
+        lis[n].classList.add('hide-nonshort')
+        for (var s = 0; s < liStatusCells.length; s++) {
+          try {
+            liStatusCells[s].querySelector("input.item-select").disabled = true;
+          }
+          catch(err){
+            console.log(err);
+          }
+
+        }
+
+      } else {
+        for (var s = 0; s < liStatusCells.length; s++) {
+          if (liStatusCells[s].classList.contains('shortage') || liStatusCells[s].classList.contains('item-group')){
+            // skip
+          } else {
+            liStatusCells[s].classList.add('hide-nonshort');
+            try {
+              liStatusCells[s].querySelector("input.item-select").disabled = true;
+            }
+            catch(err){
+              console.log(err);
+            }
+          }
+        }
+      }
+
+    }
+
+
+
+  }
+}
+
+
+// Unhide subrent bookings
+function unHideNonShorts() {
+
+  // Find the <ol> with id "opportunity_item_assets_body"
+  var opportunityList = document.getElementById("opportunity_item_assets_body");
+  // Check if the list exists
+  if (opportunityList) {
+    // Get all table rows in the document
+    var lists = opportunityList.querySelectorAll('.hide-nonshort');
+
+    // Iterate through each row
+    for (var i = 0; i < lists.length; i++) {
+      // Get the status cell in the current row
+      try {
+        lists[i].classList.remove('hide-nonshort');
+      } catch(err) {
+        console.log(err);
+      }
+    }
+
+    var boxes = opportunityList.querySelectorAll('input.item-select');
+    // Iterate through each input box
+    for (var i = 0; i < boxes.length; i++) {
+      // Get the status cell in the current row
+      try {
+        boxes[i].disabled = false;
+      } catch(err) {
+        console.log(err);
+      }
+    }
+  }
+}
 
 
 
@@ -2139,7 +2250,6 @@ if (detailView){
     listItem.classList.add("helper-btn");
     listItem.textContent = "Hide Prepared";
     listItem.id = "prepared-button";
-    //var listContainer = document.getElementById("od-function-tabs");
     listContainer.appendChild(listItem);
 
     // Create a tab button for Bulk Only
@@ -2147,16 +2257,13 @@ if (detailView){
     listItem.classList.add("helper-btn");
     listItem.textContent = "Bulk Only";
     listItem.id = "bulk-button";
-    //var listContainer = document.getElementById("od-function-tabs");
     listContainer.appendChild(listItem);
 
     // Create a tab button for hiding Subhires
     var listItem = document.createElement("li");
     listItem.classList.add("helper-btn");
-    listItem.textContent = "Hide Sub-Rentals";
+    listItem.textContent = "Hide Sub-Rents";
     listItem.id = "subhires-button";
-
-    //var listContainer = document.getElementById("od-function-tabs");
     listContainer.appendChild(listItem);
 
     // Create a tab button for hiding only non Subhires
@@ -2164,9 +2271,13 @@ if (detailView){
     listItem.classList.add("helper-btn");
     listItem.textContent = "Hide Non-Subs";
     listItem.id = "nonsubs-button";
+    listContainer.appendChild(listItem);
 
-
-    //var listContainer = document.getElementById("od-function-tabs");
+    // Create a tab button for hiding only non shortages
+    var listItem = document.createElement("li");
+    listItem.classList.add("helper-btn");
+    listItem.textContent = "Shorts Only";
+    listItem.id = "nonshorts-button";
     listContainer.appendChild(listItem);
 
     document.getElementById("notes-button").addEventListener("click", notesButton);
@@ -2174,6 +2285,7 @@ if (detailView){
     document.getElementById("bulk-button").addEventListener("click", bulkButton);
     document.getElementById("subhires-button").addEventListener("click", subhiresButton);
     document.getElementById("nonsubs-button").addEventListener("click", nonsubsButton);
+    document.getElementById("nonshorts-button").addEventListener("click", nonShortsButton);
 
   } catch (err){
     console.log(err);
