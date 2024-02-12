@@ -1448,54 +1448,95 @@ function nonShortsButton(){
 function hideNonShorts() {
 
   // Find the <ol> with id "opportunity_item_assets_body"
-  var opportunityList = document.getElementById("opportunity_item_assets_body");
-  // Check if the list exists
-  if (opportunityList) {
+  if (detailView){
+    var opportunityList = document.getElementById("opportunity_item_assets_body");
+    // Check if the list exists
+    if (opportunityList) {
 
-    // first hide groups that contains no sub hires at all.
-    // Get all li in the document
-    var lis = opportunityList.querySelectorAll('li.grid-body-row');
-    for (var n = 0; n < lis.length; n++) {
-      var containsShorts = false;
-      var liStatusCells = lis[n].querySelectorAll('tr');
-      for (var s = 0; s < liStatusCells.length; s++) {
-        if (liStatusCells[s].classList.contains('shortage')){
-        containsShorts = true;
-        }
-      }
-      if (!containsShorts){
-        lis[n].classList.add('hide-nonshort')
+      // first hide groups that contains no sub hires at all.
+      // Get all li in the document
+      var lis = opportunityList.querySelectorAll('li.grid-body-row');
+      for (var n = 0; n < lis.length; n++) {
+        var containsShorts = false;
+        var liStatusCells = lis[n].querySelectorAll('tr');
         for (var s = 0; s < liStatusCells.length; s++) {
-          try {
-            liStatusCells[s].querySelector("input.item-select").disabled = true;
+          if (liStatusCells[s].classList.contains('shortage')){
+          containsShorts = true;
           }
-          catch(err){
-            console.log(err);
-          }
-
         }
-
-      } else {
-        for (var s = 0; s < liStatusCells.length; s++) {
-          if (liStatusCells[s].classList.contains('shortage') || liStatusCells[s].classList.contains('item-group')){
-            // skip
-          } else {
-            liStatusCells[s].classList.add('hide-nonshort');
+        if (!containsShorts){
+          lis[n].classList.add('hide-nonshort')
+          for (var s = 0; s < liStatusCells.length; s++) {
             try {
               liStatusCells[s].querySelector("input.item-select").disabled = true;
             }
             catch(err){
               console.log(err);
             }
+
+          }
+
+        } else {
+          for (var s = 0; s < liStatusCells.length; s++) {
+            if (liStatusCells[s].classList.contains('shortage') || liStatusCells[s].classList.contains('item-group')){
+              // skip
+            } else {
+              liStatusCells[s].classList.add('hide-nonshort');
+              try {
+                liStatusCells[s].querySelector("input.item-select").disabled = true;
+              }
+              catch(err){
+                console.log(err);
+              }
+            }
           }
         }
+
+      }
+    }
+  } else if (orderView){
+    var opportunityList = document.getElementById("opportunity_items_scrollable");
+    // Check if the list exists
+    if (opportunityList) {
+
+      // first hide groups that contains no sub hires at all.
+      // Get all li in the document
+      var lis = opportunityList.querySelectorAll('li.grid-body-row');
+      for (var n = 0; n < lis.length; n++) {
+        var containsShorts = false;
+        var liStatusCells = lis[n].querySelectorAll('tr');
+        for (var s = 0; s < liStatusCells.length; s++) {
+          if (liStatusCells[s].classList.contains('shortage')){
+          containsShorts = true;
+          }
+        }
+        if (!containsShorts){
+          lis[n].classList.add('hide-nonshort')
+
+      } else {
+          for (var s = 0; s < liStatusCells.length; s++) {
+            var thisGroupName = liStatusCells[s].querySelector(".group-name");
+            if (liStatusCells[s].classList.contains('shortage') || thisGroupName){
+              // skip
+            } else {
+              liStatusCells[s].classList.add('hide-nonshort');
+              try {
+                liStatusCells[s].querySelector("input.item-select").disabled = true;
+              }
+              catch(err){
+                console.log(err);
+              }
+            }
+          }
+        }
+
       }
 
+
+
     }
-
-
-
   }
+
 }
 
 
@@ -1503,7 +1544,11 @@ function hideNonShorts() {
 function unHideNonShorts() {
 
   // Find the <ol> with id "opportunity_item_assets_body"
-  var opportunityList = document.getElementById("opportunity_item_assets_body");
+  if (detailView){
+    var opportunityList = document.getElementById("opportunity_item_assets_body");
+  } else if (orderView){
+    var opportunityList = document.getElementById("opportunity_items_scrollable");
+  }
   // Check if the list exists
   if (opportunityList) {
     // Get all table rows in the document
@@ -2269,7 +2314,7 @@ if (detailView){
     // Create a tab button for hiding only non Subhires
     var listItem = document.createElement("li");
     listItem.classList.add("helper-btn");
-    listItem.textContent = "Hide Non-Subs";
+    listItem.textContent = "Sub-Rents Only";
     listItem.id = "nonsubs-button";
     listContainer.appendChild(listItem);
 
@@ -2290,6 +2335,54 @@ if (detailView){
   } catch (err){
     console.log(err);
   }
+} else if (orderView){
+  try {
+
+    // start of new gui
+
+    var titleRow = document.getElementById("opportunity_items_title");
+
+    console.log(titleRow.innerHTML);
+
+    // Create a new row element
+    let newElement = document.createElement('div');
+    newElement.classList.add("row");
+    newElement.classList.add("sticky");
+    // Insert `newElement` after `referenceElement`
+    titleRow.insertAdjacentElement('afterend', newElement);
+
+    let newDiv = document.createElement('div');
+    newDiv.classList.add("pull-right");
+    newDiv.classList.add("control-links");
+    newDiv.classList.add("helper-control-panel");
+    //newDiv.innerHTML = "Testing 123";
+    newDiv.id = 'helper-control-panel';
+    newElement.appendChild(newDiv);
+
+    var listContainer = document.getElementById("helper-control-panel");
+    //listContainer.appendChild(listItem);
+
+    // Create a tab button for hiding only non shortages
+    var listItem = document.createElement("li");
+    listItem.classList.add("helper-btn");
+    listItem.textContent = "Shorts Only";
+    listItem.id = "nonshorts-button";
+    listContainer.appendChild(listItem);
+
+    document.getElementById("nonshorts-button").addEventListener("click", nonShortsButton);
+
+  } catch (err){
+    console.log(err);
+  }
+
+
+
+
+
+
+
+
+
 }
 
 // Start observing the body for mutations. This looks out for changes to the webpage, so we can spot toast messages appearing.
@@ -2371,6 +2464,9 @@ if (detailView){
   catch(err) {
     console.log(err);
   }
+
+
+
 }
 
 
