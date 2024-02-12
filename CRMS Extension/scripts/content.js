@@ -1495,6 +1495,7 @@ function hideNonShorts() {
       }
     }
   } else if (orderView){
+    document.querySelector("button.expand-all").click();
     var opportunityList = document.getElementById("opportunity_items_scrollable");
     // Check if the list exists
     if (opportunityList) {
