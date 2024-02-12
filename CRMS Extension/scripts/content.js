@@ -1191,7 +1191,7 @@ function hideNonBulkRows() {
 
     // first hide groups that contains no bulk at all.
     // Get all li in the document
-    var lis = opportunityList.querySelectorAll('li');
+    var lis = opportunityList.querySelectorAll('li.grid-body-row');
     for (var n = 0; n < lis.length; n++) {
       var containsBulk = false;
       var liStatusCells = lis[n].querySelectorAll('.asset-column');
@@ -1359,7 +1359,7 @@ function hideNonSubs() {
 
     // first hide groups that contains no sub hires at all.
     // Get all li in the document
-    var lis = opportunityList.querySelectorAll('li');
+    var lis = opportunityList.querySelectorAll('li.grid-body-row');
     for (var n = 0; n < lis.length; n++) {
       var containsSubs = false;
       var liStatusCells = lis[n].querySelectorAll('.asset-column');
@@ -1454,7 +1454,7 @@ function hideNonShorts() {
 
     // first hide groups that contains no sub hires at all.
     // Get all li in the document
-    var lis = opportunityList.querySelectorAll('li');
+    var lis = opportunityList.querySelectorAll('li.grid-body-row');
     for (var n = 0; n < lis.length; n++) {
       var containsShorts = false;
       var liStatusCells = lis[n].querySelectorAll('tr');
