@@ -1452,57 +1452,6 @@ function hideNonShorts() {
     var opportunityList = document.getElementById("opportunity_item_assets_body");
     // Check if the list exists
     if (opportunityList) {
-
-      // first hide groups that contains no sub hires at all.
-      // Get all li in the document
-      var lis = opportunityList.querySelectorAll('li.grid-body-row');
-      for (var n = 0; n < lis.length; n++) {
-        var containsShorts = false;
-        var liStatusCells = lis[n].querySelectorAll('tr');
-        for (var s = 0; s < liStatusCells.length; s++) {
-          if (liStatusCells[s].classList.contains('shortage')){
-          containsShorts = true;
-          }
-        }
-        if (!containsShorts){
-          lis[n].classList.add('hide-nonshort')
-          for (var s = 0; s < liStatusCells.length; s++) {
-            try {
-              liStatusCells[s].querySelector("input.item-select").disabled = true;
-            }
-            catch(err){
-              console.log(err);
-            }
-
-          }
-
-        } else {
-          for (var s = 0; s < liStatusCells.length; s++) {
-            if (liStatusCells[s].classList.contains('shortage') || liStatusCells[s].classList.contains('item-group')){
-              // skip
-            } else {
-              liStatusCells[s].classList.add('hide-nonshort');
-              try {
-                liStatusCells[s].querySelector("input.item-select").disabled = true;
-              }
-              catch(err){
-                console.log(err);
-              }
-            }
-          }
-        }
-
-      }
-    }
-  } else if (orderView){
-    //document.querySelector("button.expand-all").click();
-
-
-    var opportunityList = document.getElementById("opportunity_items_scrollable");
-    // Check if the list exists
-    if (opportunityList) {
-
-
       // MAKE ALL <li> ELEMENTS THAT CONTAIN A SHORTAGE VISIBLE
       // Select all <tr> elements with the class 'shortage'
       const shortageTRs = opportunityList.querySelectorAll('tr.shortage');
@@ -1533,10 +1482,6 @@ function hideNonShorts() {
         uniqueMatchingLIs[h].classList.add("force-display-block");
       }
 
-
-
-
-
       // MAKE ALL <ol> ELEMENTS THAT CONTAIN A SHORTAGE VISIBLE
       // Select all <tr> elements with the class 'shortage'
       //const shortageTRs = opportunityList.querySelectorAll('tr.shortage');
@@ -1560,7 +1505,6 @@ function hideNonShorts() {
 
       // Convert the Set to an array if you need to work with an array
       const olElementsArray = Array.from(olElements);
-      console.log(olElementsArray.length);
       for (var o = 0; o < olElementsArray.length; o++) {
         olElementsArray[o].classList.add("force-display-block");
       }
@@ -1602,6 +1546,112 @@ function hideNonShorts() {
       }
 
 
+
+
+    }
+  } else if (orderView){
+    //document.querySelector("button.expand-all").click();
+
+
+    var opportunityList = document.getElementById("opportunity_items_scrollable");
+    // Check if the list exists
+    if (opportunityList) {
+
+      // MAKE ALL <li> ELEMENTS THAT CONTAIN A SHORTAGE VISIBLE
+      // Select all <tr> elements with the class 'shortage'
+      const shortageTRs = opportunityList.querySelectorAll('tr.shortage');
+
+      // Initialize an array to store the <li> elements that match the criteria
+      const matchingLIs = [];
+
+      // Iterate over each <tr> element with the class 'shortage'
+      shortageTRs.forEach(tr => {
+        // Move up the DOM tree to find an enclosing <li> with the class 'dd-collapsed'
+        let parent = tr.parentElement;
+        while (parent) {
+          if (parent.tagName === 'LI' && parent.classList.contains('dd-collapsed')) {
+            // If such an <li> is found, add it to the array
+            matchingLIs.push(parent);
+            break; // Stop the loop once the matching <li> is found
+          }
+          parent = parent.parentElement; // Move to the next parent element
+        }
+      });
+
+      // Now matchingLIs contains all <li> elements you are interested in
+      // Optionally, remove duplicates if any <tr>.shortage is in the same <li>
+      const uniqueMatchingLIs = Array.from(new Set(matchingLIs));
+
+      for (var h = 0; h < uniqueMatchingLIs.length; h++) {
+        uniqueMatchingLIs[h].classList.add("force-display-block");
+      }
+
+
+
+
+
+      // MAKE ALL <ol> ELEMENTS THAT CONTAIN A SHORTAGE VISIBLE
+      // Select all <tr> elements with the class 'shortage'
+      //const shortageTRs = opportunityList.querySelectorAll('tr.shortage');
+
+      // Create a Set to store unique <ol> elements
+      const olElements = new Set();
+
+      // Iterate over the selected <tr> elements
+      shortageTRs.forEach(tr => {
+        // Move up the DOM tree to find the enclosing <ol> element
+        let parent = tr.parentElement;
+        while (parent) {
+          if (parent.tagName === 'OL') {
+            // If an <ol> parent is found, add it to the Set
+            olElements.add(parent);
+            break; // Stop the loop once the <ol> is found
+          }
+          parent = parent.parentElement; // Move to the next parent element
+        }
+      });
+
+      // Convert the Set to an array if you need to work with an array
+      const olElementsArray = Array.from(olElements);
+      for (var o = 0; o < olElementsArray.length; o++) {
+        olElementsArray[o].classList.add("force-display-block");
+      }
+
+
+
+
+      // first hide groups that contains no sub hires at all.
+      // Get all li in the document
+      var lis = opportunityList.querySelectorAll('li.grid-body-row');
+      for (var n = 0; n < lis.length; n++) {
+        var containsShorts = false;
+        var liStatusCells = lis[n].querySelectorAll('tr');
+        for (var s = 0; s < liStatusCells.length; s++) {
+          if (liStatusCells[s].classList.contains('shortage')){
+          containsShorts = true;
+          }
+        }
+        if (!containsShorts){
+          lis[n].classList.add('hide-nonshort')
+
+      } else {
+          for (var s = 0; s < liStatusCells.length; s++) {
+            var thisGroupName = liStatusCells[s].querySelector(".group-name");
+            if (liStatusCells[s].classList.contains('shortage') || thisGroupName){
+              // skip
+            } else {
+              liStatusCells[s].classList.add('hide-nonshort');
+              try {
+                liStatusCells[s].querySelector("input.item-select").disabled = true;
+              }
+              catch(err){
+                console.log(err);
+              }
+            }
+          }
+        }
+
+      }
 
     }
   }
