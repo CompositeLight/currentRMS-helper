@@ -357,7 +357,10 @@ div.float-right{
 
 }
 
-
 .availability-column{
   width: 50px;
+}
+
+.force-display-block{
+  display: block !important;
 }

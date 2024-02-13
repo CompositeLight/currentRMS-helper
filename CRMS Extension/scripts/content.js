@@ -1495,10 +1495,78 @@ function hideNonShorts() {
       }
     }
   } else if (orderView){
-    document.querySelector("button.expand-all").click();
+    //document.querySelector("button.expand-all").click();
+
+
     var opportunityList = document.getElementById("opportunity_items_scrollable");
     // Check if the list exists
     if (opportunityList) {
+
+
+      // MAKE ALL <li> ELEMENTS THAT CONTAIN A SHORTAGE VISIBLE
+      // Select all <tr> elements with the class 'shortage'
+      const shortageTRs = opportunityList.querySelectorAll('tr.shortage');
+
+      // Initialize an array to store the <li> elements that match the criteria
+      const matchingLIs = [];
+
+      // Iterate over each <tr> element with the class 'shortage'
+      shortageTRs.forEach(tr => {
+        // Move up the DOM tree to find an enclosing <li> with the class 'dd-collapsed'
+        let parent = tr.parentElement;
+        while (parent) {
+          if (parent.tagName === 'LI' && parent.classList.contains('dd-collapsed')) {
+            // If such an <li> is found, add it to the array
+            matchingLIs.push(parent);
+            break; // Stop the loop once the matching <li> is found
+          }
+          parent = parent.parentElement; // Move to the next parent element
+        }
+      });
+
+      // Now matchingLIs contains all <li> elements you are interested in
+      // Optionally, remove duplicates if any <tr>.shortage is in the same <li>
+      const uniqueMatchingLIs = Array.from(new Set(matchingLIs));
+
+      console.log(uniqueMatchingLIs.length);
+      for (var h = 0; h < uniqueMatchingLIs.length; h++) {
+        uniqueMatchingLIs[h].classList.add("force-display-block");
+      }
+
+
+
+
+
+      // MAKE ALL <ol> ELEMENTS THAT CONTAIN A SHORTAGE VISIBLE
+      // Select all <tr> elements with the class 'shortage'
+      //const shortageTRs = opportunityList.querySelectorAll('tr.shortage');
+
+      // Create a Set to store unique <ol> elements
+      const olElements = new Set();
+
+      // Iterate over the selected <tr> elements
+      shortageTRs.forEach(tr => {
+        // Move up the DOM tree to find the enclosing <ol> element
+        let parent = tr.parentElement;
+        while (parent) {
+          if (parent.tagName === 'OL') {
+            // If an <ol> parent is found, add it to the Set
+            olElements.add(parent);
+            break; // Stop the loop once the <ol> is found
+          }
+          parent = parent.parentElement; // Move to the next parent element
+        }
+      });
+
+      // Convert the Set to an array if you need to work with an array
+      const olElementsArray = Array.from(olElements);
+      console.log(olElementsArray.length);
+      for (var o = 0; o < olElementsArray.length; o++) {
+        olElementsArray[o].classList.add("force-display-block");
+      }
+
+
+
 
       // first hide groups that contains no sub hires at all.
       // Get all li in the document
@@ -1557,13 +1625,22 @@ function unHideNonShorts() {
 
     // Iterate through each row
     for (var i = 0; i < lists.length; i++) {
-      // Get the status cell in the current row
       try {
         lists[i].classList.remove('hide-nonshort');
       } catch(err) {
         console.log(err);
       }
     }
+
+    var forcedVisible = opportunityList.querySelectorAll('.force-display-block');
+    for (var i = 0; i < forcedVisible.length; i++) {
+      try {
+        forcedVisible[i].classList.remove('force-display-block');
+      } catch(err) {
+        console.log(err);
+      }
+    }
+
 
     var boxes = opportunityList.querySelectorAll('input.item-select');
     // Iterate through each input box
