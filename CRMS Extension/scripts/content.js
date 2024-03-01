@@ -769,8 +769,11 @@ function getProdLocation(prod){
     // Extract the "location" property from each object
     const locations = prodObject.map(obj => obj.location);
 
+    // remove duplicate inventories
+    const uniqueLocations = [...new Set(locations)];
+
     // Create a string with locations separated by commas
-    const locationsString = locations.join(', ');
+    const locationsString = uniqueLocations.join(', ');
     return locationsString;
   }
     catch(err) {
