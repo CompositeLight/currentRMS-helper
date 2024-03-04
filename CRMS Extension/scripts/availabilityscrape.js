@@ -13,6 +13,11 @@ function shouldScrape() {
     return currentUrl.endsWith("scrape");
 }
 
+function shouldScrapeQty() {
+    return currentUrl.endsWith("scrapeqty");
+}
+
+
 function createBlockOutOverlay() {
     var overlay = document.createElement('div');
     overlay.className = 'block-out';
@@ -176,6 +181,40 @@ if (shouldScrape()) {
     } else {
         console.log('Table with ID "availability-grid" not found.');
     }
+
+} else if (shouldScrapeQty()) {
+    var prodString = extractStartParameter(currentUrl);
+    console.log("Requested scrape of qty for item: " + prodString);
+
+    // Get all <tr> elements in the document
+    var trElements = document.querySelectorAll('tr');
+
+    var searchString = "loadProductBookings("+prodString+");"
+
+    // Loop through each <tr> element
+    trElements.forEach(function(tr) {
+        // Check if the onclick attribute of the current <tr> matches the desired value
+        if (tr.getAttribute('onclick') === searchString) {
+
+            // Find the first <td> element with the class "quantity"
+            var quantityTd = tr.querySelector('td.quantity');
+
+            // Check if the quantityTd exists
+            if (quantityTd) {
+                // Get the inner text of the quantityTd
+                var quantityText = quantityTd.textContent.trim();
+                console.log(quantityText);
+                chrome.runtime.sendMessage({messageType: "productQtyData", messageData: quantityText});
+            } else {
+                console.log("No <td> element with class 'quantity' found.");
+            }
+
+            // end the forEach loop
+            return;
+        }
+    });
+    chrome.runtime.sendMessage({ action: "closeTab" });
+
 
 } else {
     console.log("This will not be scraped (URL is missing 'scrape' suffix).");

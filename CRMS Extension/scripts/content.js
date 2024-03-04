@@ -2710,6 +2710,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   }
 
+  if (message.messageType == "productQtyData"){
+      console.log("Availability data was delivered");
+      console.log(message.messageData);
+
+
+  }
+
   sendResponse({message: "received"});
   //return true;
 });

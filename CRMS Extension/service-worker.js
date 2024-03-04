@@ -37,6 +37,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         availabilityScrape(message.messageText, message.messageStartDate, message.messageEndDate);
       }
 
+  } else if (message.messageType == "qtyInUseScrape"){
+      console.log("Qty in use scrape was requested for "+message.messageProduct);
+      if (iAmScraping){
+        console.log("Request denied as a scrape is already in progress");
+      } else {
+        iAmScraping = true;
+        qtyInUseScrape(message.messageProduct, message.messageOpp);
+      }
+
+
+
+
   } else if (message.action === "closeTab") {
           // close the scraper tab on demand.
           chrome.tabs.remove(sender.tab.id);
@@ -49,6 +61,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 chrome.tabs.sendMessage(tab.id, message);
             });
         });
+
+} else if (message.messageType === "productQtyData") {
+      iAmScraping = false;
+      // Forward the message to Content Script
+      chrome.tabs.query({}, function(tabs) {
+          tabs.forEach(function(tab) {
+              chrome.tabs.sendMessage(tab.id, message);
+          });
+      });
+
 
 
 
@@ -509,6 +531,32 @@ async function availabilityScrape(opp, start, end){
     const timeEnd = end.split(' ')[1].replace(':', '');
 
     var scrapeURL = 'https://'+apiSubdomain+'.current-rms.com/availability/opportunity/'+opp+'?'+timeStart+'&'+timeEnd+'&scrape';
+    console.log(scrapeURL);
+    chrome.tabs.create({
+        url: scrapeURL,
+        active: false
+      }, function(tab) {
+      // You can perform actions here after the tab is created
+    });
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+async function qtyInUseScrape(prod, opp){
+  await recallApiDetails();
+  if (apiSubdomain){
+
+    var scrapeURL = 'https://'+apiSubdomain+'.current-rms.com/availability/opportunity/'+opp+'?'+prod+'&scrapeqty';
     console.log(scrapeURL);
     chrome.tabs.create({
         url: scrapeURL,
