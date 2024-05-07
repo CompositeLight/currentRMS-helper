@@ -1855,6 +1855,8 @@ const observer = new MutationObserver((mutations) => {
         theToastcontainer.style.maxHeight = "95vh";
         theToastcontainer.addEventListener("click", focusInput);
 
+
+
         // add the time stamp to the start of the message
         var d = new Date();
         var timeNow = d.toLocaleTimeString();
@@ -1870,8 +1872,10 @@ const observer = new MutationObserver((mutations) => {
           node.innerHTML = "("+timeNow+") Free Scan toggle only applies when using Allocate.";
           //node.classList.remove("toast-error");
           //node.classList.add("toast-info");
-        } else {
+        } else if (node.innerText.charAt(0) != `(`){
           node.innerHTML = "("+timeNow+") " + node.innerHTML;
+        } else {
+          // Do nothing?
         }
       }
     });
