@@ -364,3 +364,20 @@ div.float-right{
 .force-display-block{
   display: block !important;
 }
+
+.unallocated{
+  background-color: rgba(255,255,0,0.5) !important;
+}
+
+.unallocated.shortage{
+  background-color: rgba(204,0,30,0.25) !important;
+}
+
+.allocation-detail{
+  font-style: italic;
+  padding-left: 30px;
+}
+
+a.allocation-link{
+  color: black !important;
+}

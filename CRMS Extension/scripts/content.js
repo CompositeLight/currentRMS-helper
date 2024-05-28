@@ -36,6 +36,7 @@ smartScanCandidates = {};
 revertScan = false;
 removeScan = false;
 addDetailsRunning = false;
+firstTimeLoadingApiData = true;
 
 
 blockQuarantines = true;
@@ -267,6 +268,10 @@ async function addDetails(mode) {
     if (!mode){
       await recallApiDetails();
       pageNumber = 1;
+
+      // remove existing opp data
+      oppData = {opportunity_items:[], meta:[]}
+
       var result = await opportunityApiCall(opportunityID);
       while (oppData.meta.row_count > 0){
         pageNumber ++;
@@ -407,13 +412,26 @@ async function addDetails(mode) {
       }
     }
 
-
-    makeToast("toast-info", "API information loaded.", 5);
-
+    if (firstTimeLoadingApiData){
+      firstTimeLoadingApiData = false;
+      makeToast("toast-info", "API information loaded.", 5);
+    }
 
 
   } else if (orderView){
     console.log("add Details order view");
+
+    // Remove previous allocation detail rows
+    // Select all <tr> elements with the class "allocation-detail-tr"
+    const rowsToRemove = document.querySelectorAll('.allocation-detail-tr');
+    // Loop through each element and remove it
+    rowsToRemove.forEach(function(element) {
+      element.parentNode.removeChild(element);
+    });
+
+
+
+
 
     // get the start date and time
     const thisSidebar = document.getElementById("sidebar_content");
@@ -447,6 +465,8 @@ async function addDetails(mode) {
 
     await recallApiDetails();
     pageNumber = 1;
+    // remove existing opp data
+    oppData = {opportunity_items:[], meta:[]}
     var result = await opportunityApiCall(opportunityID);
     while (oppData.meta.row_count > 0){
       pageNumber ++;
@@ -485,6 +505,66 @@ async function addDetails(mode) {
           console.log("issue finding td element for "+thisName);
         }
 
+
+
+        // SECTION TO LIST ALLOCATED SERVICES BELOW ITEMS
+        if (oppData.opportunity_items[n].item_type == "Service"){
+          // logging for dev purposes
+          console.log(oppData.opportunity_items[n]);
+
+          var trElement = tdElement.closest("tr");
+
+          var elementToGoAfter = trElement;
+
+          if (oppData.opportunity_items[n].status == 5 && oppData.opportunity_items[n].item_assets[0].stock_level_asset_number == "Group Booking"){
+            trElement.classList.add("unallocated");
+          } else {
+            trElement.classList.remove("unallocated");
+            // Iterate through the item_assets in reverse order
+            var assetCount = 1;
+            //for (let i = oppData.opportunity_items[n].item_assets.length - 1; i >= 0; i--) {
+            for (let i = 0; i < oppData.opportunity_items[n].item_assets.length; i++) {
+              var thisAsset = oppData.opportunity_items[n].item_assets[i];
+              if (thisAsset.stock_level_asset_number == "Group Booking"){
+                var quantityOfGroup = parseInt(thisAsset.quantity);
+                for (let j = 0; j < quantityOfGroup; j++) {
+                  // Create the new element you want to add
+                  const newElement = document.createElement('tr');
+                  newElement.classList.add("allocation-detail-tr");
+                  newElement.innerHTML = `<td>&nbsp;</td><td class="allocation-detail" colspan="11">${assetCount}: ???</td>`;
+                  newElement.classList.add("unallocated");
+                  // Insert the new element after the tr
+                  elementToGoAfter.insertAdjacentElement('afterend', newElement);
+                  trElement.classList.add("unallocated");
+                  elementToGoAfter = newElement;
+                  assetCount ++;
+                }
+              } else {
+
+                var textForTheAllocation = thisAsset.stock_level_asset_number;
+                if (apiSubdomain && thisAsset.stock_level_member_id){
+                  textForTheAllocation = `<a href="https://${apiSubdomain}.current-rms.com/members/${thisAsset.stock_level_member_id}" class="allocation-link"  target="_blank">${thisAsset.stock_level_asset_number}</a>`;
+
+                } else if (apiSubdomain && thisAsset.supplier_id){
+                  textForTheAllocation = `<a href="https://${apiSubdomain}.current-rms.com/members/${thisAsset.supplier_id}" class="allocation-link"  target="_blank">${thisAsset.stock_level_asset_number}</a>`;
+                }
+
+
+                // Create the new element you want to add
+                const newElement = document.createElement('tr');
+                newElement.classList.add("allocation-detail-tr");
+                newElement.innerHTML = `<td>&nbsp;</td><td class="allocation-detail" colspan="11">${assetCount}: ${textForTheAllocation}</td>`;
+                // Insert the new element after the tr
+                elementToGoAfter.insertAdjacentElement('afterend', newElement);
+                elementToGoAfter = newElement;
+                assetCount ++;
+              }
+
+            }
+          }
+        }
+
+        // SECTION TO ADD POP UP DATA
         var spanElement = tdElement.querySelector('span');
         var currentDataContent = "";
 
@@ -634,7 +714,7 @@ async function addDetails(mode) {
   }
 
   addDetailsRunning = false;
-}
+  }
 }
 
 
@@ -650,7 +730,11 @@ async function addDetails(mode) {
 
 // API Call for addDetails
 function opportunityApiCall(opp){
+
+
   return new Promise(function (resolve, reject) {
+
+
 
     //const apiUrl = 'https://api.current-rms.com/api/v1/opportunities/'+opp+'/opportunity_items?page='+pageNumber+'&q[description_present]=1&per_page=100';
     const apiUrl = 'https://api.current-rms.com/api/v1/opportunities/'+opp+'/opportunity_items?page='+pageNumber+'&per_page=100';
