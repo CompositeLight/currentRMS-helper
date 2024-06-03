@@ -98,6 +98,12 @@
     border-color: #adadad
 }
 
+.helper-bar{
+  width: 100%;
+  margin-bottom: 5px;
+  margin-left: 0px;
+}
+
 .help-active, .turned-on {
   background-color: red !important;
   color: white !important;

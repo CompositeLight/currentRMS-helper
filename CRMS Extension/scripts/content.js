@@ -66,6 +66,16 @@ if (detailView.length != 0){
   detailView = false;
 }
 
+// check if we're in Opp Edit view
+var editOppView = document.querySelectorAll('form[class="simple_form edit_opportunity"]');
+if (editOppView.length != 0){
+  editOppView = true;
+} else {
+  editOppView = false;
+}
+
+
+
 
 // check if we're in Global Check-in view
 var globalCheckinView = document.querySelectorAll('div[class="col-sm-12 global_check_ins main-content"]');
@@ -79,6 +89,7 @@ if (globalCheckinView.length != 0){
 
 console.log("Order view: "+orderView);
 console.log("Detail view: "+detailView);
+console.log("Edit Opporunity View:"+editOppView);
 console.log("Global Check-in view: "+globalCheckinView);
 
 // If in a detail/order/check in view create the modal ready for reference image.
@@ -170,88 +181,118 @@ if (detailView){
 
 if (detailView || orderView || globalCheckinView){
 
-//chrome.runtime.sendMessage({messageType: "availabilityscape", messageText: opportunityID});
-
-
-
-// Load the all products list from local storage
-chrome.storage.local.get(["allProducts"]).then((result) => {
-    if (result.allProducts == undefined){
-      // If the variable is empty, it might not have been got yet (first use)
-      chrome.storage.local.get(["api-details"]).then((result) => {
-        if (result["api-details"].apiKey && result["api-details"].apiSubdomain){
-          console.log("Products list was not found. Requesting refresh.");
-          makeToast("toast-info", "Products list was not found. Requesting refresh.", 5);
-          chrome.runtime.sendMessage("refreshProducts");
-        } else {
-          console.log("API details have not found.");
-          makeToast("toast-info", "API details have not found.", 5);
-        }
-      });
-    } else {
-      const allProductsString = result.allProducts;
-      // Parse the JSON string back into an object
-      allProducts = JSON.parse(allProductsString);
-      console.log("Retrieved allProducts from storage.");
-      //console.log(allProducts.products);
-    }
-    //console.log("Global check-in overide: "+multiGlobal);
-});
-
-// Load the quarantineData from local storage
-chrome.storage.local.get(["quarantineData"]).then((result) => {
-    if (result.quarantineData == undefined){
-    // If the variable is empty, it might not have been got yet (first use)
-    console.log("Quarantines list was not found.");
-    makeToast("toast-error", "Quarantines list was not found. Feature disabled.");
-  } else {
-    const quarantinesString = result.quarantineData;
-    quarantineData = JSON.parse(quarantinesString);
-    console.log("Retrieved quarantine data from storage");
-    //console.log(quarantineData);
-
-    quarantinedItemList = [];
-    for (let n = 0; n < quarantineData.quarantines.length; n++) {
-      var thisAsset = quarantineData.quarantines[n].stock_level.asset_number;
-      quarantinedItemList.push(thisAsset);
-    }
-    console.log("List of quarantined items was created.");
-
-  }
-});
-
-
-
-
-
-// Load the stock item list from local storage
-chrome.storage.local.get(["allStock"]).then((result) => {
-    if (result.allStock == undefined){
-      // If the variable is empty, it might not have been got yet (first use)
-      console.log("Stock list was not found. Requesting refresh.");
-      chrome.runtime.sendMessage("refreshProducts");
-    } else {
-      const allStockString = result.allStock;
-      // Parse the JSON string back into an object
-      allStock = JSON.parse(allStockString);
-      console.log("Retrieved allStock from storage:");
-      //console.log(allStock.stock_levels);
-      chrome.storage.local.get(["api-details"]).then((result) => {
+  //chrome.runtime.sendMessage({messageType: "availabilityscape", messageText: opportunityID});
+  // Load the all products list from local storage
+  chrome.storage.local.get(["allProducts"]).then((result) => {
+      if (result.allProducts == undefined){
+        // If the variable is empty, it might not have been got yet (first use)
+        chrome.storage.local.get(["api-details"]).then((result) => {
           if (result["api-details"].apiKey && result["api-details"].apiSubdomain){
-            apiKey = result["api-details"].apiKey;
-            apiSubdomain = result["api-details"].apiSubdomain;
+            console.log("Products list was not found. Requesting refresh.");
+            makeToast("toast-info", "Products list was not found. Requesting refresh.", 5);
+            chrome.runtime.sendMessage("refreshProducts");
           } else {
             console.log("API details have not found.");
             makeToast("toast-info", "API details have not found.", 5);
           }
-      });
-      addDetails();
+        });
+      } else {
+        const allProductsString = result.allProducts;
+        // Parse the JSON string back into an object
+        allProducts = JSON.parse(allProductsString);
+        console.log("Retrieved allProducts from storage.");
+        //console.log(allProducts.products);
+      }
+      //console.log("Global check-in overide: "+multiGlobal);
+  });
+
+  // Load the quarantineData from local storage
+  chrome.storage.local.get(["quarantineData"]).then((result) => {
+      if (result.quarantineData == undefined){
+      // If the variable is empty, it might not have been got yet (first use)
+      console.log("Quarantines list was not found.");
+      makeToast("toast-error", "Quarantines list was not found. Feature disabled.");
+    } else {
+      const quarantinesString = result.quarantineData;
+      quarantineData = JSON.parse(quarantinesString);
+      console.log("Retrieved quarantine data from storage");
+      //console.log(quarantineData);
+
+      quarantinedItemList = [];
+      for (let n = 0; n < quarantineData.quarantines.length; n++) {
+        var thisAsset = quarantineData.quarantines[n].stock_level.asset_number;
+        quarantinedItemList.push(thisAsset);
+      }
+      console.log("List of quarantined items was created.");
 
     }
-});
+  });
+
+
+
+  // Load the stock item list from local storage
+  chrome.storage.local.get(["allStock"]).then((result) => {
+      if (result.allStock == undefined){
+        // If the variable is empty, it might not have been got yet (first use)
+        console.log("Stock list was not found. Requesting refresh.");
+        chrome.runtime.sendMessage("refreshProducts");
+      } else {
+        const allStockString = result.allStock;
+        // Parse the JSON string back into an object
+        allStock = JSON.parse(allStockString);
+        console.log("Retrieved allStock from storage:");
+        //console.log(allStock.stock_levels);
+        chrome.storage.local.get(["api-details"]).then((result) => {
+            if (result["api-details"].apiKey && result["api-details"].apiSubdomain){
+              apiKey = result["api-details"].apiKey;
+              apiSubdomain = result["api-details"].apiSubdomain;
+            } else {
+              console.log("API details have not found.");
+              makeToast("toast-info", "API details have not found.", 5);
+            }
+        });
+        addDetails();
+
+      }
+  });
 
 };
 
+
+if (editOppView){
+
+  const schedule = Array.from(document.querySelectorAll('div')).find(el => el.textContent.trim() === 'Scheduling');
+
+  if (schedule) {
+    // Do something with the link
+    // Create the new element you want to add
+    const newElement = document.createElement('li');
+    newElement.classList.add("helper-btn");
+    newElement.classList.add("helper-bar");
+    newElement.id = "reset-all-dates";
+    newElement.innerText = "Clear All Dates";
+    // Insert the new element after the tr
+    schedule.insertAdjacentElement('afterend', newElement);
+
+    document.getElementById('reset-all-dates').addEventListener('click', function(event) {
+      console.log("test");
+      var clearButtons = document.querySelectorAll('li.clear[data-range-key="Clear"]');
+
+      clearButtons.forEach((item, i) => {
+        if (i > 2){
+          item.click();
+        }
+      });
+
+    });
+
+  } else {
+    console.log('Schedule not found');
+  }
+
+
+
+}
 
 
 
@@ -421,18 +462,6 @@ async function addDetails(mode) {
   } else if (orderView){
     console.log("add Details order view");
 
-    // Remove previous allocation detail rows
-    // Select all <tr> elements with the class "allocation-detail-tr"
-    const rowsToRemove = document.querySelectorAll('.allocation-detail-tr');
-    // Loop through each element and remove it
-    rowsToRemove.forEach(function(element) {
-      element.parentNode.removeChild(element);
-    });
-
-
-
-
-
     // get the start date and time
     const thisSidebar = document.getElementById("sidebar_content");
     const spans = thisSidebar.querySelectorAll('span');
@@ -506,13 +535,20 @@ async function addDetails(mode) {
         }
 
 
-
         // SECTION TO LIST ALLOCATED SERVICES BELOW ITEMS
         if (oppData.opportunity_items[n].item_type == "Service"){
           // logging for dev purposes
           console.log(oppData.opportunity_items[n]);
 
           var trElement = tdElement.closest("tr");
+
+          // remove previous rows in case they have changed
+          const rowsToRemove = liElement.querySelectorAll('.allocation-detail-tr');
+          // Loop through each element and remove it
+          rowsToRemove.forEach(function(element) {
+            element.parentNode.removeChild(element);
+          });
+
 
           var elementToGoAfter = trElement;
 
@@ -527,23 +563,13 @@ async function addDetails(mode) {
               var thisAsset = oppData.opportunity_items[n].item_assets[i];
               if (thisAsset.stock_level_asset_number == "Group Booking"){
                 var quantityOfGroup = parseInt(thisAsset.quantity);
-                for (let j = 0; j < quantityOfGroup; j++) {
-                  // Create the new element you want to add
-                  const newElement = document.createElement('tr');
-                  newElement.classList.add("allocation-detail-tr");
-                  newElement.innerHTML = `<td>&nbsp;</td><td class="allocation-detail" colspan="11">${assetCount}: ???</td>`;
-                  newElement.classList.add("unallocated");
-                  // Insert the new element after the tr
-                  elementToGoAfter.insertAdjacentElement('afterend', newElement);
                   trElement.classList.add("unallocated");
-                  elementToGoAfter = newElement;
-                  assetCount ++;
-                }
+
               } else {
 
                 var textForTheAllocation = thisAsset.stock_level_asset_number;
                 if (apiSubdomain && thisAsset.stock_level_member_id){
-                  textForTheAllocation = `<a href="https://${apiSubdomain}.current-rms.com/members/${thisAsset.stock_level_member_id}" class="allocation-link"  target="_blank">${thisAsset.stock_level_asset_number}</a>`;
+                  textForTheAllocation = `<a href="https://${apiSubdomain}.current-rms.com/members/${thisAsset.stock_level_member_id}" class="allocation-link"  target="_blank" data-memberemail="${thisAsset.stock_level_member_work_email_address ? thisAsset.stock_level_member_work_email_address : ''}">${thisAsset.stock_level_asset_number}</a>`;
 
                 } else if (apiSubdomain && thisAsset.supplier_id){
                   textForTheAllocation = `<a href="https://${apiSubdomain}.current-rms.com/members/${thisAsset.supplier_id}" class="allocation-link"  target="_blank">${thisAsset.stock_level_asset_number}</a>`;

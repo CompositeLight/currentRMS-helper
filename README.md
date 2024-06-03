@@ -25,6 +25,10 @@ Aside from the Chrome Desktop Browser, users have successfully used this extensi
 
 
 ## Features / Updates
+- NEW: 1.31.3: Edit Opportunity Scheduling section now has a button to clear all dates for the detailed schedule boxes. You still need to Update Order to apply any changes.
+
+- IMPROVED: 1.31.3: The new service allocation details now only list allocated entries, rather than listing out the missing ones. Is also less glitchy when refreshing after an edit.
+
 - NEW: 1.31.2: In Order View, services are now highlighted in yellow when some or all of the services are unallocated. The line will still highlight in red as normal if there is a shortage. When allocations are made, a list below the item tells you what/who has been allocated. Clicking on the name listed will open a new tab showing information about that resource. Known limitation: Sub-contract bookings don't list the supplier name currently, because the API does not provide this information at the item_asset level; just the number for some reason. If this irritates enough people I'll work around this in a future update.
 
 - FIX: 1.31.2: Removed the constant repetition of "API information loaded" toast message whilst scanning. If annoying stuff like this happens please do let me know in the Issues section so I can fix it! I don't get to scan much in the warehouse at the moment, so I'm reliant on user feedback for things like this.
