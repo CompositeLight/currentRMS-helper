@@ -1,3 +1,7 @@
+const keepAlive = () => setInterval(chrome.runtime.getPlatformInfo, 20e3);
+chrome.runtime.onStartup.addListener(keepAlive);
+keepAlive();
+
 
 var removed = "";
 var iAmScraping = false;
@@ -46,12 +50,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         qtyInUseScrape(message.messageProduct, message.messageOpp);
       }
 
+  } else if (message.messageType == "globalsearchscrape"){
+      console.log("Global Search scrape was requested for "+message.messageText);
+      if (iAmScraping){
+        console.log("Request denied as a scrape is already in progress");
+      } else {
+        iAmScraping = true;
+        globalSearchScrape(message.messageText);
+      }
 
 
 
   } else if (message.action === "closeTab") {
           // close the scraper tab on demand.
           chrome.tabs.remove(sender.tab.id);
+          iAmScraping = false;
 
   } else if (message.messageType === "availabilityData") {
         iAmScraping = false;
@@ -61,8 +74,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 chrome.tabs.sendMessage(tab.id, message);
             });
         });
+  } else if (message.messageType === "oppScrapeData") {
+        iAmScraping = false;
+        // Forward the message to Content Script B
+        chrome.tabs.query({}, function(tabs) {
+            tabs.forEach(function(tab) {
+                chrome.tabs.sendMessage(tab.id, message);
+            });
+        });
 
-} else if (message.messageType === "productQtyData") {
+  } else if (message.messageType === "productQtyData") {
       iAmScraping = false;
       // Forward the message to Content Script
       chrome.tabs.query({}, function(tabs) {
@@ -70,10 +91,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
               chrome.tabs.sendMessage(tab.id, message);
           });
       });
-
-
-
-
   } else {
 
     (async () => {
@@ -545,18 +562,27 @@ async function availabilityScrape(opp, start, end){
 
 
 
-
-
-
-
-
-
-
 async function qtyInUseScrape(prod, opp){
   await recallApiDetails();
   if (apiSubdomain){
 
     var scrapeURL = 'https://'+apiSubdomain+'.current-rms.com/availability/opportunity/'+opp+'?'+prod+'&scrapeqty';
+    console.log(scrapeURL);
+    chrome.tabs.create({
+        url: scrapeURL,
+        active: false
+      }, function(tab) {
+      // You can perform actions here after the tab is created
+    });
+  }
+}
+
+
+async function globalSearchScrape(toSearch){
+  await recallApiDetails();
+  if (apiSubdomain){
+https://amps.current-rms.com/opportunities?utf8=%E2%9C%93&per_page=48&view_id=0&filtermode%5B%5D=inactive
+    var scrapeURL = 'https://'+apiSubdomain+'.current-rms.com/opportunities?utf8=✓&per_page=48&view_id=0&q%5Bs%5D%5B%5D=starts_at+desc&filtermode%5B%5D=inactive&q%5Bsubject_or_description_or_number_or_reference_or_member_name_or_tags_name_cont%5D='+toSearch+'&scrape';
     console.log(scrapeURL);
     chrome.tabs.create({
         url: scrapeURL,

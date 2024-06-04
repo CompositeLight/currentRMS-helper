@@ -1,4 +1,3 @@
-
 // NOTE: This code deals with two types of messages. ToastMessages are the type that appear via websocket message to the page. This includes things like sucess messages when an item is scanned. The other type I have called toastPosts, which appear following a php page refresh. This applies to certain scenarios, like reverting the status on an item. FYI Current calls the dialog boxes in the top corner "toast messages", which is where the toast thing comes from.
 console.log("CurrentRMS Helper Activated.");
 
@@ -76,7 +75,6 @@ if (editOppView.length != 0){
 
 
 
-
 // check if we're in Global Check-in view
 var globalCheckinView = document.querySelectorAll('div[class="col-sm-12 global_check_ins main-content"]');
 if (globalCheckinView.length != 0){
@@ -84,6 +82,17 @@ if (globalCheckinView.length != 0){
 } else {
   globalCheckinView = false;
 }
+
+
+//check if we're in Global Search View
+var globalSearchRows = document.querySelectorAll("div.global-search-summary");
+if (globalSearchRows.length > 0){
+  globalSearchView = true;
+} else {
+  globalSearchView = false;
+}
+
+
 
 
 
@@ -1249,9 +1258,16 @@ function hidePrepared() {
                     break; // No need to check further
                 }
             }
-            // Set the background color of the current <li> element
+            // Hide the row
             if (hideThis){
-            listItems[i].classList.add("hide-prepared");
+              listItems[i].classList.add("hide-prepared");
+
+              //uncheck the check box for this row
+              try {
+                listItems[i].querySelector("input.item-select").checked = false;
+              } catch (e) {
+              }
+
             }
         }
     }
@@ -1267,7 +1283,7 @@ function unhidePrepared() {
         var listItems = opportunityList.getElementsByTagName("li");
         // Iterate through each <li> element
         for (var i = 0; i < listItems.length; i++) {
-            // Set the background color of the current <li> element
+            // Unhide the row
             listItems[i].classList.remove("hide-prepared");
         }
     }
@@ -1315,6 +1331,12 @@ function hideNonBulkRows() {
       }
       if (!containsBulk){
         lis[n].classList.add('hide-nonbulk')
+
+        //uncheck the check box for this row
+        try {
+          lis[n].querySelector("input.item-select").checked = false;
+        } catch (e) {
+        }
       }
     }
 
@@ -1336,6 +1358,11 @@ function hideNonBulkRows() {
           //var thisItem = statusCell.closest("table");
           //thisItem.classList.add('hide-nonbulk');
           rows[i].classList.add('hide-nonbulk');
+          //uncheck the check box for this row
+          try {
+            rows[i].querySelector("input.item-select").checked = false;
+          } catch (e) {
+          }
         }
       } catch(err) {
         //console.log(err);
@@ -1409,6 +1436,11 @@ function hideSubHires() {
         if (statusCell.innerText.includes('Sub-Rent Booking')) {
           var thisItem = statusCell.closest("li");
           thisItem.classList.add('hide-subhire');
+          //uncheck the check box for this row
+          try {
+            thisItem.querySelector("input.item-select").checked = false;
+          } catch (e) {
+          }
         }
       } catch(err) {
         //console.log(err);
@@ -1483,6 +1515,10 @@ function hideNonSubs() {
       }
       if (!containsSubs){
         lis[n].classList.add('hide-nonsub')
+        try {
+          lis[n].querySelector("input.item-select").checked = false;
+        } catch (e) {
+        }
       }
     }
 
@@ -1502,6 +1538,10 @@ function hideNonSubs() {
           //Skip this item
         } else{
           rows[i].classList.add('hide-nonsub');
+          try {
+            rows[i].querySelector("input.item-select").checked = false;
+          } catch (e) {
+          }
         }
       } catch(err) {
         //console.log(err);
@@ -1638,6 +1678,10 @@ function hideNonShorts() {
         }
         if (!containsShorts){
           lis[n].classList.add('hide-nonshort')
+          try {
+            lis[n].querySelector("input.item-select").checked = false;
+          } catch (e) {
+          }
 
       } else {
           for (var s = 0; s < liStatusCells.length; s++) {
@@ -1647,6 +1691,7 @@ function hideNonShorts() {
             } else {
               liStatusCells[s].classList.add('hide-nonshort');
               try {
+                liStatusCells[s].querySelector("input.item-select").checked = false;
                 liStatusCells[s].querySelector("input.item-select").disabled = true;
               }
               catch(err){
@@ -1755,7 +1800,7 @@ function hideNonShorts() {
             } else {
               liStatusCells[s].classList.add('hide-nonshort');
               try {
-                liStatusCells[s].querySelector("input.item-select").disabled = true;
+                liStatusCells[s].querySelector("input.item-select").checked = false;
               }
               catch(err){
                 console.log(err);
@@ -2622,13 +2667,85 @@ if (detailView){
 
 
 
+} else if (globalSearchView){
 
+  var searchTerm = returnGlobalSearchTerm();
+  if (searchTerm){
+    chrome.runtime.sendMessage({messageType: "globalsearchscrape", messageText: searchTerm});
+  }
 
-
-
-
+  const theForm = document.querySelector("form.form-search");
+    if (theForm){
+    theForm.addEventListener('submit', function(event) {
+      searchTerm = document.getElementById("search_term").value;
+      if (searchTerm.length > 0){
+          chrome.runtime.sendMessage({messageType: "globalsearchscrape", messageText: searchTerm});
+      }
+    });
+  }
 
 }
+
+
+
+
+function returnGlobalSearchTerm() {
+    // Get the current URL
+    const currentUrl = window.location.href;
+
+    // Parse the URL to extract the search parameters
+    const urlParams = new URLSearchParams(window.location.search);
+
+    // Get the value of the 'search_term' parameter
+    const searchTerm = urlParams.get('search_term');
+
+    // Return the search term
+    return searchTerm;
+}
+
+
+
+
+
+
+if (detailView){
+  // Add an event listener to the select all check box
+  var checkAllBox = document.getElementById("asset_select_all")
+  checkAllBox.addEventListener('click', function(event) {
+
+    setTimeout(function(){
+      if (checkAllBox.checked){
+        itemSelects = document.querySelectorAll("input.item-select");
+
+        itemSelects.forEach((item) => {
+          var theRow = item.closest("li.grid-body-row");
+          if (theRow.classList.contains("hide-nonsub")){
+            item.checked = false;
+          } else if (theRow.classList.contains("hide-nonbulk")){
+            item.checked = false;
+          } else if (theRow.classList.contains("hide-subhire")){
+            item.checked = false;
+          } else if (theRow.classList.contains("hide-prepared")){
+            item.checked = false;
+          } else if (theRow.classList.contains("hide-nonshort")){
+            item.checked = false;
+          }
+
+        });
+      }
+      }, 10);
+  });
+}
+
+
+
+
+
+
+
+
+
+
 
 // Start observing the body for mutations. This looks out for changes to the webpage, so we can spot toast messages appearing.
 observer.observe(document.body, {
@@ -2827,9 +2944,128 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.messageType == "productQtyData"){
       console.log("Availability data was delivered");
       console.log(message.messageData);
-
-
   }
+
+  if (message.messageType == "oppScrapeData" && globalSearchView){
+    // hand global search return
+
+    console.log(message.messageData);
+    var oppsToList = message.messageData;
+    var oppCount = message.messageCount;
+
+    if (oppsToList){
+
+      var htmlChunk = '';
+      oppsToList.forEach((item) => {
+
+        let stateText;
+        let stateId;
+
+        switch (item.state) {
+          case "ENQUIRY":
+            stateText = "Enquiry";
+            stateId = "00";
+            break;
+          case "DRAFT":
+            stateText = "Draft";
+            stateId = "01";
+            break;
+          case "QUOTATION":
+            stateText = "Quotation";
+            stateId = "02";
+            break;
+          case "ORDER":
+            stateText = "Order";
+            stateId = "03";
+            break;
+          default:
+
+        }
+
+        let extraIcon = "";
+
+        if (item.status == "Dead"){
+          extraIcon = `&nbsp; <div class="label label-default">
+          <i class="icn-cobra-skull"></i>
+          Dead
+          </div>`;
+        } else if (item.status == "Completed   Invoiced"){
+          extraIcon = `&nbsp; <div class="label label-inverse">
+          <i class="icn-cobra-lock"></i>
+          Completed
+          </div>`;
+        } else if (item.status == "Completed"){
+          extraIcon = `&nbsp; <div class="label label-inverse">
+          <i class="icn-cobra-lock"></i>
+          Completed
+          </div>`;
+        } else if (item.status == "Cancelled"){
+          extraIcon = `&nbsp; <div class="label label-warning">
+          <i class="icn-cobra-close"></i>
+          Cancelled
+          </div>`;
+        } else if (item.status == "Postponed"){
+          extraIcon = `&nbsp; <div class="label label-default">
+          <i class="icn-cobra-clock-4"></i>
+          Postponed
+          </div>`;
+        }
+
+        htmlChunk += `
+        <tbody>
+          <tr id="id-463">
+            <td class="essential opportunity-state${stateId} row-avatar">
+              <span class="avatar small icon">
+              <i class="${item.avatar}"></i>
+              <p>${stateText}</p>
+              </span>
+            </td>
+            <td class="show_link essential"><a href="/opportunities/${item.oppid}">${item.title}</a>${extraIcon}</td>
+          </tr>
+        </tbody>`
+      });
+
+      var thisSearch = document.getElementById("search_term").value;
+
+      var resultsContainer = document.querySelector(".row.global-search-results.display-flex.detailspage");
+      const newElement = document.createElement('div');
+      // Insert the new element
+      //resultsContainer.insertAdjacentElement('afterend', newElement);
+      resultsContainer.appendChild(newElement);
+
+      newElement.outerHTML = `
+      <div class="col-lg-3 col-md-4 col-sm-6 col-xs-12 global-search-result" data-index="50"><table class="table index-table">
+      <thead>
+      <tr>
+      <th class="essential" colspan="2">
+      <span class="search-result-title">
+      Inactive Opportunities
+      </span>
+      <div class="global-search-module-total">
+      ${oppCount} Records
+      </div>
+      </th>
+      </tr>
+      </thead>
+      ${htmlChunk}
+
+      </table>
+
+      <div class="closinglist-details">
+      <a href="/opportunities?utf8=✓&per_page=48&view_id=0&filtermode%5B%5D=inactive&q%5Bsubject_or_description_or_number_or_reference_or_member_name_or_tags_name_cont%5D=${thisSearch}">View more</a>
+      </div>
+      </div>`;
+
+      var totalCounter = document.getElementById("global_search_count");
+      var overallTotal = parseInt(totalCounter.innerText) + parseInt(message.messageCount);
+      totalCounter.innerText = overallTotal;
+      
+    }
+  }
+
+
+
+
 
   sendResponse({message: "received"});
   //return true;

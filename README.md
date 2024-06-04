@@ -1,4 +1,4 @@
-# currentRMS-helper 1.31.2
+# currentRMS-helper 1.31.4
 This is a work-in-progress Chrome extension to add functionality to the CurrentRMS web interface. It was created out of our frustration waiting on "quality of life" modifications to make the user experience better - specifically, as part of warehouse operations. Our warehouse team has found it helpful, so we've decided to share it with others. As it was created with our own in-house work processes in mind, it may or may not work for other users. However, my hope is that others (who are better at coding that I) might take this forward, or even inspire the CurrentRMS team to implement some of the changes within the main product.
 
 **DISCLAIMER: This is a first attempt work-in-progress written by me, an utter rookie in JavaScript. Use at your own risk. This code is in no way affiliated with InspHire Ltd.**
@@ -25,6 +25,10 @@ Aside from the Chrome Desktop Browser, users have successfully used this extensi
 
 
 ## Features / Updates
+- FIXED: 1.31.4: In Detail View, the Select All checkbox now respects any currentRMS-helper filters applied.
+
+- NEW: 1.31.4: Global search will now has an extra section called "Inactive Opportunities" (whereas the standard global search will only find active ones).
+
 - NEW: 1.31.3: Edit Opportunity Scheduling section now has a button to clear all dates for the detailed schedule boxes. You still need to Update Order to apply any changes.
 
 - IMPROVED: 1.31.3: The new service allocation details now only list allocated entries, rather than listing out the missing ones. Is also less glitchy when refreshing after an edit.
