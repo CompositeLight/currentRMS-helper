@@ -93,15 +93,22 @@ Once a container exists on the opportunity it can be accessed without further us
 ## Edit Opportunity
 - The Edit Opportunity Scheduling section now has a button to clear all dates for the detailed schedule boxes. You still need to Update Order to apply any changes.
 
+
+## Add Opportunity Item
+- When adding an item to an opportunity, if you start typing in a text item, and then realise you haven't clicked the "Text Item" radio button, doing so will no longer erase the text you just typed.
+
+
 ## Global Check-in
 - Added an option to override the dialog box that pops up if you use Global Check-in on an item that is booked out on multiple opportunities. Previously, this box requires interaction which means going back to the computer and disrupts scanning. In practice, it's rare that you would not want to check in the item from all possible opportunities - because that's the whole point of global check in.
 
-## Global Search
 
+## Global Search
 - Global Search results now include an "Inactive Opportunities" section (whereas the standard global search will only find active ones).
+
 
 ## Stock Check
 - Stock check sounds are now handled by the extension (previously the alert sound was going off for everything).
+
 
 ## Product View
 - Products Pages now list the quantity booked against each opportunity in the list.

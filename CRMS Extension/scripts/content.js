@@ -101,11 +101,22 @@ if (globalSearchRows.length > 0){
 
 
 
+if (orderView){
+  console.log("Order view: "+orderView);
+}
 
-console.log("Order view: "+orderView);
-console.log("Detail view: "+detailView);
-console.log("Edit Opportunity View: "+editOppView);
-console.log("Global Check-in view: "+globalCheckinView);
+if (detailView){
+  console.log("Detail view: "+detailView);
+}
+
+if (editOppView){
+  console.log("Edit Opportunity View: "+editOppView);
+}
+
+if (globalCheckinView){
+  console.log("Global Check-in view: "+globalCheckinView);
+}
+
 
 // If in a detail/order/check in view create the modal ready for reference image.
 if (detailView || orderView || globalCheckinView){
@@ -553,7 +564,7 @@ async function addDetails(mode) {
         // SECTION TO LIST ALLOCATED SERVICES BELOW ITEMS
         if (oppData.opportunity_items[n].item_type == "Service"){
           // logging for dev purposes
-          console.log(oppData.opportunity_items[n]);
+          //console.log(oppData.opportunity_items[n]);
 
           var trElement = tdElement.closest("tr");
 
