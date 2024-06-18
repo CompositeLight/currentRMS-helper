@@ -114,6 +114,25 @@ function getQuarantineTime(){
   });
 }
 
+// Code for getting the Allocate by Default radio button to match the stored value
+chrome.storage.local.get(["soundsOn"]).then((result) => {
+  if (result.soundsOn == "false"){
+    document.querySelector(`input[name="soundson"][value="false"]`).checked = true;
+  }
+});
+
+// Code for watching the Extension sounds radio buttons for changes and updating local storage
+document.querySelectorAll('input[name="soundson"]').forEach(function(radio) {
+  radio.addEventListener('change', function() {
+    console.log(this.value);
+    chrome.storage.local.set({ "soundsOn": this.value }).then(() => {
+       console.log("Extension sounds setting was changed");
+       chrome.runtime.sendMessage("soundchanged");
+     });
+
+  });
+});
+
 
 
 
@@ -160,7 +179,7 @@ document.querySelectorAll('input[name="inspectionalert"]').forEach(function(radi
     //await chrome.storage.session.set({ prepareSet: this.value });
     chrome.storage.local.set({ "inspectionAlert": this.value }).then(() => {
        console.log("Inspection alert set");
-       chrome.runtime.sendMessage({ inpsectionAlerts: this.value });
+       chrome.runtime.sendMessage({ inspectionAlerts: this.value });
      });
 
   });

@@ -91,12 +91,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
               chrome.tabs.sendMessage(tab.id, message);
           });
       });
+
+  } else if (message == "soundchanged") {
+        // Forward the message to Content Script
+        chrome.tabs.query({}, function(tabs) {
+            tabs.forEach(function(tab) {
+                chrome.tabs.sendMessage(tab.id, message);
+            });
+        });
   } else {
 
     (async () => {
       // Sends a message to the service worker and receives a response
       chrome.tabs.query({active: true, currentWindow: true}, function(tabs){
-          chrome.tabs.sendMessage(tabs[0].id, {inpsectionAlerts: message.inpsectionAlerts, multiGlobal: message.multiGlobal, blockQuarantines: message.blockQuarantines}, function(response) {});
+          chrome.tabs.sendMessage(tabs[0].id, {inspectionAlerts: message.inspectionAlerts, multiGlobal: message.multiGlobal, blockQuarantines: message.blockQuarantines}, function(response) {});
       });
     })();
   }

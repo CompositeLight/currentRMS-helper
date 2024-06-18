@@ -1,7 +1,11 @@
 // NOTE: This code deals with two types of messages. ToastMessages are the type that appear via websocket message to the page. This includes things like sucess messages when an item is scanned. The other type I have called toastPosts, which appear following a php page refresh. This applies to certain scenarios, like reverting the status on an item. FYI Current calls the dialog boxes in the top corner "toast messages", which is where the toast thing comes from.
 console.log("CurrentRMS Helper Activated.");
 
+
+
+
 // MAKE THIS VARIABLE true IF YOU WANT TO MUTE THE SUCCESS / FAIL SOUNDS FROM THE EXTENSION //
+// NOTE: THIS METHID IS NOW DEPRECIATED. USE THE SOUNDS SETTING IN THE EXTENSION POP-UP INSTEAD //
 muteExtensionSounds = false;
 
 
@@ -49,8 +53,10 @@ quarantinedItemList = [];
 
 
 
-// check if we're in Order or Detail View
-var orderView = document.querySelectorAll('a[name="activities"][class="anchor"]');
+// check if we're in Order
+
+//var orderView = document.querySelectorAll('a[name="activities"][class="anchor"]');
+var orderView = document.querySelectorAll('div[class="row sticky quick-add-section"]');
 if (orderView.length != 0){
   orderView = true;
 } else {
@@ -98,7 +104,7 @@ if (globalSearchRows.length > 0){
 
 console.log("Order view: "+orderView);
 console.log("Detail view: "+detailView);
-console.log("Edit Opporunity View:"+editOppView);
+console.log("Edit Opportunity View: "+editOppView);
 console.log("Global Check-in view: "+globalCheckinView);
 
 // If in a detail/order/check in view create the modal ready for reference image.
@@ -855,6 +861,9 @@ function quarantineApiCall(){
       .catch(error => {
         // Handle errors here
         console.error('Error making API request:', error);
+        if (error.message.includes('Failed to fetch')) {
+          console.log("Failed to fetch from API");
+        }
       });
 
   });
@@ -959,10 +968,12 @@ function findClosestLi(element) {
 }
 
 function sayWord(speakWord){
+  if (!muteExtensionSounds){
     var msg = new SpeechSynthesisUtterance();
     msg.rate = 0.8; // 0.1 to 10
     msg.text = speakWord;
     window.speechSynthesis.speak(msg);
+  }
 }
 
 // Function that takes in a string and returns the first word inside single quotes. This is to extract the asset number from a message.
@@ -2632,8 +2643,6 @@ if (detailView){
 
     var titleRow = document.getElementById("opportunity_items_title");
 
-    console.log(titleRow.innerHTML);
-
     // Create a new row element
     let newElement = document.createElement('div');
     newElement.classList.add("row");
@@ -2821,6 +2830,13 @@ if (detailView){
       }
     });
 
+    chrome.storage.local.get(["soundsOn"]).then((result) => {
+      console.log("Sound = "+result.soundsOn);
+      if (result.soundsOn != "true"){
+        muteExtensionSounds = true;
+      }
+    });
+
 
   }
   catch(err) {
@@ -2830,6 +2846,10 @@ if (detailView){
 
 
 }
+
+
+
+
 
 
 
@@ -2883,13 +2903,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   //console.log("Message received from service-worker:");
   //console.log(message);
 
-  if (message.inpsectionAlerts == "off"){
+  if (message.inspectionAlerts == "off"){
     inspectionAlerts = "off";
     console.log("Inspection Alerts set to OFF");
-  } else if (message.inpsectionAlerts == "short"){
+  } else if (message.inspectionAlerts == "short"){
     inspectionAlerts = "short";
     console.log("Inspection Alerts set to SHORT");
-  } else if (message.inpsectionAlerts == "full"){
+  } else if (message.inspectionAlerts == "full"){
     inspectionAlerts = "full";
     console.log("Inspection Alerts set to FULL");
   }
@@ -2946,6 +2966,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       console.log(message.messageData);
   }
 
+  if (message == "soundchanged"){
+      chrome.storage.local.get(["soundsOn"]).then((result) => {
+        if (result.soundsOn != "true"){
+          muteExtensionSounds = true;
+        } else {
+          muteExtensionSounds = false;
+        }
+      });
+  }
+
   if (message.messageType == "oppScrapeData" && globalSearchView){
     // hand global search return
 
@@ -2988,6 +3018,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           extraIcon = `&nbsp; <div class="label label-default">
           <i class="icn-cobra-skull"></i>
           Dead
+          </div>`;
+        } else if (item.status == "Lost"){
+          extraIcon = `&nbsp; <div class="label label-default">
+          <i class="icn-cobra-thumbs-down"></i>
+          Lost
           </div>`;
         } else if (item.status == "Completed   Invoiced"){
           extraIcon = `&nbsp; <div class="label label-inverse">
@@ -3059,7 +3094,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       var totalCounter = document.getElementById("global_search_count");
       var overallTotal = parseInt(totalCounter.innerText) + parseInt(message.messageCount);
       totalCounter.innerText = overallTotal;
-      
+
     }
   }
 
