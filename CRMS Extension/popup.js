@@ -231,6 +231,37 @@ document.querySelectorAll('input[name="blockquarantines"]').forEach(function(rad
 
 
 
+// Code for the error timeout setting
+
+var timeOutBox = document.getElementById('error-message-timeout');
+
+chrome.storage.local.get(["errorTimeout"]).then((result) => {
+  if ("errorTimeout" in result){
+    console.log(result);
+    console.log("errorTimeout:" + result.errorTimeout);
+    timeOutBox.value = result.errorTimeout;
+  }
+});
+
+
+timeOutBox.addEventListener('change', function() {
+  console.log(this.value);
+  chrome.storage.local.set({ "errorTimeout": this.value }).then(() => {
+     console.log("errorTimeout value set");
+     chrome.runtime.sendMessage("errortimeoutchanged");
+   });
+
+});
+
+
+
+
+
+
+
+
+
+
 
 
 

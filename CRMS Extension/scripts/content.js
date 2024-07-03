@@ -10,6 +10,10 @@ muteExtensionSounds = false;
 
 
 
+
+// errorTimeout default value. This is the period after which a toast error message will vanish
+errorTimeout = 0;
+
 assetsOnTheJob = [];
 assetsGlobalScanned = [];
 
@@ -40,6 +44,12 @@ revertScan = false;
 removeScan = false;
 addDetailsRunning = false;
 firstTimeLoadingApiData = true;
+
+pickerPageMemory = new Map();
+pickerQtyMemory = new Map();
+pickerChosenQtyMemory = new Map();
+pickerPageStorage = new Map();
+rowsAdded = false;
 
 
 blockQuarantines = true;
@@ -2127,6 +2137,7 @@ const observer = new MutationObserver((mutations) => {
     } else if (messageText.includes('Failed to allocate asset(s)') || messageText.includes('Failed to mark item(s) as prepared') || messageText.includes('Failed to check in item(s)')  || messageText.includes('as it does not have an active stock allocation with a sufficient quantity.') || messageText.includes('Failed to add container component')  || messageText.includes('Failed to stock check item')){
         //error_sound.play();
         errorSound();
+        destroyAfterTime(toastMessage, errorTimeout);
 
       // Handle errors related to items being already scanned, or just not on the job at all
     } else if (messageText.includes('No available asset could be found using') || messageText.includes("No allocated or reserved stock allocations could be found using")  || messageText.includes("has already been selected on this opportunity.") ) {
@@ -2149,6 +2160,7 @@ const observer = new MutationObserver((mutations) => {
               console.log(messageText);
             }, 900);
           }
+          destroyAfterTime(toastMessage, errorTimeout);
 
       // Handle messages related to at item being overdue an inspection
     }else if (messageText.includes('Inspect Now')){
@@ -2172,9 +2184,10 @@ const observer = new MutationObserver((mutations) => {
         default:
         // code block
       }
+      destroyAfterTime(toastMessage, errorTimeout);
 
       // Handle an error where an item cannot be added because it's a container that's already allocated
-      }else if (messageText.slice(11) == 'A temporary container cannot be allocated while it has a live allocation on an opportunity'){
+    } else if (messageText.slice(11) == 'A temporary container cannot be allocated while it has a live allocation on an opportunity'){
             setTimeout(function() {
               sayWord("Container already allocated");
               console.log(messageText);
@@ -2196,10 +2209,10 @@ const observer = new MutationObserver((mutations) => {
             sayWord("Cannot prepare item.");
             console.log(messageText);
     }, 900);
+    destroyAfterTime(toastMessage, errorTimeout);
 
-
-      // Handle an error during global check-in that is caused by a failed scan
-      }else if (messageText.includes("at your active store using the filter options from the settings screen (accessed using the wrench button).")){
+    // Handle an error during global check-in that is caused by a failed scan
+    }else if (messageText.includes("at your active store using the filter options from the settings screen (accessed using the wrench button).")){
 
           console.log(messageText);
 
@@ -2221,15 +2234,17 @@ const observer = new MutationObserver((mutations) => {
           }
 
 
-      // Handle an error during check-in that is caused by an item already being checked in
-      }else if (messageText.slice(11,82) == 'No booked out or part checked in stock allocations could be found using'){
+    // Handle an error during check-in that is caused by an item already being checked in
+    } else if (messageText.includes('No booked out or part checked in stock allocations could be found using')){
             // setTimeout(function() {
             //  sayWord("Already scanned in?");
               console.log(messageText);
             //}, 1000);
+            destroyAfterTime(toastMessage, errorTimeout);
+
 
       // Handle niche error where an item is not available because it's listed in quarantine
-      }else if (messageText.slice(11,52) == 'A shortage exists for the Rental of Asset'){
+    }else if (messageText.includes('A shortage exists for the Rental of Asset')){
         theAsset = extractAssetToSay(messageText);
         setTimeout(function() {
           sayWord("A shortage exists for asset " + theAsset + ". It may be in quarantine.");
@@ -2237,7 +2252,7 @@ const observer = new MutationObserver((mutations) => {
         }, 900);
 
       // Handle an error when trying to add an item to a container which is already in a container, or is itself a container
-      }else if (messageText.slice(11, 96) == 'No active rental stock level that is not already a container component could be found'){
+    }else if (messageText.includes('No active rental stock level that is not already a container component could be found')){
         theAsset = extractAssetToSay(messageText);
         setTimeout(function() {
           sayWord("Asset already containerized.");
@@ -2264,7 +2279,7 @@ const observer = new MutationObserver((mutations) => {
         scanSound();
 
       // Handle myriad messages that are good, and just need a confirmatory "ding"
-      } else if (messageText.slice(11) == 'Allocation successful' || messageText.slice(11) == 'Items successfully marked as prepared' || messageText.slice(11) == 'Items successfully checked in' || messageText.slice(11) == 'Container Component was successfully destroyed. ' || messageText.slice(11) == 'Opportunity Item was successfully destroyed.' || messageText.slice(11) == 'Container component was successfully added' || messageText.slice(11) == 'Opportunity Item was successfully updated.'  || messageText.slice(11) == 'Items successfully booked out.' || messageText.slice(11) == 'Container component was successfully removed'  || messageText.slice(11) == 'Check-in details updated successfully' || messageText.slice(11) == 'Opportunity Item was updated.' || messageText.slice(11) == 'Set container successfully' || messageText.includes('Asset(s) successfully checked in')){
+    } else if (messageText.includes('Allocation successful') || messageText.includes('Items successfully marked as prepared') || messageText.includes('Items successfully checked in') || messageText.includes('Container Component was successfully destroyed.') || messageText.includes('Opportunity Item was successfully destroyed.') || messageText.includes('Container component was successfully added') || messageText.includes('Opportunity Item was successfully updated.')  ||  messageText.includes('Items successfully booked out.') || messageText.includes('Container component was successfully removed')  || messageText.includes('Check-in details updated successfully') || messageText.includes('Opportunity Item was updated.') || messageText.includes('Set container successfully') || messageText.includes('Asset(s) successfully checked in')){
         addDetails(true);
         if (detailView && (document.querySelector('input[type="text"][name="container"]').value)){
           containerScanSound();
@@ -2361,8 +2376,7 @@ function calculateContainerWeights() {
       }
 
 
-      if (thisContainer != null && thisContainer.length != 0 && thisContainer != "Container") {
-
+      if (thisContainer != null && thisContainer.length != 0 && thisContainer != "Container") { // has a container value set (and isn't the header row)
 
         // if it's an asset, add it to the items in container list for later.
         if (!thisAsset.includes("Sub-Rent") && thisAsset != "Group Booking" && thisAsset != "Bulk Stock" && thisAsset != "Non-Stock Booking"){
@@ -2392,24 +2406,28 @@ function calculateContainerWeights() {
   }
 
 
-
-
-
-
-
-  // now interate through the rows and spot assets that are also listed as containers
+  // now interate through the rows and spot assets that are also listed as containers, whilst sorting out the name of the container
   for (var i = 0; i < rows.length; i++) {
     try {
       var assetCell = rows[i].querySelector('.asset-column');
       var thisAsset = assetCell.textContent.trim();
       if (containerData[thisAsset]){ // the asset listed in a row is also a container listed in the containerData object
+
         var containerName = rows[i].querySelector('.container-column').textContent.trim();
-        if (thisAsset != containerName){
-        var thisItemWeight = rows[i].getAttribute('data-weight') * 1; // get the weight of the container
+
+        if (thisAsset != containerName){ // avoid double counting where a container has been added to "itself"
+          var thisItemWeight = rows[i].getAttribute('data-weight') * 1; // get the weight of the container
           containerData[thisAsset] = Number((Number(containerData[thisAsset]) + thisItemWeight).toFixed(2)); // add the container weight to the previous total
         }
+
+
+
+
+        // Now sort out the name if needed
+
         var nameCell = rows[i].querySelector('.dd-name'); // get the name
         var thisName = nameCell.textContent.trim();
+
         if (thisName.startsWith("CollapseExpand")) {
           thisName = thisName.substring(15);
         }
@@ -2848,6 +2866,15 @@ if (detailView){
       }
     });
 
+    chrome.storage.local.get(["errorTimeout"]).then((result) => {
+      console.log("errorTimeout = "+result.errorTimeout);
+      if (result.errorTimeout){
+        errorTimeout = result.errorTimeout;
+      } else {
+        console.log("errorTimeout not retrieved");
+      }
+    });
+
 
   }
   catch(err) {
@@ -2939,6 +2966,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     blockQuarantines = false;
     console.log("blockQuarantines set to FALSE");
   }
+
+
+
+
+
+
   if (message == "quarantinedatarefreshed"){
     console.log("Quarantine data was refreshed by the service worker.");
     // Load the quarantineData from local storage
@@ -2985,7 +3018,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           muteExtensionSounds = false;
         }
       });
+  } else if (message == "errortimeoutchanged"){
+      chrome.storage.local.get(["errorTimeout"]).then((result) => {
+        console.log("errorTimeout = "+result.errorTimeout);
+        if (result.errorTimeout){
+          errorTimeout = result.errorTimeout;
+        } else {
+          console.log("errorTimeout not retrieved");
+        }
+      });
   }
+
+
+
+
+
+
+
 
   if (message.messageType == "oppScrapeData" && globalSearchView){
     // hand global search return
@@ -3909,4 +3958,234 @@ function removeAsset(assetToRemove){
           break;
       }
   } // end of for assetColumns for loop
+}
+
+
+
+// section below is to deal with modifying the picker behaviour in regards to items spread across Pages
+if (orderView){
+
+  // Select the target table you want to observe
+  const targetTable = document.querySelector('#picker_search_results'); // Replace '#myTable' with your actual table selector
+
+
+
+  // Check if the table exists
+  if (targetTable) {
+    tableUpdated = false;
+    // Create a callback function to execute when mutations are observed
+    const onTableMutated = (mutationsList, observer) => {
+      for (const mutation of mutationsList) {
+        if (mutation.type === 'childList' && !tableUpdated) {
+          console.log('A change was detected.');
+          console.log(mutation);
+          // You can call your function here to handle the table changes
+          tableUpdated = true;
+          handleTableUpdate();
+        } else if (mutation.type === 'subtree') {
+          console.log('A change in the table\'s subtree was detected.');
+          // Handle subtree changes if necessary
+        }
+        // Additional conditions can be added here if needed
+      }
+    };
+
+    // Create an instance of MutationObserver with the callback function
+    const observer = new MutationObserver(onTableMutated);
+
+    // Configuration for the observer
+    const config = {
+      childList: true, // Observe direct children of the table
+      subtree: true, // Observe all descendants of the table
+      attributes: false, // Optionally observe attribute changes
+      characterData: false // Optionally observe changes to text content
+    };
+
+    // Start observing the target table with the specified configurations
+    observer.observe(targetTable, config);
+
+    // Define the function to handle table updates
+    function handleTableUpdate() {
+      // Your custom logic to handle the table update
+      console.log('Picker table content has been updated.');
+      // Perform your desired actions here
+      const pickerModal = document.getElementById('pickerModal');
+
+      let activePageLi = pickerModal.querySelector("li.active");
+
+      if (!activePageLi){
+        //console.log("Resetting picker maps");
+        pickerPageMemory.clear();
+        pickerQtyMemory.clear();
+        pickerChosenQtyMemory.clear();
+        pickerPageStorage.clear();
+        tableUpdated = false;
+        return;
+      }
+
+      let activePage = activePageLi.innerText;
+      var pickerBody = pickerModal.querySelector("tbody");
+
+      // first restore saved values into the rows, if they have been entered Previously
+      if (pickerQtyMemory.has(activePage) && pickerPageStorage.has(activePage)){
+
+        // resurrect the previous rows so that we see the expanded accessories
+        pickerBody.innerHTML = pickerPageStorage.get(activePage);
+
+        var arrayOfPickedValues = pickerQtyMemory.get(activePage);
+        var allPickerRows = pickerBody.querySelectorAll("tr");
+        allPickerRows.forEach((item, i) => {
+          if (arrayOfPickedValues[i] > 0){
+            item.querySelector('input[type="number"]').value = arrayOfPickedValues[i];
+          } else {
+            item.querySelector('input[type="number"]').value = "";
+          }
+        });
+      }
+
+
+      // now add values from other pages to the bottom of this one.
+
+      if (activePage && !rowsAdded){
+        // Iterating through each key in the map using forEach
+
+        var htmlToAdd;
+        var valuesToAdd = [];
+
+        pickerPageMemory.forEach((value, key) => {
+          if (key != activePage){
+            value.forEach((row) => {
+              htmlToAdd += row;
+            });
+          }
+        });
+
+        pickerChosenQtyMemory.forEach((value, key) => {
+          if (key != activePage){
+            console.log (key, value);
+            value.forEach((qty) => {
+              valuesToAdd.push(qty);
+            });
+          }
+        });
+
+
+        var temp = document.createElement('div');
+        temp.innerHTML = '<table>' + htmlToAdd + '</table>'; // Wrap rowHTML in a table for proper parsing
+
+        var rowsToAdd = temp.querySelectorAll('tr');
+
+        if (rowsToAdd){
+          rowsToAdd.forEach((rowToAdd, i) => {
+
+            pickerBody.appendChild(rowToAdd);
+            rowToAdd.querySelector('input[type="number"]').value = valuesToAdd[i];
+            rowToAdd.dataset.additional = 'true';
+            rowToAdd.style.display = "none";
+
+          });
+        }
+        rowsAdded = true;
+
+      }
+
+
+    }
+
+    // Optional: Stop observing after a certain condition or time
+    // observer.disconnect(); // Uncomment to stop observing when needed
+  } else {
+    console.error('Picker table not found.');
+  }
+
+
+
+    // Select the pickerModal element
+  const pickerModal = document.getElementById('pickerModal');
+
+  // Check if the element exists to avoid errors
+  if (pickerModal) {
+    // Add an event listener for click events on the pickerModal element
+    pickerModal.addEventListener('click', function(event) {
+      // Check if the clicked element is an <a> tag
+      const clickedElement = event.target;
+      if (clickedElement.tagName.toLowerCase() === 'a') {
+        // Find the closest <li> ancestor
+        const liElement = clickedElement.closest('li');
+        // Check if the <li> exists, does not have the class "disabled", and is inside a <ul> with the class "pagination"
+        if (liElement && !liElement.classList.contains('disabled') && !liElement.classList.contains('active')) {
+          const ulElement = liElement.closest('ul');
+          if (ulElement && ulElement.classList.contains('pagination')) {
+            handleValidLinkClick(clickedElement);
+            tableUpdated = false;
+          }
+        }
+      }
+    });
+
+    // Define the function to handle the valid <a> click
+    function handleValidLinkClick(linkElement) {
+
+      // work out the current page:
+      let activePage = pickerModal.querySelector("li.active").innerText;
+
+      let arrayOfrows = [];
+      let arrayOfValues = [];
+      let arrayOfChosenValues = [];
+
+      // Log any values entered:
+      var pickerBody = pickerModal.querySelector("tbody");
+      var allPickerRows = pickerBody.querySelectorAll("tr");
+      console.log(allPickerRows.length);
+      allPickerRows.forEach((item, i) => {
+          if (item.dataset.additional != 'true'){
+          var inputQty = item.querySelector('input[type="number"]').value;
+          if (parseInt(inputQty) > 0){
+            arrayOfrows.push(item.outerHTML);
+            arrayOfValues.push(inputQty);
+            arrayOfChosenValues.push(inputQty);
+          } else {
+            arrayOfValues.push(0);
+          }
+        }
+
+
+      });
+      pickerPageStorage.set(activePage, pickerBody.innerHTML); // the entire innerHTML of this page
+      pickerPageMemory.set(activePage, arrayOfrows); // just the rows from this page that have a value against them
+      pickerQtyMemory.set(activePage, arrayOfValues); // values for every single row
+      pickerChosenQtyMemory.set(activePage, arrayOfChosenValues); // values for just the rows that have a value
+      rowsAdded = false;
+    }
+  } else {
+    console.error('Element with ID "pickerModal" not found.');
+  }
+}
+
+///// End of picker SECTION
+
+
+
+// Function to delete an element (most likely a toast message) after a given time in seconds
+function destroyAfterTime(element, seconds) {
+
+  if (seconds == 0){
+    return;
+  } else {
+    var time = seconds * 1000;
+  }
+
+  // Check if the element is a valid node
+  if (element instanceof Node) {
+    // Set a timeout to remove the element after the specified time
+    setTimeout(() => {
+      // Check if the element is still in the DOM before attempting to remove it
+      if (element.parentNode) {
+        element.parentNode.removeChild(element);
+        console.log('Element removed from the DOM.');
+      }
+    }, time);
+  } else {
+    console.error('Provided argument is not a valid DOM node.');
+  }
 }

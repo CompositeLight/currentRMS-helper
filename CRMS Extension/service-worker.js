@@ -99,6 +99,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 chrome.tabs.sendMessage(tab.id, message);
             });
         });
+  } else if (message == "errortimeoutchanged") {
+        // Forward the message to Content Script
+        chrome.tabs.query({}, function(tabs) {
+            tabs.forEach(function(tab) {
+                chrome.tabs.sendMessage(tab.id, message);
+            });
+        });
+
   } else {
 
     (async () => {

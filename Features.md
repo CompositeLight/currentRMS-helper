@@ -12,6 +12,7 @@ Below is a list of current features. It's the same information as the Readme cha
 
 - CSS override for Modal Headers so that they're "sticky". This means, on a very long Recent Actions modal for example, the close button never leaves the screen (which is unnecessary and irritating).
 
+- The settings panel includes an option to automatically dismiss error messages after a given number of seconds. Setting the value to 0 will cause default behaviour (ie. error messages will remain until clicked on). This is primarily aimed at those using scanners with integrated screens.
 
 ## Detail view
 
@@ -79,6 +80,8 @@ Once a container exists on the opportunity it can be accessed without further us
 - Services are now highlighted in yellow when some or all of the services are unallocated. The line will still highlight in red as normal if there is a shortage. When allocations are made, a list below the item tells you what/who has been allocated. Clicking on the name listed will open a new tab showing information about that resource.
 
 - In Order View, when "Use Chargable Days" is on, a value will now be entered for Service items. If rate type is set to Hours, the value will be stated as **"8H"**. If rate type is set to Distance in Miles the value will be stated as **"8mi"**, or in Kilometres the value will be stated as **"8km"**.
+
+- The OrderView Quick Picker now allows user input across multiple pages.
 
 
 ## Costs View
