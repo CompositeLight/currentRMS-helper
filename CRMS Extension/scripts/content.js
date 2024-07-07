@@ -2265,6 +2265,7 @@ const observer = new MutationObserver((mutations) => {
         if (globalCheckinView){
           error_sound.play();
         }
+        destroyAfterTime(toastMessage, errorTimeout);
 
         // handle the user hitting enter on an empty input box
       } else if (messageText.includes("The stock level's product does not match the stock check product.")) {
