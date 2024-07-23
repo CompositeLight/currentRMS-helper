@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "CurrentRMS Helper",
-  "version": "1.31.8",
+  "version": "1.31.9",
   "description": "Adding functionality to Current RMS, one reduced click at a time.",
   "icons": {
     "16": "images/icon-16.png",
@@ -29,7 +29,8 @@
       "https://*.current-rms.com/opportunity_items/*",
       "https://*.current-rms.com/products/*",
       "https://*.current-rms.com/opportunities/*view=c",
-      "https://*.current-rms.com/opportunities?*"
+      "https://*.current-rms.com/opportunities?*",
+      "https://*.current-rms.com/opportunities"
     ],
     "js": ["scripts/content.js", "scripts/api.js"],
     "css": ["style.css"]
@@ -55,7 +56,7 @@
       "css": ["style.css"]
     },
     {
-      "matches": ["https://*.current-rms.com/opportunities?*"],
+      "matches": ["https://*.current-rms.com/opportunities?*", "https://*.current-rms.com/opportunities"],
       "js": ["scripts/globalsearchoppscrape.js"],
       "css": ["scrapestyle.css"]
     },

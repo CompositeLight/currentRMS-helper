@@ -31,6 +31,9 @@ scanningContainer = "";
 freeScanReset = false;
 containerData = {};
 containerList = [];
+
+let containerisationData;
+
 detailViewMode = "functions";
 allProducts = {};
 allStock = {};
@@ -2085,7 +2088,7 @@ const observer = new MutationObserver((mutations) => {
       // Now respond to  toastMessages depending on their contents
 
       //ignore these as they're messages created by the CRMS Helper makeToast function
-      if (messageText.includes('Free Scan') || messageText.includes('Container cleared.') || messageText.includes('Container set to') || messageText.includes('Now scan the container.') || messageText.includes('Container was not set.') || messageText.includes('API information loaded.') || messageText.includes('was removed from the opportunity.')){
+      if (messageText.includes('Free Scan') || messageText.includes('Container cleared.') || messageText.includes('Container set to') || messageText.includes('Now scan the container.') || messageText.includes('Container was not set.') || messageText.includes('API information loaded.') || messageText.includes('was removed from the opportunity.') || messageText.includes("Container error(s) found:")){
 
 
         // Error sound and warning if item was flagged as being in quarantine.
@@ -2184,7 +2187,7 @@ const observer = new MutationObserver((mutations) => {
         default:
         // code block
       }
-      destroyAfterTime(toastMessage, errorTimeout);
+
 
       // Handle an error where an item cannot be added because it's a container that's already allocated
     } else if (messageText.slice(11) == 'A temporary container cannot be allocated while it has a live allocation on an opportunity'){
@@ -2287,11 +2290,6 @@ const observer = new MutationObserver((mutations) => {
         } else if (!orderView){
           scanSound();
         }
-        if (detailViewMode == "allocate" || detailViewMode == "prepare"){
-          //smartScanSetup(lastScan);
-
-        }
-
 
       // If any other alert appears, log it so that I can spot it and add it to this code
       } else {
@@ -2303,8 +2301,13 @@ const observer = new MutationObserver((mutations) => {
         console.log("The following message was not handled by CurrentRMS Helper");
         console.log("Sliced 11 messageText:" + messageText.slice(11)); // The bit I'd use to add a handler.
       }
-      calculateContainerWeights(); // update container weight values in the side bar
-      updateHidings(); // Update changed items that might need to be hidden
+
+      if (!messageText.includes("Container error(s) found:")){
+      newCalculateContainerWeights(); // update container weight values in the side bar
+        updateHidings(); // Update changed items that might need to be hidden
+      }
+
+
     });
 
 
@@ -2344,18 +2347,11 @@ const observer = new MutationObserver((mutations) => {
 });
 
 
-
-
-
-
-
-
 /////////
-function calculateContainerWeights() {
+function newCalculateContainerWeights() {
   // Initialize an object to store container information
-  containerData = {};
-  containerList = [];
-  itemsInContainers = [];
+  containerisationData = {};
+
 
   // Get all table rows in the document
   var rows = document.querySelectorAll('tr');
@@ -2366,36 +2362,43 @@ function calculateContainerWeights() {
     try {
 
       var containerCell = rows[i].querySelector('.container-column');
+
+      var thisContainer;
       if (containerCell){
-      var thisContainer = containerCell.textContent.trim();
+        thisContainer = containerCell.textContent.trim();
+      }
+
       var assetCell = rows[i].querySelector('.asset-column');
       var thisAsset = assetCell.textContent.trim();
 
-      // add this container to the container list array if it's not already there
-      if (containerList.indexOf(thisContainer) === -1 && thisContainer != null && thisContainer.length != 0) {
-        containerList.push(thisContainer);
+      var nameCell = rows[i].querySelector('.dd-content');
+      var rowName = nameCell.textContent.trim();
+
+      const magnifyingGlassEmoji = "🔎";
+      if (rowName.endsWith(magnifyingGlassEmoji)) {
+        rowName = rowName.substring(0, rowName.length - (magnifyingGlassEmoji.length+1));
+      }
+
+      var rowId = rows[i].id;
+
+      //var statusCell = rows[i].querySelector('td.status-column');
+      //var thisStatus = statusCell.textContent.trim();
+      //console.log(status);
+
+      // get the weight of the item
+      var thisItemWeight = rows[i].getAttribute('data-weight') * 1; // muliply to convert to number. note: the value given for bulk items it already multiplied by the quantity listed
+
+
+      //if (!thisAsset.includes("Sub-Rent") && thisAsset != "Group Booking" && thisAsset != "Bulk Stock" && thisAsset != "Non-Stock Booking" && thisAsset != "Asset Number"){
+      //    containerisationData[rowId] = {asset: thisAsset, name: rowName, container: thisContainer, weight: thisItemWeight, contents: {}};
+      //}
+
+      //if (thisAsset != "Asset Number" && thisStatus != "Reserved"){
+      if (thisAsset != "Asset Number"){
+          containerisationData[rowId] = {asset: thisAsset, name: rowName, container: thisContainer, weight: thisItemWeight, contents: {}};
       }
 
 
-      if (thisContainer != null && thisContainer.length != 0 && thisContainer != "Container") { // has a container value set (and isn't the header row)
-
-        // if it's an asset, add it to the items in container list for later.
-        if (!thisAsset.includes("Sub-Rent") && thisAsset != "Group Booking" && thisAsset != "Bulk Stock" && thisAsset != "Non-Stock Booking"){
-        itemsInContainers.push(thisAsset);
-        }
-
-        // get the weight of the item that is in this container
-        var thisItemWeight = rows[i].getAttribute('data-weight') * 1; // muliply to convert to number. note: the value given for bulk items it already multiplied by the quantity listed
-
-        if (containerData[thisContainer]){
-          // if the container already has a record, add this item to the weight total
-          containerData[thisContainer] = Number((Number(containerData[thisContainer]) + thisItemWeight).toFixed(2));
-        } else {
-          // if no record exists yet, created one with this item as the initial weight
-          containerData[thisContainer] = Number(thisItemWeight.toFixed(2));
-        }
-      }
-      }
 
 
     } catch(err) {
@@ -2406,71 +2409,84 @@ function calculateContainerWeights() {
     }
   }
 
+  const containerErrors = detectCircularContainment(containerisationData);
+  console.log(containerErrors);
 
-  // now interate through the rows and spot assets that are also listed as containers, whilst sorting out the name of the container
-  for (var i = 0; i < rows.length; i++) {
-    try {
-      var assetCell = rows[i].querySelector('.asset-column');
-      var thisAsset = assetCell.textContent.trim();
-      if (containerData[thisAsset]){ // the asset listed in a row is also a container listed in the containerData object
+  const containerisationDataJSON = transformContainerisationData(containerisationData);
 
-        var containerName = rows[i].querySelector('.container-column').textContent.trim();
+  // now convert the JSON to HTML for display
+  let containers = [];
+  let looseItemsWeight = 0;
 
-        if (thisAsset != containerName){ // avoid double counting where a container has been added to "itself"
-          var thisItemWeight = rows[i].getAttribute('data-weight') * 1; // get the weight of the container
-          containerData[thisAsset] = Number((Number(containerData[thisAsset]) + thisItemWeight).toFixed(2)); // add the container weight to the previous total
-        }
-
-
-
-
-        // Now sort out the name if needed
-
-        var nameCell = rows[i].querySelector('.dd-name'); // get the name
-        var thisName = nameCell.textContent.trim();
-
-        if (thisName.startsWith("CollapseExpand")) {
-          thisName = thisName.substring(15);
-        }
-        const magnifyingGlassEmoji = "🔎";
-        if (thisName.endsWith(magnifyingGlassEmoji)) {
-          thisName = thisName.substring(0, thisName.length - magnifyingGlassEmoji.length);
-        }
-
-        var newName = thisAsset + "___" + thisName;
-
-        // create the new entry with name included
-        containerData[newName] = containerData[thisAsset];
-
-        // Delete the old entry
-        delete containerData[thisAsset];
-      };
-
-    } catch(err) {
-      if (err.name != "TypeError"){ // ignore errors that are caused becase elements don't exist on the page
-        console.log(err);
+  for (let key in containerisationDataJSON) {
+      let item = containerisationDataJSON[key];
+      if (Object.keys(item.contents).length > 0) {
+          containers.push(item);
+      } else if (!item.container) {
+          looseItemsWeight += item.weight;
       }
-    }
   }
 
+  containers.sort((a, b) => a.asset.localeCompare(b.asset));
+
+  let html = "";
+
+  if (containerErrors.length > 0){
+    // Output list of errors into the sidebar if there are any
+      var ul = document.getElementById("containerlist");
+      html +=  `<li class="container-error">Container Error(s): ${containerErrors}</li>`;
+      makeToast("toast-error", `Container error(s) found: A container has been placed inside itself (${containerErrors})`, 5);
+  }
+
+
+
+  for (let container of containers) {
+      html += generateHtml(container);
+  }
+  html += `<li>&#9723; Loose items: ${looseItemsWeight.toFixed(2)} ${weightUnit}</li>\n`;
 
   // Output the result into the sidebar if it exists
   if (document.getElementById("containerlist")) {
     var ul = document.getElementById("containerlist");
-    ul.innerHTML = "";
-    for (var prop in containerData) {
-      if (containerData.hasOwnProperty(prop)) {
-        var li = document.createElement('li');
-        var containerName = prop.replace(/___/g, ' / ');
-        li.innerHTML =  containerName + ': ' + containerData[prop] + " " + weightUnit;
-        ul.appendChild(li);
-      }
-    }
+    ul.innerHTML = html;
+
   }
 
+
+
+
+  function calculateWeight(item) {
+    let totalWeight = item.weight;
+    for (let key in item.contents) {
+        totalWeight += calculateWeight(item.contents[key]);
+    }
+    return totalWeight;
+  }
+
+
+  function generateHtml(item, indent = 0) {
+    let weight = calculateWeight(item);
+    let html = "";
+
+    if (Object.keys(item.contents).length > 0) {
+      console.log(item);
+      if (item.asset != item.name){
+        html += `<li ${indent > 0 ? 'class="subcontainer"' : ''}>${'&nbsp;'.repeat(indent * 4)}${indent > 0 ? ' &#8627;' : '&#9635; '}${item.asset} / ${item.name}: ${weight.toFixed(2)} ${weightUnit}</li>\n`;
+      } else {
+        html += `<li ${indent > 0 ? 'class="subcontainer"' : ''}>${'&nbsp;'.repeat(indent * 4)}${indent > 0 ? ' &#8627;' : '&#9635; '}${item.name}: ${weight.toFixed(2)} ${weightUnit}</li>\n`;
+      }
+    }
+
+    let sortedContents = Object.values(item.contents).sort((a, b) => a.asset.localeCompare(b.asset));
+    for (let content of sortedContents) {
+        html += generateHtml(content, indent + 1);
+    }
+
+    return html;
+  }
+
+
 }
-
-
 
 
 
@@ -2563,7 +2579,7 @@ if (detailView){
       };
    
       getWeightUnit(); // check to see what weight unit the user has set by looking at the total weight field
-      calculateContainerWeights(); // set initial container weigh values in the side bar
+      newCalculateContainerWeights(); // set initial container weigh values in the side bar
    
       // Add inline style for the toggle-button size
       toggleButton.style.fontSize = '14px'; // Adjust the size as needed
@@ -2584,7 +2600,7 @@ if (detailView){
 
     var titleRow = document.getElementById("opportunity_items_title");
 
-    console.log(titleRow.innerHTML);
+
 
     // Create a new row element
     let newElement = document.createElement('div');
@@ -4189,4 +4205,155 @@ function destroyAfterTime(element, seconds) {
   } else {
     console.error('Provided argument is not a valid DOM node.');
   }
+}
+
+
+function transformContainerisationData(data) {
+  // Create a new object to store the transformed data
+  const transformedData = {};
+  console.log(data);
+  //Use Object.values() to get an array of nested objects
+  const nestedObjects = Object.values(data);
+
+  // Use map() to extract the values of the "asset" key
+  const assetValues = nestedObjects.map(nestedObj => nestedObj.asset);
+  //console.log(assetValues);
+  // Function to place an item and its contents into the correct container
+
+  function placeItem(id, item, containerMap) {
+    if (item.container === "" || item.container == String(item.asset)) {
+      // If the item has no container, it is a top-level item
+      transformedData[id] = item;
+    } else {
+      // If the item has a container, find the container and place the item inside it
+      let container = containerMap[item.container];
+      if (container) {
+        container.contents[id] = item;
+      } else if (!assetValues.includes(item.container)){
+        // the container given is not an actual item.
+        console.log("non item: ", item.asset);
+        const newId = generateRandomString();
+        const newItem = {asset: item.container, name: item.container, container: "", weight: 0, contents:{}};
+        transformedData[newId] = newItem;
+        // Add the item to the containerMap to allow for nesting
+        containerMap[item.container] = newItem;
+        return false;
+      } else {
+        // If the container is not yet in the containerMap, wait until it is added
+        return false;
+      }
+    }
+    // Add the item to the containerMap to allow for nesting
+    containerMap[item.asset] = item;
+    return true;
+  }
+
+  // This map helps to track where each item has been placed
+  const containerMap = {};
+
+  // First, place all items into their respective containers or as top-level items
+  let itemsLeft = Object.keys(data);
+  let maxIterations = itemsLeft.length * 10; // Avoid infinite loop, assume max 10 iterations per item
+  let iteration = 0;
+
+  let logItemsLeft = {};
+
+  while (itemsLeft.length > 0 && iteration < maxIterations) {
+    console.log("Interation: ", iteration);
+
+    const remainingItems = [];
+    for (const id of itemsLeft) {
+      const item = data[id];
+      if (!placeItem(id, item, containerMap)) {
+        // If the item couldn't be placed, keep it for the next iteration
+        remainingItems.push(id);
+      }
+    }
+    if (remainingItems.length === itemsLeft.length) {
+      // If no items were placed in this iteration, break the loop to avoid infinite loop
+      break;
+    }
+    itemsLeft = remainingItems;
+    iteration++;
+  }
+
+  console.log(containerMap);
+
+
+
+  //console.log(fixedData);
+  console.log(JSON.stringify(transformedData, null, 2));
+
+  return transformedData;
+}
+
+
+function generateRandomString(length = 10) {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    const charactersLength = characters.length;
+
+    for (let i = 0; i < length; i++) {
+        const randomIndex = Math.floor(Math.random() * charactersLength);
+        result += characters.charAt(randomIndex);
+    }
+
+    return result;
+}
+
+function detectCircularContainment(data) {
+    let errorContainers = [];
+    let containerMap = {};
+
+    // First, build a container map to index by asset.
+    for (const key in data) {
+        // Ignore non-asset items or items without a container set.
+        if (data[key].asset === "Group Booking" || data[key].asset === "Bulk Stock" ||
+            data[key].asset === "Non-Stock Booking" || data[key].asset.includes("Sub-Rent") ||
+            !data[key].container) {
+            continue;
+        } else {
+            const newKey = data[key].asset;
+            containerMap[newKey] = { idKey: key, container: data[key].container };
+        }
+    }
+
+    for (const item in containerMap) {
+        let visited = new Set();
+        if (checkItem(item, item, containerMap, visited)) {
+            errorContainers.push(item);
+        }
+    }
+
+    return errorContainers;
+
+    function checkItem(target, asset, map, visited) {
+        // Ensure the asset exists in the map before accessing its properties.
+        if (!map[asset] || !map[map[asset].container]) {
+            return false;
+        }
+
+        // ignore assets where container is set to themselves
+        if (asset == map[asset].container){
+          return false;
+        }
+
+        let parentAsset = map[asset].container;
+
+        // If the parent asset has already been visited, we have a cycle.
+        if (visited.has(parentAsset)) {
+            return false;
+        }
+
+        // Mark the current asset as visited.
+        visited.add(asset);
+
+        if (!map[parentAsset] || !map[parentAsset].container) {
+            return false;
+        } else if (map[parentAsset].container === target) {
+            return true;
+        } else {
+            return checkItem(target, parentAsset, map, visited);
+        }
+    }
 }

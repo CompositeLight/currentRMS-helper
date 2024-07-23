@@ -109,6 +109,33 @@ if (shouldScrape()) {
 
 }  else {
     console.log("This will not be scraped (URL is missing 'scrape' suffix).");
+
+    // Add event listener to the document (or a parent element)
+    document.addEventListener('click', function(event) {
+        // Check if the clicked element or any of its ancestors is a td with class 'row-avatar'
+        const tdElement = event.target.closest('td.row-avatar');
+        if (tdElement) {
+            // Find the parent tr element
+            const trElement = tdElement.closest('tr');
+            if (trElement) {
+                // Extract the reference number from the tr element's id
+                const refNumber = trElement.id.split('-')[1];
+                if (refNumber) {
+                    // Construct the new URL
+                    const baseURL = window.location.origin;
+                    const newURL = `${baseURL}/opportunities/${refNumber}?view=d`;
+                    // Navigate to the new URL
+                    window.location.href = newURL;
+                } else {
+                    console.log('Reference number not found.');
+                }
+            } else {
+                console.log('No parent tr element found.');
+            }
+        }
+    });
+
+
 }
 
 

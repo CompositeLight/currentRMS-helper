@@ -30,7 +30,7 @@ Below is a list of current features. It's the same information as the Readme cha
 
 - Remove By Scan: Much requested by warehouses that go straight to Prepared, this works the same as the *revert* scan (which is still in place), but instead of reverting by one step the asset will be completely removed, regardless of it's status. BE AWARE: This even works for items that have been Booked Out, so use wisely. Due to the auto-play limitations of Chrome, it is not possible to play a sound before user interaction with a page. For this reason there is no audible confirmation that a Remove has been successful - just a toast message.
 
-- Container weights: Added a section to the info side bar called Container Weights. This gives you a list of all containers currently in use, and the running total of weights in them. This is helpful as a quick reference in the warehouse to see if a crate has been overloaded, or to allow a tech to write the case weight on the road label. Note: In order for the weight of the case/container to be included it needs to be scanned onto the job. For example, if the container is 99008 (one of our laptop cases) the asset 99009 needs to be prepared on the job for the self weight of the that case to be included in the total.
+- Container weights: Added a section to the info side bar called Container Weights. This gives you a list of all containers currently in use, and the running total of weights in them. This is helpful as a quick reference in the warehouse to see if a crate has been overloaded, or to allow a tech to write the case weight on the road label. Note: In order for the weight of the case/container to be included it needs to be scanned onto the job. For example, if the container is 99008 (one of our laptop cases) the asset 99009 needs to be prepared on the job for the self weight of the that case to be included in the total. Adhoc containers can be used, but there is no way to give an adhoc container a weight value, so the figure given is for the contents only.
 
 - Added time stamps to “toast messages” generated when scanning in Detail View. This makes it easier to identify when errors occurred if you return to a screen full of red messages.
 
@@ -115,3 +115,6 @@ Once a container exists on the opportunity it can be accessed without further us
 
 ## Product View
 - Products Pages now list the quantity booked against each opportunity in the list.
+
+## Opportunities List
+- Clicking the order Avatar (the circular icon to the left hand side) is now a shortcut to take you directly to Detail View for that opportunity.

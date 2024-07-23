@@ -1,4 +1,4 @@
-# currentRMS-helper 1.31.8
+# currentRMS-helper 1.31.9
 This is a work-in-progress Chrome extension to add functionality to the CurrentRMS web interface. It was created out of our frustration waiting on "quality of life" modifications to make the user experience better - specifically, as part of warehouse operations. Our warehouse team has found it helpful, so we've decided to share it with others. As it was created with our own in-house work processes in mind, it may or may not work for other users. However, my hope is that others (who are better at coding that I) might take this forward, or even inspire the CurrentRMS team to implement some of the changes within the main product.
 
 **DISCLAIMER: This is a first attempt work-in-progress written by me, an utter rookie in JavaScript. Use at your own risk. This code is in no way affiliated with InspHire Ltd.**
@@ -25,6 +25,12 @@ Aside from the Chrome Desktop Browser, users have successfully used this extensi
 
 
 ## Features / Updates
+
+- IMPROVED 1.31.9: Error timeout function now does not effect inspection overdue warnings, so you can use the Inspect Now button. Open to feedback on this behaviour...
+
+- IMPROVED 1.31.9: The Container Weights sidebar section has been rewritten to implement several fixes and suggestions. It now accounts for the weight of all items and nested containers (previously the contents of nested containers were ignored), and shows the weight of each sub-container beneath. This should make it easier to use nested containers for multi-van planning. Containers are now listed in alphabetical/numberical order (previously the display order was arbitary). A "Loose items" listing has been added to the bottom to indicate the remaining job weight not assigned to any container. NOTE: CurrentRMS allows circular containerisation. That is to say: Item A can be stored inside Item B, which is stored inside Item A, which as I said earlier is stored inside Item B... I consider this to be a bug, and it causes chaos when you try to calculate the combined weight of nested containers. My solution to this is that if you do create a circular container scenario, a warning will alert you to the error, and red text in the Container Weights panel will suggest where the problem is. No weight is given for the impossible container until you fix the issue. I cannot think of any real world scenario or work flow where you would actually nest a container inside of itself; if you can please let me know!
+
+- NEW 1.31.9: Opportunities List: Clicking the order Avatar (the circular icon to the left hand side) is now a shortcut to take you directly to Detail View for that opportunity.
 
 - IMPROVED 1.31.8: Added a "seconds" label to the error timeout box and added timeout to "You must select an asset" messages.
 

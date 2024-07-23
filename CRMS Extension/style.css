@@ -387,3 +387,11 @@ div.float-right{
 a.allocation-link{
   color: black !important;
 }
+
+.subcontainer{
+  font-style: italic;
+}
+
+.container-error{
+  color: red;
+}

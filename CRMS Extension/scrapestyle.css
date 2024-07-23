@@ -17,3 +17,7 @@
     text-align: center; /* Center text alignment */
     padding: 20px; /* Padding for text */
 }
+
+td.row-avatar{
+  cursor: zoom-in !important;
+}
