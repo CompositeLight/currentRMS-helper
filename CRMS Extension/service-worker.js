@@ -70,41 +70,62 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         iAmScraping = false;
         // Forward the message to Content Script B
         chrome.tabs.query({}, function(tabs) {
+          if (tabs.length > 0){
             tabs.forEach(function(tab) {
                 chrome.tabs.sendMessage(tab.id, message);
             });
+          }
         });
   } else if (message.messageType === "oppScrapeData") {
         iAmScraping = false;
         // Forward the message to Content Script B
         chrome.tabs.query({}, function(tabs) {
+          if (tabs.length > 0){
             tabs.forEach(function(tab) {
                 chrome.tabs.sendMessage(tab.id, message);
             });
+          }
         });
 
   } else if (message.messageType === "productQtyData") {
       iAmScraping = false;
       // Forward the message to Content Script
       chrome.tabs.query({}, function(tabs) {
+        if (tabs.length > 0){
           tabs.forEach(function(tab) {
               chrome.tabs.sendMessage(tab.id, message);
           });
+        }
       });
 
   } else if (message == "soundchanged") {
         // Forward the message to Content Script
+        console.log("Sound change message received");
         chrome.tabs.query({}, function(tabs) {
+          if (tabs.length > 0){
             tabs.forEach(function(tab) {
                 chrome.tabs.sendMessage(tab.id, message);
             });
+          }
         });
   } else if (message == "errortimeoutchanged") {
         // Forward the message to Content Script
         chrome.tabs.query({}, function(tabs) {
+          if (tabs.length > 0){
             tabs.forEach(function(tab) {
                 chrome.tabs.sendMessage(tab.id, message);
             });
+          }
+        });
+
+  } else if (message == "bookOutContainers") {
+        // Forward the message to Content Script
+        chrome.tabs.query({}, function(tabs) {
+          if (tabs.length > 0){
+            tabs.forEach(function(tab) {
+                chrome.tabs.sendMessage(tab.id, message);
+            });
+          }
         });
 
   } else {
@@ -112,7 +133,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     (async () => {
       // Sends a message to the service worker and receives a response
       chrome.tabs.query({active: true, currentWindow: true}, function(tabs){
-          chrome.tabs.sendMessage(tabs[0].id, {inspectionAlerts: message.inspectionAlerts, multiGlobal: message.multiGlobal, blockQuarantines: message.blockQuarantines}, function(response) {});
+          console.log(tabs.length);
+          if (tabs.length > 0){
+            if (tabs[0].url.match(/^https:\/\/.*\.current-rms\.com\/.*$/)) {
+              chrome.tabs.sendMessage(tabs[0].id, {inspectionAlerts: message.inspectionAlerts, multiGlobal: message.multiGlobal, blockQuarantines: message.blockQuarantines}, function(response) {});
+            }
+          }
       });
     })();
   }

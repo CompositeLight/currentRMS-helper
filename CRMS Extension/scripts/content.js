@@ -26,10 +26,12 @@ nonShortsHidden = false;
 weightUnit = "kgs"; // default to kgs for weight unit
 inspectionAlerts = "";
 multiGlobal = true;
+bookOutContainers = false;
 containerScan = false;
 scanningContainer = "";
 freeScanReset = false;
-containerData = {};
+
+containers = [];
 containerList = [];
 
 let containerisationData;
@@ -189,6 +191,27 @@ chrome.storage.local.get(["multiGlobal"]).then((result) => {
     }
     console.log("Global check-in overide: "+multiGlobal);
 });
+
+
+// get the bookOutContainers setting from local storage
+chrome.storage.local.get(["bookOutContainers"]).then((result) => {
+    if (result.bookOutContainers == undefined){
+      bookOutContainers = false;
+
+    } else if (result.bookOutContainers == "false"){
+      bookOutContainers = false;
+    } else if (result.bookOutContainers == "true"){
+      bookOutContainers = true;
+
+    } else {
+      bookOutContainers = result.bookOutContainers;
+    }
+    console.log("Auto book out nested containers setting: "+bookOutContainers);
+});
+
+
+
+
 
 
 
@@ -494,7 +517,7 @@ async function addDetails(mode) {
 
     if (firstTimeLoadingApiData){
       firstTimeLoadingApiData = false;
-      makeToast("toast-info", "API information loaded.", 5);
+      makeToast("toast-info", "API information loaded.", 3);
     }
 
 
@@ -2283,7 +2306,7 @@ const observer = new MutationObserver((mutations) => {
         scanSound();
 
       // Handle myriad messages that are good, and just need a confirmatory "ding"
-    } else if (messageText.includes('Allocation successful') || messageText.includes('Items successfully marked as prepared') || messageText.includes('Items successfully checked in') || messageText.includes('Container Component was successfully destroyed.') || messageText.includes('Opportunity Item was successfully destroyed.') || messageText.includes('Container component was successfully added') || messageText.includes('Opportunity Item was successfully updated.')  ||  messageText.includes('Items successfully booked out.') || messageText.includes('Container component was successfully removed')  || messageText.includes('Check-in details updated successfully') || messageText.includes('Opportunity Item was updated.') || messageText.includes('Set container successfully') || messageText.includes('Asset(s) successfully checked in')){
+    } else if (messageText.includes('Allocation successful') || messageText.includes('Items successfully marked as prepared') || messageText.includes('Items successfully checked in') || messageText.includes('Container Component was successfully destroyed.') || messageText.includes('Opportunity Item was successfully destroyed.') || messageText.includes('Container component was successfully added') || messageText.includes('Opportunity Item was successfully updated.')  ||  messageText.includes('Items successfully booked out') || messageText.includes('Container component was successfully removed')  || messageText.includes('Check-in details updated successfully') || messageText.includes('Opportunity Item was updated.') || messageText.includes('Set container successfully') || messageText.includes('Asset(s) successfully checked in')){
         addDetails(true);
         if (detailView && (document.querySelector('input[type="text"][name="container"]').value)){
           containerScanSound();
@@ -2410,12 +2433,17 @@ function newCalculateContainerWeights() {
   }
 
   const containerErrors = detectCircularContainment(containerisationData);
-  console.log(containerErrors);
+  if (containerErrors.lenghth > 0){
+    console.log("Container errors:");
+    console.log(containerErrors);
+  }
+
 
   const containerisationDataJSON = transformContainerisationData(containerisationData);
 
   // now convert the JSON to HTML for display
-  let containers = [];
+  containers = [];
+  containerList = [];
   let looseItemsWeight = 0;
 
   for (let key in containerisationDataJSON) {
@@ -2441,6 +2469,9 @@ function newCalculateContainerWeights() {
 
 
   for (let container of containers) {
+
+    containerList.push(container.asset);
+
       html += generateHtml(container);
   }
   html += `<li>&#9723; Loose items: ${looseItemsWeight.toFixed(2)} ${weightUnit}</li>\n`;
@@ -2469,7 +2500,7 @@ function newCalculateContainerWeights() {
     let html = "";
 
     if (Object.keys(item.contents).length > 0) {
-      console.log(item);
+      //console.log(item);
       if (item.asset != item.name){
         html += `<li ${indent > 0 ? 'class="subcontainer"' : ''}>${'&nbsp;'.repeat(indent * 4)}${indent > 0 ? ' &#8627;' : '&#9635; '}${item.asset} / ${item.name}: ${weight.toFixed(2)} ${weightUnit}</li>\n`;
       } else {
@@ -2933,8 +2964,11 @@ function focusInput(){
 
 //check with Service Worker to see if we have a new message waiting...
 chrome.runtime.sendMessage({messageType: "check"}, function(response) {
-  console.log("Response from service worker:", response.removedAsset);
-  console.log(response);
+
+  if (response.removedAsset != ""){
+    console.log("Response from service worker:", response.removedAsset);
+    console.log(response);
+  }
   if (response.removedAsset){
     var announce = "The asset "+response.removedAsset+" was removed from the opportunity.";
     makeToast("toast-success", announce, 5);
@@ -2955,8 +2989,8 @@ chrome.storage.local.get(["setPrepared"]).then((result) => {
 
 // Messages from the extension service worker to trigger changes
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  //console.log("Message received from service-worker:");
-  //console.log(message);
+  console.log("Message received from service-worker:");
+  console.log(message);
 
   if (message.inspectionAlerts == "off"){
     inspectionAlerts = "off";
@@ -2983,11 +3017,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     blockQuarantines = false;
     console.log("blockQuarantines set to FALSE");
   }
-
-
-
-
-
 
   if (message == "quarantinedatarefreshed"){
     console.log("Quarantine data was refreshed by the service worker.");
@@ -3044,13 +3073,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           console.log("errorTimeout not retrieved");
         }
       });
+  } else if (message == "bookOutContainers"){
+      chrome.storage.local.get(["bookOutContainers"]).then((result) => {
+        if (result.bookOutContainers == "true"){
+          bookOutContainers = true;
+
+        } else {
+          console.log("bookOutContainers not retrieved");
+        }
+      });
+      console.log(bookOutContainers);
   }
-
-
-
-
-
-
 
 
   if (message.messageType == "oppScrapeData" && globalSearchView){
@@ -3197,10 +3230,15 @@ if (detailView){
 
 function activeIntercept(){
   if (detailView){
+
+    // allocate panel items
     allocateScanBox = document.getElementById("stock_level_asset_number");
     var parentSpan = allocateScanBox.parentNode;
     var quantityBox = document.querySelector('input[type="text"][name="quantity"]');
     var containerBox = document.querySelector('input[type="text"][name="container"]');
+
+    // book out panel items
+    bookoutScanBox = document.getElementById("bo_stock_level_asset_number");
 
     function resetScanBox(){
       // block to clear the allocate box after an intercept
@@ -3212,10 +3250,7 @@ function activeIntercept(){
       activeIntercept(); // need to re-run because we've just nuked the scan section DOM so the event listener won't work
     }
 
-
-
-
-
+    // event listener for the scanbox in the Allocate panel
     allocateScanBox.addEventListener("keypress", function(event) {
       if (event.key === "Enter") {
 
@@ -3427,25 +3462,89 @@ function activeIntercept(){
       } // end of if enter key block
 
     });
+
+    // Event listener for the scanbox in the Book Out panel
+    bookoutScanBox.addEventListener("keypress", function(event) {
+      if (event.key === "Enter") {
+        var myScan = bookoutScanBox.value;
+        console.log(myScan);
+        console.log(bookOutContainers);
+        if (containerExists(myScan) && bookOutContainers){
+          bookOutNested(myScan);
+        }
+      }
+    });
   }
 }
 
 
 
-// FORCING ALOCATE BOX FOR TESTING
-//var allocateForm = document.querySelector('form[class="form-page"][id="quick_allocate"]');
-//console.log(allocateForm.getAttribute('onsubmit'));
-//allocateForm.setAttribute('onsubmit', '');
-//console.log(allocateForm.getAttribute('onsubmit'));
-//var groupScanInput = document.getElementById("group_scan");
-//groupScanInput.setAttribute('value', '1');
-//document.getElementById("group_scan").value = "1";
-//document.getElementById("group_id").value = "35765";
-//var groupIdInput = document.getElementById("group_id");
-//groupIdInput.setAttribute('value', '35765');
+// Function to book out all of the nested containers and subcontainers of a scanned item
 
+function bookOutNested(scanned){
 
+  console.log(scanned);
+  console.log(containerisationData);
 
+  function findAssets(data, target) {
+    let result = [];
+
+    function searchContents(contents) {
+      for (let key in contents) {
+        if (Object.keys(contents[key].contents).length > 0) {
+            LogContents(contents[key].contents);
+        }
+      }
+    }
+
+    function LogContents(contents) {
+      for (let key in contents) {
+        result.push(key);
+        if (Object.keys(contents[key].contents).length > 0) {
+            LogContents(contents[key].contents);
+        }
+      }
+    }
+
+    for (let key in data) {
+        if (data[key].asset === target) {
+            searchContents(data[key].contents);
+            break;
+        }
+    }
+
+    return result;
+}
+
+  const assetsToBookOut = findAssets(containerisationData, scanned);
+
+  console.log(assetsToBookOut);
+
+  var assetTable = document.getElementById('nestable-grid');
+  var stuffToBookOut = false;
+  assetsToBookOut.forEach((itemId) => {
+    var liElement = assetTable.querySelector('li.grid-body-row[data-id="'+itemId+'"]');
+    var tdElement = liElement.querySelector('td.essential.status-column');
+    console.log(tdElement.innerText);
+    if (tdElement && tdElement.innerText == "Prepared"){
+      var tickboxElement = liElement.querySelector('input.item-select');
+        if (tickboxElement){
+          tickboxElement.checked = true;
+          stuffToBookOut = true;
+        }
+    }
+  });
+
+  if (stuffToBookOut){
+    var bookOutButton = Array.from(document.querySelectorAll('a.row-selector[data-disable-with="wait ..."]'))
+    .find(element => element.textContent.trim() === "Book out");
+    bookOutButton.click();
+
+  }
+
+  // bookmark 1
+
+}
 
 
 
@@ -4211,7 +4310,7 @@ function destroyAfterTime(element, seconds) {
 function transformContainerisationData(data) {
   // Create a new object to store the transformed data
   const transformedData = {};
-  console.log(data);
+
   //Use Object.values() to get an array of nested objects
   const nestedObjects = Object.values(data);
 
@@ -4231,7 +4330,6 @@ function transformContainerisationData(data) {
         container.contents[id] = item;
       } else if (!assetValues.includes(item.container)){
         // the container given is not an actual item.
-        console.log("non item: ", item.asset);
         const newId = generateRandomString();
         const newItem = {asset: item.container, name: item.container, container: "", weight: 0, contents:{}};
         transformedData[newId] = newItem;
@@ -4259,8 +4357,6 @@ function transformContainerisationData(data) {
   let logItemsLeft = {};
 
   while (itemsLeft.length > 0 && iteration < maxIterations) {
-    console.log("Interation: ", iteration);
-
     const remainingItems = [];
     for (const id of itemsLeft) {
       const item = data[id];
@@ -4277,12 +4373,8 @@ function transformContainerisationData(data) {
     iteration++;
   }
 
-  console.log(containerMap);
-
-
-
-  //console.log(fixedData);
-  console.log(JSON.stringify(transformedData, null, 2));
+  //console.log(containerMap);
+  //console.log(JSON.stringify(transformedData, null, 2));
 
   return transformedData;
 }

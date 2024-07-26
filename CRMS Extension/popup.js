@@ -187,10 +187,8 @@ document.querySelectorAll('input[name="inspectionalert"]').forEach(function(radi
 
 // Code for the Global Check-in setting:
 chrome.storage.local.get(["multiGlobal"]).then((result) => {
-
   var selectedOption = "input[name='multiglobal'][value='" + result.multiGlobal + "']";
   document.querySelector(selectedOption).checked = true;
-
 });
 
 document.querySelectorAll('input[name="multiglobal"]').forEach(function(radio) {
@@ -204,6 +202,38 @@ document.querySelectorAll('input[name="multiglobal"]').forEach(function(radio) {
 
   });
 });
+
+
+
+
+
+// Code for the auto book out nested containers setting:
+chrome.storage.local.get(["bookOutContainers"]).then((result) => {
+  console.log(result.bookOutContainers);
+  var selectedOption = "input[name='bookoutcontainers'][value='" + result.bookOutContainers + "']";
+  document.querySelector(selectedOption).checked = true;
+});
+
+document.querySelectorAll('input[name="bookoutcontainers"]').forEach(function(radio) {
+  radio.addEventListener('change', function() {
+    console.log(this.value);
+    //await chrome.storage.session.set({ prepareSet: this.value });
+    chrome.storage.local.set({ "bookOutContainers": this.value }).then(() => {
+       console.log("Auto Book Out nested containers changed");
+       console.log(this.value);
+       chrome.runtime.sendMessage("bookOutContainers");
+     });
+
+  });
+});
+
+
+
+
+
+
+
+
 
 
 // Code for the block scan of quartantines setting:

@@ -395,3 +395,7 @@ a.allocation-link{
 .container-error{
   color: red;
 }
+
+.btn-success{
+  overflow: visible !important;
+}
