@@ -2911,6 +2911,8 @@ if (detailView){
       console.log("Sound = "+result.soundsOn);
       if (result.soundsOn != "true"){
         muteExtensionSounds = true;
+      } else {
+        muteExtensionSounds = false;
       }
     });
 

@@ -25,6 +25,8 @@ Aside from the Chrome Desktop Browser, users have successfully used this extensi
 
 
 ## Features / Updates
+- FIXED: 1.31.11 - Fixed an issue that could cause the extension sounds to stop working.
+
 - NEW: 1.31.10 - Auto Book Out Nested Containers - This setting is OFF by default, so you'll want to enable it in the settings popup. When enabled, if you you scan a container to book it out and nested containers (and therefore their contents) will also be booked out automatically. Only containers with the status "Prepared" will be auto-booked out (this is to avoid accidentally changing a forgotten "Reserved" item into "Booked Out", but be aware that this can still happen(!) because CurrentRMS will just book out the first level contents of a container regardless of its status, and I can't currently block this insane behaviour).
 
 - FIXED: 1.31.10 - Book out scans producing the wrong sound.
