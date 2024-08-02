@@ -3540,11 +3540,11 @@ function bookOutNested(scanned){
   if (stuffToBookOut){
     var bookOutButton = Array.from(document.querySelectorAll('a.row-selector[data-disable-with="wait ..."]'))
     .find(element => element.textContent.trim() === "Book out");
-    bookOutButton.click();
 
+    if (bookOutButton){
+      bookOutButton.click();
+    }
   }
-
-  // bookmark 1
 
 }
 
