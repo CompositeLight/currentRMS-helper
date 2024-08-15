@@ -3,7 +3,8 @@ console.log("CurrentRMS productpage.js is active");
 
 // Create an array to collect opportunities listed as using this product
 var oppsList = [];
-
+apiKey = "";
+apiSubdomain = "";
 
 // scrape the product ID from the page URL if there is one
 let productId = (function() {
@@ -162,5 +163,34 @@ async function processOppsList(productId) {
   }
 }
 
-// Example usage with a hypothetical product ID
-processOppsList(productId);
+// run immediately
+processProduct();
+
+// check if we have API details before attempting to get info
+async function processProduct(){
+  await recallApiDetails();
+  if (apiKey && apiSubdomain){
+    processOppsList(productId);
+  } else {
+    console.log("API info was not found, so information could not be loaded");
+  }
+}
+
+
+function recallApiDetails(){
+  return new Promise(function (resolve, reject) {
+    chrome.storage.local.get(["api-details"]).then((result) => {
+      if (result["api-details"].apiKey){
+        apiKey = result["api-details"].apiKey;
+      } else {
+        console.log("No API key saved in local storage.");
+      }
+      if (result["api-details"].apiSubdomain){
+        apiSubdomain = result["api-details"].apiSubdomain;
+      } else {
+        console.log("No API Subdomain saved in local storage.");
+      }
+      resolve();
+    });
+  });
+}

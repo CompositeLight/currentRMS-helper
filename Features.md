@@ -1,4 +1,4 @@
-# currentRMS-helper 1.31.5
+# currentRMS-helper 1.31.12
 
 Below is a list of current features. It's the same information as the Readme change log, but listed "per area" to make it easier for new users to see what the extension adds.
 
@@ -66,6 +66,8 @@ Once a container exists on the opportunity it can be accessed without further us
 - Block Quarantined Allocations: There is now a user setting within the pop (on by default) that will prevent items listed in quarantine from being scanned onto a job. If this setting is false quarantined items can be scanned on as normal, but a toast message and verbal warning will alert the user. Block Quarantine Toast Messages now include a link to go to the quarantine record. Quaratine status is refreshed every 30 minutes.
 
 - Auto Book Out Nested Containers - This setting is OFF by default, so you'll want to enable it in the settings popup. When enabled, if you you scan a container to book it out and nested containers (and therefore their contents) will also be booked out automatically. Only containers with the status "Prepared" will be auto-booked out (this is to avoid accidentally changing a forgotten "Reserved" item into "Booked Out", but be aware that this can still happen(!) because CurrentRMS will just book out the first level contents of a container regardless of its status, and I can't currently block this insane behaviour).
+
+- The Attributes panel on the right shows the weight of equipment on the opportunity. Now, when you book items out a new field of "Booked Out Weight" is shown. Useful when loading multiple vehicles.
 
 ## Serialised Containers
 

@@ -221,7 +221,6 @@ function recallApiDetails(){
     } else {
       console.log("No API Subdomain saved in local storage.");
     }
-
     resolve();
   });
 });
@@ -236,47 +235,49 @@ function recallApiDetails(){
 
 function getOpportunityAssets(opp){
   recallApiDetails();
-  return new Promise(function (resolve, reject) {
-    const apiUrl = 'https://api.current-rms.com/api/v1/opportunities/'+opp+'/opportunity_items/?include[]=item&include[]=item_assets&page='+pageNumber+'&per_page=100';
-    //const apiUrl = 'https://api.current-rms.com/api/v1/opportunities/'+opp+'?include[opportunity_items]=1&page='+pageNumber+'&per_page=100';
-    console.log(apiUrl);
-    // Options for the fetch request
-    const fetchOptions = {
-      method: 'GET',
-      headers: {
-        'X-SUBDOMAIN': apiSubdomain,
-        'X-AUTH-TOKEN': apiKey,
-      },
-    };
+  if (apiKey && apiSubdomain){
+    return new Promise(function (resolve, reject) {
+      const apiUrl = 'https://api.current-rms.com/api/v1/opportunities/'+opp+'/opportunity_items/?include[]=item&include[]=item_assets&page='+pageNumber+'&per_page=100';
+      //const apiUrl = 'https://api.current-rms.com/api/v1/opportunities/'+opp+'?include[opportunity_items]=1&page='+pageNumber+'&per_page=100';
+      console.log(apiUrl);
+      // Options for the fetch request
+      const fetchOptions = {
+        method: 'GET',
+        headers: {
+          'X-SUBDOMAIN': apiSubdomain,
+          'X-AUTH-TOKEN': apiKey,
+        },
+      };
 
-    // Make the API call
-    fetch(apiUrl, fetchOptions)
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        return response.json();
-      })
-      .then(data => {
-        // Handle the API response data here
-        opportunityAssets.opportunity_items = opportunityAssets.opportunity_items.concat(data.opportunity_items); // merge new page of data into stock_levels
-        opportunityAssets.meta = data.meta; // merge new page of data into meta
-        resolve("ok");
-        console.log("Loading stock list page " + pageNumber);
-        var totalRows = (data.meta.total_row_count);
-        var currentRow = (data.meta.page * data.meta.per_page);
-        var progressPercent = Math.floor((currentRow / totalRows) * 100);
-        progressPercent = Math.min(progressPercent, 100);
-        sendProgress(progressPercent);
-        //console.log (progressPercent +"% complete");
-        //console.log(data);
+      // Make the API call
+      fetch(apiUrl, fetchOptions)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then(data => {
+          // Handle the API response data here
+          opportunityAssets.opportunity_items = opportunityAssets.opportunity_items.concat(data.opportunity_items); // merge new page of data into stock_levels
+          opportunityAssets.meta = data.meta; // merge new page of data into meta
+          resolve("ok");
+          console.log("Loading stock list page " + pageNumber);
+          var totalRows = (data.meta.total_row_count);
+          var currentRow = (data.meta.page * data.meta.per_page);
+          var progressPercent = Math.floor((currentRow / totalRows) * 100);
+          progressPercent = Math.min(progressPercent, 100);
+          sendProgress(progressPercent);
+          //console.log (progressPercent +"% complete");
+          //console.log(data);
 
-      })
-      .catch(error => {
-        // Handle errors here
-        console.error('Error making API request:', error);
-      });
-  });
+        })
+        .catch(error => {
+          // Handle errors here
+          console.error('Error making API request:', error);
+        });
+    });
+  }
 }
 
 async function retreiveOpportunityAssets(opp) {
@@ -397,7 +398,8 @@ function getStock(){
 
 async function retrieveApiData(opp) {
 
-    await recallApiDetails();
+  await recallApiDetails();
+  if (apiKey && apiSubdomain){
     // Refresh product list
     var result = await getProducts(opp);
     while (allProducts.meta.row_count > 0){
@@ -448,7 +450,7 @@ async function retrieveApiData(opp) {
           console.log('Current time stored in local storage:', formattedTime);
       });
       chrome.runtime.sendMessage("apidatawasrefreshed");
-
+    }
 }
 
 
@@ -505,36 +507,37 @@ function sendProgress(percent){
 async function retreiveQuarantines() {
 
     await recallApiDetails();
-    quarantineData = {quarantines:[], meta:[]};
+    if (apiKey && apiSubdomain){
+      quarantineData = {quarantines:[], meta:[]};
 
-    quarantinePageNumber = 1;
-    var result = await quarantineApiCall();
-    while (quarantineData.meta.row_count > 0){
-      quarantinePageNumber ++;
+      quarantinePageNumber = 1;
       var result = await quarantineApiCall();
-      console.log("Downloading Quarantine data");
+      while (quarantineData.meta.row_count > 0){
+        quarantinePageNumber ++;
+        var result = await quarantineApiCall();
+        console.log("Downloading Quarantine data");
+      }
+      console.log("Quarantine data download complete.");
+      quarantinePageNumber = 1;
+      var countQuarantines = quarantineData.quarantines.length;
+      console.log(countQuarantines +" quarantine records retrieved.")
+
+
+      // Get the current date and time
+      const currentDate = new Date().getTime();
+
+      //Store the last update time in Chrome local storage
+      chrome.storage.local.set({ "quarantineUpdateTime": currentDate }, function() {
+          console.log('Quarantine Update Time saved in local storage.', currentDate);
+      });
+      checkQuarantineStatus();
+
+      const quarantineDataString = JSON.stringify(quarantineData);
+      chrome.storage.local.set({ 'quarantineData': quarantineDataString }).then(() => {
+         console.log("Quarantine data in local storage was updated");
+      });
+      chrome.runtime.sendMessage("quarantinedatarefreshed");
     }
-    console.log("Quarantine data download complete.");
-    quarantinePageNumber = 1;
-    var countQuarantines = quarantineData.quarantines.length;
-    console.log(countQuarantines +" quarantine records retrieved.")
-
-
-    // Get the current date and time
-    const currentDate = new Date().getTime();
-
-    //Store the last update time in Chrome local storage
-    chrome.storage.local.set({ "quarantineUpdateTime": currentDate }, function() {
-        console.log('Quarantine Update Time saved in local storage.', currentDate);
-    });
-    checkQuarantineStatus();
-
-    const quarantineDataString = JSON.stringify(quarantineData);
-    chrome.storage.local.set({ 'quarantineData': quarantineDataString }).then(() => {
-       console.log("Quarantine data in local storage was updated");
-     });
-     chrome.runtime.sendMessage("quarantinedatarefreshed");
-
 }
 
 
@@ -542,6 +545,7 @@ async function retreiveQuarantines() {
 // API Call for quarantines
 function quarantineApiCall(){
 
+  if (apiKey && apiSubdomain){
     return new Promise(function (resolve, reject) {
 
       //const apiUrl = 'https://api.current-rms.com/api/v1/opportunities/'+opp+'/opportunity_items?page='+pageNumber+'&q[description_present]=1&per_page=100';
@@ -577,7 +581,7 @@ function quarantineApiCall(){
         });
 
     });
-
+  }
 }
 
 

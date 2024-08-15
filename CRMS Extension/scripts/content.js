@@ -36,6 +36,8 @@ containerList = [];
 
 let containerisationData;
 
+bookedOutWeight = 0;
+
 detailViewMode = "functions";
 allProducts = {};
 allStock = {};
@@ -186,8 +188,8 @@ let opportunityID = (function() {
 chrome.storage.local.get(["multiGlobal"]).then((result) => {
     if (result.multiGlobal == undefined){
       multiGlobal = true;
-    } else {
-      multiGlobal = result.multiGlobal;
+    } else if (result.multiGlobal == "false"){
+      multiGlobal = false;
     }
     console.log("Global check-in overide: "+multiGlobal);
 });
@@ -202,7 +204,6 @@ chrome.storage.local.get(["bookOutContainers"]).then((result) => {
       bookOutContainers = false;
     } else if (result.bookOutContainers == "true"){
       bookOutContainers = true;
-
     } else {
       bookOutContainers = result.bookOutContainers;
     }
@@ -232,10 +233,11 @@ if (detailView){
   chrome.storage.local.get(["blockQuarantines"]).then((result) => {
       if (result.blockQuarantines == undefined){
         blockQuarantines = true;
-      } else {
-        blockQuarantines = result.blockQuarantines;
+      } else if (result.blockQuarantines == "false"){
+        blockQuarantines = false;
       }
       console.log("Block Quarantines setting: "+blockQuarantines);
+      console.log(typeof blockQuarantines);
   });
 }
 
@@ -254,8 +256,8 @@ if (detailView || orderView || globalCheckinView){
             makeToast("toast-info", "Products list was not found. Requesting refresh.", 5);
             chrome.runtime.sendMessage("refreshProducts");
           } else {
-            console.log("API details have not found.");
-            makeToast("toast-info", "API details have not found.", 5);
+            console.log("API details have not been found in local storage.");
+            //makeToast("toast-info", "API details have not found.", 5);
           }
         });
       } else {
@@ -309,8 +311,8 @@ if (detailView || orderView || globalCheckinView){
               apiKey = result["api-details"].apiKey;
               apiSubdomain = result["api-details"].apiSubdomain;
             } else {
-              console.log("API details have not found.");
-              makeToast("toast-info", "API details have not found.", 5);
+              console.log("API details have not been found.");
+              //makeToast("toast-info", "API details have not found.", 5);
             }
         });
         addDetails();
@@ -590,11 +592,14 @@ async function addDetails(mode) {
         }
 
         var liElement = document.querySelector('li.grid-body-row[data-id="'+thisID+'"]');
-        var tdElement = liElement.querySelector('td.total-column.align-right.item-total');
 
-        if (!tdElement){
-          console.log("issue finding td element for "+thisName);
+        if (liElement){
+          var tdElement = liElement.querySelector('td.total-column.align-right.item-total');
+          if (!tdElement){
+            console.log("issue finding td element for "+thisName);
+          }
         }
+
 
 
         // SECTION TO LIST ALLOCATED SERVICES BELOW ITEMS
@@ -819,61 +824,59 @@ async function addDetails(mode) {
 // API Call for addDetails
 function opportunityApiCall(opp){
 
+  if (apiKey && apiSubdomain){
+    return new Promise(function (resolve, reject) {
 
-  return new Promise(function (resolve, reject) {
-
-
-
-    //const apiUrl = 'https://api.current-rms.com/api/v1/opportunities/'+opp+'/opportunity_items?page='+pageNumber+'&q[description_present]=1&per_page=100';
-    const apiUrl = 'https://api.current-rms.com/api/v1/opportunities/'+opp+'/opportunity_items?page='+pageNumber+'&per_page=100';
-    // Options for the fetch request
-    const fetchOptions = {
-      method: 'GET',
-      headers: {
-        'X-SUBDOMAIN': apiSubdomain,
-        'X-AUTH-TOKEN': apiKey,
-      },
-    };
-    // Make the API call
-    fetch(apiUrl, fetchOptions)
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        return response.json();
-      })
-      .then(data => {
-        // Handle the API response data here
-        oppData.opportunity_items = oppData.opportunity_items.concat(data.opportunity_items); // merge new page of data into stock_levels
-        oppData.meta = data.meta; // merge new page of data into meta
-        resolve("ok");
-      })
-      .catch(error => {
-        // Handle errors here
-        console.error('Error making API request:', error);
-      });
-  //console.log(oppData.opportunity_items);
-  });
+      //const apiUrl = 'https://api.current-rms.com/api/v1/opportunities/'+opp+'/opportunity_items?page='+pageNumber+'&q[description_present]=1&per_page=100';
+      const apiUrl = 'https://api.current-rms.com/api/v1/opportunities/'+opp+'/opportunity_items?page='+pageNumber+'&per_page=100';
+      // Options for the fetch request
+      const fetchOptions = {
+        method: 'GET',
+        headers: {
+          'X-SUBDOMAIN': apiSubdomain,
+          'X-AUTH-TOKEN': apiKey,
+        },
+      };
+      // Make the API call
+      fetch(apiUrl, fetchOptions)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then(data => {
+          // Handle the API response data here
+          oppData.opportunity_items = oppData.opportunity_items.concat(data.opportunity_items); // merge new page of data into stock_levels
+          oppData.meta = data.meta; // merge new page of data into meta
+          resolve("ok");
+        })
+        .catch(error => {
+          // Handle errors here
+          console.error('Error making API request:', error);
+        });
+    //console.log(oppData.opportunity_items);
+    });
+  }
 }
 
 
 function recallApiDetails(){
   return new Promise(function (resolve, reject) {
-  chrome.storage.local.get(["api-details"]).then((result) => {
-    if (result["api-details"].apiKey){
-      apiKey = result["api-details"].apiKey;
-    } else {
-      console.log("No API key saved in local storage.");
-    }
-    if (result["api-details"].apiSubdomain){
-      apiSubdomain = result["api-details"].apiSubdomain;
-    } else {
-      console.log("No API Subdomain saved in local storage.");
-    }
-    resolve();
+    chrome.storage.local.get(["api-details"]).then((result) => {
+      if (result["api-details"].apiKey){
+        apiKey = result["api-details"].apiKey;
+      } else {
+        console.log("No API key saved in local storage.");
+      }
+      if (result["api-details"].apiSubdomain){
+        apiSubdomain = result["api-details"].apiSubdomain;
+      } else {
+        console.log("No API Subdomain saved in local storage.");
+      }
+      resolve();
+    });
   });
-});
-
 }
 
 // API Call for quarantines
@@ -2139,7 +2142,12 @@ const observer = new MutationObserver((mutations) => {
     } else if (scanningContainer && (messageText.includes('Allocation successful')  || messageText.includes('Items successfully marked as prepared'))){
         scanSound();
         addDetails(true);
-        //smartScanSetup(lastScan);
+
+        if (smartScan){
+          console.log("Running smartScanSetup");
+          smartScanSetup(lastScan);
+        }
+
         // set the container field to the new asset
         containerBox = document.querySelector('input[type="text"][name="container"]');
         containerBox.value = scanningContainer;
@@ -2314,6 +2322,13 @@ const observer = new MutationObserver((mutations) => {
           scanSound();
         }
 
+        if (messageText.includes('Allocation successful')){
+          if (detailView && smartScan){
+            console.log("Running smartScanSetup");
+            smartScanSetup(lastScan);
+          }
+        }
+
       // If any other alert appears, log it so that I can spot it and add it to this code
       } else {
         if (detailView){
@@ -2374,7 +2389,7 @@ const observer = new MutationObserver((mutations) => {
 function newCalculateContainerWeights() {
   // Initialize an object to store container information
   containerisationData = {};
-
+  bookedOutWeight = 0;
 
   // Get all table rows in the document
   var rows = document.querySelectorAll('tr');
@@ -2404,25 +2419,20 @@ function newCalculateContainerWeights() {
 
       var rowId = rows[i].id;
 
-      //var statusCell = rows[i].querySelector('td.status-column');
-      //var thisStatus = statusCell.textContent.trim();
-      //console.log(status);
+      var statusCell = rows[i].querySelector('td.status-column');
+      var thisStatus = statusCell.textContent.trim();
+      console.log(thisStatus);
 
       // get the weight of the item
       var thisItemWeight = rows[i].getAttribute('data-weight') * 1; // muliply to convert to number. note: the value given for bulk items it already multiplied by the quantity listed
 
 
-      //if (!thisAsset.includes("Sub-Rent") && thisAsset != "Group Booking" && thisAsset != "Bulk Stock" && thisAsset != "Non-Stock Booking" && thisAsset != "Asset Number"){
-      //    containerisationData[rowId] = {asset: thisAsset, name: rowName, container: thisContainer, weight: thisItemWeight, contents: {}};
-      //}
-
-      //if (thisAsset != "Asset Number" && thisStatus != "Reserved"){
       if (thisAsset != "Asset Number"){
           containerisationData[rowId] = {asset: thisAsset, name: rowName, container: thisContainer, weight: thisItemWeight, contents: {}};
+          if (thisStatus == "Booked Out"){
+            bookedOutWeight += thisItemWeight;
+          }
       }
-
-
-
 
     } catch(err) {
 
@@ -2516,7 +2526,31 @@ function newCalculateContainerWeights() {
     return html;
   }
 
+  if (bookedOutWeight > 0){
+    //const existingWeightElement =
+    console.log(bookedOutWeight);
 
+    var bookedOutWeightLi = document.getElementById("booked_out_weight");
+
+    if (bookedOutWeightLi){
+      bookedOutWeightLi.innerHTML = `${bookedOutWeight} ${weightUnit}`;
+    } else {
+      // Find the <li> element that contains the weight
+      var weightLi = document.querySelector('#weight_total').closest('li');
+
+      // Create a new <li> element
+      var newLi = document.createElement('li');
+
+      newLi.innerHTML = `<span>Booked Out Weight:</span>
+                         <span id="booked_out_weight";>
+                         ${bookedOutWeight} ${weightUnit}
+                         </span>`;
+
+      // Insert the new <li> after the existing one
+      weightLi.parentNode.insertBefore(newLi, weightLi.nextSibling);
+    }
+
+  }
 }
 
 
@@ -3049,8 +3083,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.messageType == "availabilityData"){
       console.log("Availability data was delivered");
       //console.log(message.messageData);
-      addAvailability(message.messageData);
-
+      if (orderView){
+        addAvailability(message.messageData);
+      }
   }
 
   if (message.messageType == "productQtyData"){
@@ -3298,11 +3333,9 @@ function activeIntercept(){
 
               console.log(matchingQuarantines);
               if (matchingQuarantines.length > 0){
-                console.log("2068");
                 var quarantineId = matchingQuarantines[0].id;
                 console.log(quarantineId);
               }
-
 
               makeToast("toast-error", "Failed to allocate asset(s)");
               makeToast("toast-error", "Asset "+myScan+" is in quarantine.<br><br><a class='toast-link' href='https://"+apiSubdomain+".current-rms.com/quarantines/"+quarantineId+"' target='_blank'>View Record</a>");
@@ -3751,13 +3784,13 @@ function smartScanSetup(assetScanned){
   // Loop through the elements and find the one with the correct inner text
   var desiredTdElement = null;
   for (var i = 0; i < tdElements.length; i++) {
-    console.log(tdElements[i].innerText.trim());
+    //console.log(tdElements[i].innerText.trim());
     if (tdElements[i].innerText.trim() == assetScanned) {
       desiredTdElement = tdElements[i];
       break; // Stop the loop once a match is found
     }
   }
-
+  console.log(desiredTdElement.innerText.trim());
   var parentRow = desiredTdElement.closest('tr');
   var oppItemId = parentRow.getAttribute("data-oi-id");
   console.log("It's opportunity item ID is: " + oppItemId);
@@ -3772,6 +3805,7 @@ function smartScanSetup(assetScanned){
   console.log(assetScannedPath);
   console.log("It has children:");
   console.log(assetScannedHasChildren);
+
 
   var childElements = parentLi.querySelectorAll("td.optional-01.asset.asset-column");
   for (var i = 0; i < childElements.length; i++) {
@@ -3795,6 +3829,7 @@ function smartScanSetup(assetScanned){
       }
     }
   }
+  console.log("Potenital SmartScan candidates:");
   console.log(smartScanCandidates);
 }
 
@@ -3808,7 +3843,8 @@ function findAssetNumbersByItemName(itemName) {
 
     // Map the filtered objects to their asset_number values
     const assetNumbers = matchingItems.map(stockItem => stockItem.asset_number);
-    return assetNumbers;
+    const filteredAssetNumbers = assetNumbers.filter(value => value !== "Group Booking" && value !== "Sub-Rent Booking");
+    return filteredAssetNumbers;
 }
 
 
@@ -3879,6 +3915,9 @@ function deallocateAsset(asset){
   .then(data => console.log(data))
   .catch(error => console.error('Error:', error));
 }
+
+
+//// END OF SMART SCAN SECTION
 
 
 
