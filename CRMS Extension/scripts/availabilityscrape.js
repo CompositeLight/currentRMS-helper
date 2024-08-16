@@ -174,8 +174,13 @@ if (shouldScrape()) {
         }
         console.log(availabilityData);
         console.log(Object.keys(availabilityData).length);
+
+        // grab the opp number to pass back for warehouse notes
+        var thisOpp = document.getElementById("opportunity_id").value;
+
+
         if (Object.keys(availabilityData).length > 0){
-          chrome.runtime.sendMessage({messageType: "availabilityData", messageData: availabilityData});
+          chrome.runtime.sendMessage({messageType: "availabilityData", messageData: availabilityData, messageOpp: thisOpp});
         }
         chrome.runtime.sendMessage({ action: "closeTab" });
     } else {

@@ -8,9 +8,6 @@ console.log("CurrentRMS Helper Activated.");
 // NOTE: THIS METHID IS NOW DEPRECIATED. USE THE SOUNDS SETTING IN THE EXTENSION POP-UP INSTEAD //
 muteExtensionSounds = false;
 
-
-
-
 // errorTimeout default value. This is the period after which a toast error message will vanish
 errorTimeout = 0;
 
@@ -66,6 +63,42 @@ let oppData = {opportunity_items:[], meta:[]}
 
 quarantineData = {quarantines:[], meta:[]};
 quarantinedItemList = [];
+
+
+// check if we're scraping warehouse notes for another window
+pageUrl = window.location.href;
+if (pageUrl.endsWith("view=d&scrape")){
+  createBlockOutOverlay();
+  var warehouseNotesLog = {};
+  var warehouseNotesDivs = document.querySelectorAll("div.opportunity-item-warehouse-notes");
+  warehouseNotesDivs.forEach((note, i) => {
+    var thisNote = note.innerText.trim();
+    var noteOwner = note.closest("li");
+    var noteGroup = noteOwner.dataset.id;
+    var noteItemId = noteOwner.querySelector(`tr#${CSS.escape(noteGroup)}`);
+    var itemRef = noteItemId.dataset.oiId;
+    warehouseNotesLog[itemRef] = thisNote;
+  });
+  console.log("NOTES:");
+  console.log(warehouseNotesLog);
+  if (Object.keys(warehouseNotesLog).length > 0){
+    chrome.runtime.sendMessage({messageType: "warehouseNotesData", messageData: warehouseNotesLog});
+  }
+  chrome.runtime.sendMessage({ action: "closeTab" });
+}
+
+function createBlockOutOverlay() {
+    var overlay = document.createElement('div');
+    overlay.className = 'block-out';
+    var text = document.createElement('span');
+    text.textContent = 'THIS DUMMY TAB IS FOR BACKGROUND SCRAPING BY CURRENT-RMS HELPER. THIS TAB SHOULD AUTO-CLOSE AFTER SCRAPING, SO IF YOU ARE READING THIS AN ERROR HAS OCCURED. SORRY!';
+    overlay.appendChild(text);
+    document.body.appendChild(overlay);
+
+}
+
+
+
 
 
 
@@ -245,7 +278,6 @@ if (detailView){
 
 if (detailView || orderView || globalCheckinView){
 
-  //chrome.runtime.sendMessage({messageType: "availabilityscape", messageText: opportunityID});
   // Load the all products list from local storage
   chrome.storage.local.get(["allProducts"]).then((result) => {
       if (result.allProducts == undefined){
@@ -2430,7 +2462,7 @@ function newCalculateContainerWeights() {
       if (thisAsset != "Asset Number"){
           containerisationData[rowId] = {asset: thisAsset, name: rowName, container: thisContainer, weight: thisItemWeight, contents: {}};
           if (thisStatus == "Booked Out"){
-            bookedOutWeight += thisItemWeight;
+            bookedOutWeight += (thisItemWeight*1);
           }
       }
 
@@ -3087,6 +3119,51 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         addAvailability(message.messageData);
       }
   }
+
+  if (message.messageType == "warehouseNotesData"){
+      console.log("Warehouse Notes Data was delivered");
+      console.log(message.messageData);
+      if (orderView){
+
+        let obj = message.messageData;
+        for (let key in obj) {
+          if (obj.hasOwnProperty(key)) {  // Ensures the key belongs to the object, not its prototype
+            let value = obj[key];
+
+            var liElement = document.querySelector('li.grid-body-row[data-id="'+key+'"]');
+
+            if (liElement){
+              var tdElement = liElement.querySelector('td.dd-name');
+              if (!tdElement){
+                console.log("issue finding dd-name td element for "+value);
+              } else {
+                let existingIcon = tdElement.querySelector("span.warehouse-tooltip");
+
+                if (existingIcon){
+                  existingIcon.remove();
+                }
+                  var itemName = tdElement.querySelector('a');
+                  if (!itemName){
+                    itemName = tdElement.querySelector('div.item-name');
+                  }
+                  if (itemName){
+                    itemName.insertAdjacentHTML('afterend', `<span class="warehouse-tooltip">&nbsp;<i class="icn-cobra-paste3"></i><span class="warehouse-tooltiptext"><u>WAREHOUSE NOTE:</u><br>${value}</span></span>`);
+                  }
+
+              }
+            }
+
+            console.log(`Key: ${key}, Value: ${value}`);
+            // Do something with the value
+          }
+        }
+        //addWarehouseNotes(message.messageData);
+      }
+  }
+
+
+
+
 
   if (message.messageType == "productQtyData"){
       console.log("Availability data was delivered");

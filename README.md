@@ -25,6 +25,10 @@ Aside from the Chrome Desktop Browser, users have successfully used this extensi
 
 
 ## Features / Updates
+- NEW: 1.31.13 - In Order View, items that have a Warehouse Note set now have an icon next to them. Mouse over the icon to see the warehouse note in a tooltip.
+
+- FIXED: 1.31.13 - Total weight calculation was sometimes showing incorrectly.
+
 - FIXED: 1.31.12 - Fixed an issue where quarantine blocking was always on.
 
 - NEW: 1.31.12 - In Detail View, the Attributes panel on the right shows the weight of equipment on the opportunity. Now, when you book items out a new field of "Booked Out Weight" is shown. Useful when loading multiple vehicles.

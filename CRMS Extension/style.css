@@ -399,3 +399,57 @@ a.allocation-link{
 .btn-success{
   overflow: visible !important;
 }
+
+.block-out {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    z-index: 1500;
+    pointer-events: auto; /* Prevent clicks on content underneath */
+
+    /* Flexbox to center the content */
+    display: flex;
+    align-items: center; /* Vertical centering */
+    justify-content: center; /* Horizontal centering */
+    color: white; /* White text color */
+    font-size: 4em; /* Larger text size */
+    text-align: center; /* Center text alignment */
+    padding: 20px; /* Padding for text */
+}
+
+
+
+
+
+
+.warehouse-tooltip {
+  position: relative;
+  display: inline-block;
+  cursor:help;
+}
+
+.warehouse-tooltip .warehouse-tooltiptext {
+  visibility: hidden;
+  min-width: 400px;
+  overflow-wrap: break-word;
+  max-width: 800px;
+  background-color: #555;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px;
+  position: absolute;
+  z-index: 1;
+  top: -5px;
+  left: 110%;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.warehouse-tooltip:hover .warehouse-tooltiptext {
+  visibility: visible;
+  opacity: 1;
+}

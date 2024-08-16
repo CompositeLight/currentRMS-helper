@@ -86,6 +86,8 @@ Once a container exists on the opportunity it can be accessed without further us
 
 - The OrderView Quick Picker now allows user input across multiple pages.
 
+- Items that have a Warehouse Note set now have an icon next to them. Mouse over the icon to see the warehouse note in a tooltip.
+
 
 ## Costs View
 

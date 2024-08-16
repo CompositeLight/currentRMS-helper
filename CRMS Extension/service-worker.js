@@ -76,7 +76,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             });
           }
         });
+        // now follow up by scraping detail view data
+        if (iAmScraping){
+          console.log("Request denied as a scrape is already in progress");
+        } else {
+
+          iAmScraping = true;
+          warehouseNotesScrape(message.messageOpp);
+        }
   } else if (message.messageType === "oppScrapeData") {
+        // response regarding inactive opps found for global search
         iAmScraping = false;
         // Forward the message to Content Script B
         chrome.tabs.query({}, function(tabs) {
@@ -86,7 +95,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             });
           }
         });
-
+  } else if (message.messageType === "warehouseNotesData") {
+        // response regarding inactive opps found for global search
+        iAmScraping = false;
+        // Forward the message to Content Script
+        chrome.tabs.query({}, function(tabs) {
+          if (tabs.length > 0){
+            tabs.forEach(function(tab) {
+                chrome.tabs.sendMessage(tab.id, message);
+            });
+          }
+        });
   } else if (message.messageType === "productQtyData") {
       iAmScraping = false;
       // Forward the message to Content Script
@@ -603,6 +622,24 @@ async function availabilityScrape(opp, start, end){
     });
   }
 }
+
+
+async function warehouseNotesScrape(opp){
+  await recallApiDetails();
+  if (apiSubdomain){
+    var scrapeURL = 'https://'+apiSubdomain+'.current-rms.com/opportunities/'+opp+'?view=d&scrape';
+    console.log(scrapeURL);
+    chrome.tabs.create({
+        url: scrapeURL,
+        active: false
+      }, function(tab) {
+      // You can perform actions here after the tab is created
+    });
+  }
+}
+
+
+
 
 
 
