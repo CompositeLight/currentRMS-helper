@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "CurrentRMS Helper",
-  "version": "1.31.14",
+  "version": "1.31.15",
   "description": "Adding functionality to Current RMS, one reduced click at a time.",
   "icons": {
     "16": "images/icon-16.png",
@@ -30,7 +30,10 @@
       "https://*.current-rms.com/products/*",
       "https://*.current-rms.com/opportunities/*view=c",
       "https://*.current-rms.com/opportunities?*",
-      "https://*.current-rms.com/opportunities"
+      "https://*.current-rms.com/opportunities",
+      "https://*.current-rms.com/products?*",
+      "https://*.current-rms.com/purchase_orders*",
+      "https://*.current-rms.com/services*"
     ],
     "js": ["scripts/content.js", "scripts/api.js"],
     "css": ["style.css"]
@@ -51,7 +54,7 @@
       "css": ["style.css"]
     },
     {
-      "matches": ["https://*.current-rms.com/products/*"],
+      "matches": ["https://*.current-rms.com/products/*", "https://*.current-rms.com/products?*"],
       "js": ["scripts/productpage.js"],
       "css": ["style.css"]
     },
@@ -63,6 +66,16 @@
     {
       "matches": ["https://*.current-rms.com/opportunity_items/new?*"],
       "js": ["scripts/additem.js"],
+      "css": ["style.css"]
+    },
+    {
+      "matches": ["https://*.current-rms.com/purchase_orders*"],
+      "js": ["scripts/purchaseorderspage.js"],
+      "css": ["style.css"]
+    },
+    {
+      "matches": ["https://*.current-rms.com/services*"],
+      "js": ["scripts/servicespage.js"],
       "css": ["style.css"]
     }
   ],

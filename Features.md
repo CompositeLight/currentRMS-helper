@@ -1,4 +1,4 @@
-# currentRMS-helper 1.31.12
+# currentRMS-helper 1.31.15
 
 Below is a list of current features. It's the same information as the Readme change log, but listed "per area" to make it easier for new users to see what the extension adds.
 
@@ -13,6 +13,8 @@ Below is a list of current features. It's the same information as the Readme cha
 - CSS override for Modal Headers so that they're "sticky". This means, on a very long Recent Actions modal for example, the close button never leaves the screen (which is unnecessary and irritating).
 
 - The settings panel includes an option to automatically dismiss error messages after a given number of seconds. Setting the value to 0 will cause default behaviour (ie. error messages will remain until clicked on). This is primarily aimed at those using scanners with integrated screens.
+
+- In the Opportunities, Products, Services and Purchase Order pages you can now change view settings without losing the current search term entered. This works when recalling saved views, or the Default, or when changing the Per Page setting. This doesn't work for Filter Selection - sadly that's a bit more complicated.
 
 ## Detail view
 
