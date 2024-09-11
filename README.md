@@ -26,6 +26,8 @@ Aside from the Chrome Desktop Browser, users have successfully used this extensi
 
 ## Features / Updates
 
+- New 1.31.14 - Added additional filter buttons in Detail View for Hide Booked Out and Hide Checked In.
+
 - NEW: 1.31.14 - Added an option to disable the controversial "Delete from Detail View" feature recently added to CurrentRMS. Active by default.
 
 - FIXED: 1.31.14 - In Detail View, the "Mark as Prepared" was in conflict with the new in built setting. You can now use them side by side.

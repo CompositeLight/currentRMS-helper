@@ -44,7 +44,7 @@ Below is a list of current features. It's the same information as the Readme cha
 
 - Override the CSS position properties of “toast container” to allow the alerts to be scrolled when they overflow the screen. This is particularly helpful when using “Check shortages” since a long list is generated that would previously flow off the screen and be unreadable (and unlike individual scan errors it’s just one big box, so you can’t dismiss the top ones to bring the other messages into view).
 
-- View options: Added tab buttons in Detail View to allow the user to hide Prepared items, hide Sub Rentals, and hide everything except Bulk/Non Stock Items. These hide the rows without effecting the display/sort order. When hiding Prepared Items, the parent item of an unprepared accessory will not be hidden until all its children are prepared.
+- View options: Added tab buttons in Detail View to allow the user to hide Prepared items, hide Booked Out items, hide Checked In items, hide Sub Rentals, and hide everything except Bulk/Non Stock Items. These hide the rows without effecting the display/sort order. When hiding Prepared, Booked Out or Checked In items, the parent item of an accessory will not be hidden until all its children match the given status.
 
 - Container Scanning: You can now set, and clear, the value of the Allocate Container Field via scanning. This feature works as follows:
 To set an asset as the Container value: User scans the "*container*"" barcode. User is then prompted to “scan container”. The next scan of an asset will attempt to set that asset as the container, with the following logic:
@@ -69,7 +69,7 @@ Once a container exists on the opportunity it can be accessed without further us
 
 - The Attributes panel on the right shows the weight of equipment on the opportunity. Now, when you book items out a new field of "Booked Out Weight" is shown. Useful when loading multiple vehicles.
 
-- Option to disable the controversial "Delete from Detail View" feature recently added to CurrentRMS. Active by default. 
+- Option to disable the controversial "Delete from Detail View" feature recently added to CurrentRMS. Active by default.
 
 ## Serialised Containers
 
