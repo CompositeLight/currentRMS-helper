@@ -229,7 +229,27 @@ document.querySelectorAll('input[name="bookoutcontainers"]').forEach(function(ra
 
 
 
+// Code for the disable detail view delete function setting:
+chrome.storage.local.get(["detailDelete"]).then((result) => {
+  console.log(result.detailDelete);
+  if (result.detailDelete){
+  var selectedOption = "input[name='detaildelete'][value='" + result.detailDelete + "']";
+    document.querySelector(selectedOption).checked = true;
+  }
+});
 
+document.querySelectorAll('input[name="detaildelete"]').forEach(function(radio) {
+  radio.addEventListener('change', function() {
+    console.log(this.value);
+    //await chrome.storage.session.set({ prepareSet: this.value });
+    chrome.storage.local.set({ "detailDelete": this.value }).then(() => {
+       console.log("Disable Detail View Delete setting changed");
+       console.log(this.value);
+       chrome.runtime.sendMessage("detailDelete");
+     });
+
+  });
+});
 
 
 

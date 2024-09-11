@@ -16,6 +16,8 @@ assetsGlobalScanned = [];
 
 notesHidden = false;
 preparedHidden = false;
+bookedOutHidden = false;
+checkedInHidden = false;
 bulkOnly = false;
 subhiresHidden = false;
 nonsubsHidden = false;
@@ -24,6 +26,7 @@ weightUnit = "kgs"; // default to kgs for weight unit
 inspectionAlerts = "";
 multiGlobal = true;
 bookOutContainers = false;
+detailDelete = true;
 containerScan = false;
 scanningContainer = "";
 freeScanReset = false;
@@ -243,7 +246,24 @@ chrome.storage.local.get(["bookOutContainers"]).then((result) => {
     console.log("Auto book out nested containers setting: "+bookOutContainers);
 });
 
+// get the detailDelete setting from local storage
+chrome.storage.local.get(["detailDelete"]).then((result) => {
+    if (result.detailDelete == undefined){
+      detailDelete = true;
 
+    } else if (result.detailDelete == "false"){
+      detailDelete = false;
+    } else if (result.detailDelete == "true"){
+      detailDelete = true;
+    } else {
+      detailDelete = result.detailDelete;
+    }
+    console.log("Disable Detail View Delete setting: "+detailDelete);
+
+    if (detailView){
+      hideDeleteButtons();
+    }
+});
 
 
 
@@ -1383,6 +1403,158 @@ function unhidePrepared() {
 }
 
 
+// Hide Booked Out button pushed
+
+function bookedOutButton(){
+  var element = document.getElementById("booked-out-button");
+  if (bookedOutHidden){
+    bookedOutHidden = false;
+    unhideBookedOut();
+    element.classList.remove("turned-on");
+    element.innerHTML = "Hide Booked Out";
+  } else {
+    bookedOutHidden = true;
+    hideBookedOut();
+    element.classList.add("turned-on");
+    element.innerHTML = "Booked Out Hidden";
+  }
+  focusInput();
+}
+
+
+
+function hideBookedOut() {
+    // Find the <ol> with id "opportunity_item_assets_body"
+    var opportunityList = document.getElementById("opportunity_item_assets_body");
+
+    // Check if the list exists
+    if (opportunityList) {
+        // Get all <li> elements within the <ol>
+        var listItems = opportunityList.getElementsByTagName("li");
+
+        // Iterate through each <li> element
+        for (var i = 0; i < listItems.length; i++) {
+            // Get all <tr> elements with class "status-column" within the current <li>
+            var statusRows = listItems[i].getElementsByClassName("status-column");
+
+            var hideThis = true;
+            // Check if any <tr> has inner text not including "Booked Out"
+            for (var j = 0; j < statusRows.length; j++) {
+                if (statusRows[j].innerText.indexOf("Booked Out") === -1) {
+                    hideThis = false;
+                    break; // If found, we will ignore this item in the list
+                }
+            }
+            // Hide the row
+            if (hideThis){
+              listItems[i].classList.add("hide-booked-out");
+
+              //uncheck the check box for this row
+              try {
+                listItems[i].querySelector("input.item-select").checked = false;
+              } catch (e) {
+              }
+
+            }
+        }
+    }
+}
+
+function unhideBookedOut() {
+    // Find the <ol> with id "opportunity_item_assets_body"
+    var opportunityList = document.getElementById("opportunity_item_assets_body");
+
+    // Check if the list exists
+    if (opportunityList) {
+        // Get all <li> elements within the <ol>
+        var listItems = opportunityList.getElementsByTagName("li");
+        // Iterate through each <li> element
+        for (var i = 0; i < listItems.length; i++) {
+            // Unhide the row
+            listItems[i].classList.remove("hide-booked-out");
+        }
+    }
+}
+
+
+// Hide Checked-In button pushed
+
+// Hide Booked Out button pushed
+
+function checkedInButton(){
+  var element = document.getElementById("checked-in-button");
+  if (checkedInHidden){
+    checkedInHidden = false;
+    unhideCheckedIn();
+    element.classList.remove("turned-on");
+    element.innerHTML = "Hide Checked In";
+  } else {
+    checkedInHidden = true;
+    hideCheckedIn();
+    element.classList.add("turned-on");
+    element.innerHTML = "Checked In Hidden";
+  }
+  focusInput();
+}
+
+
+
+function hideCheckedIn() {
+    // Find the <ol> with id "opportunity_item_assets_body"
+    var opportunityList = document.getElementById("opportunity_item_assets_body");
+
+    // Check if the list exists
+    if (opportunityList) {
+        // Get all <li> elements within the <ol>
+        var listItems = opportunityList.getElementsByTagName("li");
+
+        // Iterate through each <li> element
+        for (var i = 0; i < listItems.length; i++) {
+            // Get all <tr> elements with class "status-column" within the current <li>
+            var statusRows = listItems[i].getElementsByClassName("status-column");
+
+            var hideThis = true; // assume it will be hidden, unless we find a reason not to
+
+            // Check if any <tr> has inner text not including "Checked In" or "Completed"
+            for (var j = 0; j < statusRows.length; j++) {
+                if (statusRows[j].innerText.indexOf("Checked In") === -1 && statusRows[j].innerText.indexOf("Completed") === -1) {
+                    // If found, we will ignore this item in the list
+                    hideThis = false;
+                    break; // No need to check further
+                }
+            }
+            // Hide the row
+            if (hideThis){
+              listItems[i].classList.add("hide-checked-in");
+
+              //uncheck the check box for this row
+              try {
+                listItems[i].querySelector("input.item-select").checked = false;
+              } catch (e) {
+              }
+
+            }
+        }
+    }
+}
+
+function unhideCheckedIn() {
+    // Find the <ol> with id "opportunity_item_assets_body"
+    var opportunityList = document.getElementById("opportunity_item_assets_body");
+
+    // Check if the list exists
+    if (opportunityList) {
+        // Get all <li> elements within the <ol>
+        var listItems = opportunityList.getElementsByTagName("li");
+        // Iterate through each <li> element
+        for (var i = 0; i < listItems.length; i++) {
+            // Unhide the row
+            listItems[i].classList.remove("hide-checked-in");
+        }
+    }
+}
+
+
 // Bulk Only button pressed
 function bulkButton(){
   var element = document.getElementById("bulk-button");
@@ -2459,7 +2631,7 @@ function newCalculateContainerWeights() {
       var thisItemWeight = rows[i].getAttribute('data-weight') * 1; // muliply to convert to number. note: the value given for bulk items it already multiplied by the quantity listed
 
 
-      if (thisAsset != "Asset Number"){
+      if (thisAsset != "Asset Number"){ // ignore header row
           containerisationData[rowId] = {asset: thisAsset, name: rowName, container: thisContainer, weight: thisItemWeight, contents: {}};
           if (thisStatus == "Booked Out"){
             bookedOutWeight += (thisItemWeight*1);
@@ -2468,7 +2640,7 @@ function newCalculateContainerWeights() {
 
     } catch(err) {
 
-      if (err.name != "TypeError"){ // ignore errors that are caused becase elements don't exist on the page
+      if (err.name != "TypeError"){ // ignore errors that are caused because elements don't exist on the page
         console.log(err);
       }
     }
@@ -2741,6 +2913,20 @@ if (detailView){
     listItem.id = "prepared-button";
     listContainer.appendChild(listItem);
 
+    // Create a tab button for hiding booked out items
+    var listItem = document.createElement("li");
+    listItem.classList.add("helper-btn");
+    listItem.textContent = "Hide Booked Out";
+    listItem.id = "booked-out-button";
+    listContainer.appendChild(listItem);
+
+    // Create a tab button for hiding checked in items
+    var listItem = document.createElement("li");
+    listItem.classList.add("helper-btn");
+    listItem.textContent = "Hide Checked In";
+    listItem.id = "checked-in-button";
+    listContainer.appendChild(listItem);
+
     // Create a tab button for Bulk Only
     var listItem = document.createElement("li");
     listItem.classList.add("helper-btn");
@@ -2771,6 +2957,8 @@ if (detailView){
 
     document.getElementById("notes-button").addEventListener("click", notesButton);
     document.getElementById("prepared-button").addEventListener("click", preparedButton);
+    document.getElementById("booked-out-button").addEventListener("click", bookedOutButton);
+    document.getElementById("checked-in-button").addEventListener("click", checkedInButton);
     document.getElementById("bulk-button").addEventListener("click", bulkButton);
     document.getElementById("subhires-button").addEventListener("click", subhiresButton);
     document.getElementById("nonsubs-button").addEventListener("click", nonsubsButton);
@@ -3048,8 +3236,14 @@ chrome.runtime.sendMessage({messageType: "check"}, function(response) {
 // auto set "mark as prepared" to on depending on the user setting
 chrome.storage.local.get(["setPrepared"]).then((result) => {
   if (result.setPrepared != "false" && detailView){
-    var preparedButton = document.querySelectorAll('label[for="mark_as_prepared"][class="checkbox toggle android"]');
-    preparedButton[0].click();
+
+    var preparedCheckbox = document.getElementById('mark_as_prepared');
+    if(!preparedCheckbox.checked){
+      preparedCheckbox.click();
+    };
+
+    //var preparedButton = document.querySelectorAll('label[for="mark_as_prepared"][class="checkbox toggle android"]');
+    //preparedButton[0].click();
     focusInput();
   }
 });
@@ -3193,10 +3387,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           bookOutContainers = true;
 
         } else {
-          console.log("bookOutContainers not retrieved");
+          bookOutContainers = false;
         }
       });
       console.log(bookOutContainers);
+  } else if (message == "detailDelete"){
+      chrome.storage.local.get(["detailDelete"]).then((result) => {
+        console.log(result);
+        if (result.detailDelete == "true"){
+          detailDelete = true;
+
+        } else {
+          detailDelete = false;
+        }
+        console.log(detailDelete);
+        hideDeleteButtons();
+      });
+
   }
 
 
@@ -3334,12 +3541,28 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 
 
-// Intercept scanning actions to handle special scans without submitting the form
+
 
 if (detailView){
-  activeIntercept();
-}
+  activeIntercept(); // Intercept scanning actions to handle special scans without submitting the form
+};
 
+
+function hideDeleteButtons(){
+  if (detailDelete){
+    let allDeleteButtons = document.querySelectorAll("li.danger");
+    allDeleteButtons.forEach((item, i) => {
+      item.classList.add("hide-delete");
+    });
+  } else {
+    let allHiddenDeletes = document.querySelectorAll(".hide-delete");
+    console.log(allHiddenDeletes); // Check if elements are selected
+    allHiddenDeletes.forEach((item, i) => {
+      item.classList.remove("hide-delete");
+    });
+
+  }
+}
 
 
 function activeIntercept(){

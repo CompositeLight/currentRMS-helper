@@ -3,6 +3,14 @@
   display: none !important;
 }
 
+.hide-booked-out{
+  display: none !important;
+}
+
+.hide-checked-in{
+  display: none !important;
+}
+
 .hide-nonbulk{
   display: none !important;
 }
@@ -34,7 +42,7 @@
 
 .helper-btn {
     display: inline-block;
-    margin-bottom: 0;
+    margin-bottom: 1px;
     font-weight: normal;
     text-align: center;
     vertical-align: middle;
@@ -452,4 +460,9 @@ a.allocation-link{
 .warehouse-tooltip:hover .warehouse-tooltiptext {
   visibility: visible;
   opacity: 1;
+}
+
+
+.hide-delete{
+  display: none !important;
 }
