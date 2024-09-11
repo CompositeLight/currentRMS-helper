@@ -24,6 +24,7 @@ weightUnit = "kgs"; // default to kgs for weight unit
 inspectionAlerts = "";
 multiGlobal = true;
 bookOutContainers = false;
+detailDelete = true;
 containerScan = false;
 scanningContainer = "";
 freeScanReset = false;
@@ -243,7 +244,24 @@ chrome.storage.local.get(["bookOutContainers"]).then((result) => {
     console.log("Auto book out nested containers setting: "+bookOutContainers);
 });
 
+// get the detailDelete setting from local storage
+chrome.storage.local.get(["detailDelete"]).then((result) => {
+    if (result.detailDelete == undefined){
+      detailDelete = true;
 
+    } else if (result.detailDelete == "false"){
+      detailDelete = false;
+    } else if (result.detailDelete == "true"){
+      detailDelete = true;
+    } else {
+      detailDelete = result.detailDelete;
+    }
+    console.log("Disable Detail View Delete setting: "+detailDelete);
+
+    if (detailView){
+      hideDeleteButtons();
+    }
+});
 
 
 
@@ -3048,8 +3066,14 @@ chrome.runtime.sendMessage({messageType: "check"}, function(response) {
 // auto set "mark as prepared" to on depending on the user setting
 chrome.storage.local.get(["setPrepared"]).then((result) => {
   if (result.setPrepared != "false" && detailView){
-    var preparedButton = document.querySelectorAll('label[for="mark_as_prepared"][class="checkbox toggle android"]');
-    preparedButton[0].click();
+
+    var preparedCheckbox = document.getElementById('mark_as_prepared');
+    if(!preparedCheckbox.checked){
+      preparedCheckbox.click();
+    };
+
+    //var preparedButton = document.querySelectorAll('label[for="mark_as_prepared"][class="checkbox toggle android"]');
+    //preparedButton[0].click();
     focusInput();
   }
 });
@@ -3193,10 +3217,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           bookOutContainers = true;
 
         } else {
-          console.log("bookOutContainers not retrieved");
+          bookOutContainers = false;
         }
       });
       console.log(bookOutContainers);
+  } else if (message == "detailDelete"){
+      chrome.storage.local.get(["detailDelete"]).then((result) => {
+        console.log(result);
+        if (result.detailDelete == "true"){
+          detailDelete = true;
+
+        } else {
+          detailDelete = false;
+        }
+        console.log(detailDelete);
+        hideDeleteButtons();
+      });
+
   }
 
 
@@ -3334,12 +3371,28 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 
 
-// Intercept scanning actions to handle special scans without submitting the form
+
 
 if (detailView){
-  activeIntercept();
-}
+  activeIntercept(); // Intercept scanning actions to handle special scans without submitting the form
+};
 
+
+function hideDeleteButtons(){
+  if (detailDelete){
+    let allDeleteButtons = document.querySelectorAll("li.danger");
+    allDeleteButtons.forEach((item, i) => {
+      item.classList.add("hide-delete");
+    });
+  } else {
+    let allHiddenDeletes = document.querySelectorAll(".hide-delete");
+    console.log(allHiddenDeletes); // Check if elements are selected
+    allHiddenDeletes.forEach((item, i) => {
+      item.classList.remove("hide-delete");
+    });
+
+  }
+}
 
 
 function activeIntercept(){

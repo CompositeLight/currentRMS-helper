@@ -146,6 +146,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             });
           }
         });
+  } else if (message == "detailDelete") {
+        // Forward the message to Content Script
+        chrome.tabs.query({}, function(tabs) {
+          if (tabs.length > 0){
+            tabs.forEach(function(tab) {
+                chrome.tabs.sendMessage(tab.id, message);
+            });
+          }
+        });
 
   } else {
 

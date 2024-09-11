@@ -69,6 +69,8 @@ Once a container exists on the opportunity it can be accessed without further us
 
 - The Attributes panel on the right shows the weight of equipment on the opportunity. Now, when you book items out a new field of "Booked Out Weight" is shown. Useful when loading multiple vehicles.
 
+- Option to disable the controversial "Delete from Detail View" feature recently added to CurrentRMS. Active by default. 
+
 ## Serialised Containers
 
 - When scanning assets into a container you will receive a verbal warning when trying to scan in an item that already is, or already is in, a container.

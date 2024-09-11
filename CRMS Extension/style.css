@@ -453,3 +453,8 @@ a.allocation-link{
   visibility: visible;
   opacity: 1;
 }
+
+
+.hide-delete{
+  display: none !important;
+}

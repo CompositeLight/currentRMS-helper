@@ -1,4 +1,4 @@
-# currentRMS-helper 1.31.12
+# currentRMS-helper 1.31.14
 This is a work-in-progress Chrome extension to add functionality to the CurrentRMS web interface. It was created out of our frustration waiting on "quality of life" modifications to make the user experience better - specifically, as part of warehouse operations. Our warehouse team has found it helpful, so we've decided to share it with others. As it was created with our own in-house work processes in mind, it may or may not work for other users. However, my hope is that others (who are better at coding that I) might take this forward, or even inspire the CurrentRMS team to implement some of the changes within the main product.
 
 **DISCLAIMER: This is a first attempt work-in-progress written by me, an utter rookie in JavaScript. Use at your own risk. This code is in no way affiliated with InspHire Ltd.**
@@ -25,6 +25,11 @@ Aside from the Chrome Desktop Browser, users have successfully used this extensi
 
 
 ## Features / Updates
+
+- NEW: 1.31.14 - Added an option to disable the controversial "Delete from Detail View" feature recently added to CurrentRMS. Active by default.
+
+- FIXED: 1.31.14 - In Detail View, the "Mark as Prepared" was in conflict with the new in built setting. You can now use them side by side.
+
 - NEW: 1.31.13 - In Order View, items that have a Warehouse Note set now have an icon next to them. Mouse over the icon to see the warehouse note in a tooltip.
 
 - FIXED: 1.31.13 - Total weight calculation was sometimes showing incorrectly.

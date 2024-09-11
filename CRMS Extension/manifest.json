@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "CurrentRMS Helper",
-  "version": "1.31.13",
+  "version": "1.31.14",
   "description": "Adding functionality to Current RMS, one reduced click at a time.",
   "icons": {
     "16": "images/icon-16.png",
