@@ -110,6 +110,7 @@ if (shouldScrape()) {
 }  else {
     console.log("This will not be scraped (URL is missing 'scrape' suffix).");
 
+    // Section to add quick shortcut to reach Detail View directly by clicking on the avater symbol
     // Add event listener to the document (or a parent element)
     document.addEventListener('click', function(event) {
         // Check if the clicked element or any of its ancestors is a td with class 'row-avatar'
@@ -135,7 +136,8 @@ if (shouldScrape()) {
         }
     });
 
-    // retain text entered into the search box when changing view, group etc.
+
+    // Section to retain text entered into the search box when changing view, group etc.
 
     let dropdownArea = document.querySelector(".inline-list");
 
@@ -158,7 +160,6 @@ if (shouldScrape()) {
             });
         });
     }
-
 
 
 
