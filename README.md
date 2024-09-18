@@ -1,4 +1,4 @@
-# currentRMS-helper 1.31.14
+# currentRMS-helper 1.31.16
 This is a work-in-progress Chrome extension to add functionality to the CurrentRMS web interface. It was created out of our frustration waiting on "quality of life" modifications to make the user experience better - specifically, as part of warehouse operations. Our warehouse team has found it helpful, so we've decided to share it with others. As it was created with our own in-house work processes in mind, it may or may not work for other users. However, my hope is that others (who are better at coding that I) might take this forward, or even inspire the CurrentRMS team to implement some of the changes within the main product.
 
 **DISCLAIMER: This is a first attempt work-in-progress written by me, an utter rookie in JavaScript. Use at your own risk. This code is in no way affiliated with InspHire Ltd.**
@@ -25,8 +25,15 @@ Aside from the Chrome Desktop Browser, users have successfully used this extensi
 
 
 ## Features / Updates
+- NEW: 1.31.16 - Recent Tab: The top menu bar now features a "Recent" menu item. This offers quick links to the last 10 opportunities you looked at, in the order than you looked at them. I'm hoping to add Favourites in the future, but this was actually easier to do. When you're generally bouncing between the same few jobs on any given day, this should be a lot faster than going via the Opportunities list.
 
-- New 1.31.14 - Added additional filter buttons in Detail View for Hide Booked Out and Hide Checked In.
+- NEW: 1.31.16 - In Order View, you can now click on the opportunity grand total at the bottom of the page to jump to the Deal Price screen more intuitively.
+
+- NEW: 1.31.16 - In Order View, the Product/Service picker inputs now have a minimum of 0, so you can't accidentally over-click into a negative number.
+
+- NEW: 1.31.15 - In the Opportunities, Products, Services and Purchase Order pages you can now change view settings without losing the current search term entered. This works when recalling saved views, or the Default, or when changing the Per Page setting. This doesn't work for Filter Selection - sadly that's a bit more complicated.
+
+- NEW: 1.31.14 - Added additional filter buttons in Detail View for Hide Booked Out and Hide Checked In.
 
 - NEW: 1.31.14 - Added an option to disable the controversial "Delete from Detail View" feature recently added to CurrentRMS. Active by default.
 

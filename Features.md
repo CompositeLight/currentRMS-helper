@@ -1,4 +1,4 @@
-# currentRMS-helper 1.31.12
+# currentRMS-helper 1.31.16
 
 Below is a list of current features. It's the same information as the Readme change log, but listed "per area" to make it easier for new users to see what the extension adds.
 
@@ -13,6 +13,10 @@ Below is a list of current features. It's the same information as the Readme cha
 - CSS override for Modal Headers so that they're "sticky". This means, on a very long Recent Actions modal for example, the close button never leaves the screen (which is unnecessary and irritating).
 
 - The settings panel includes an option to automatically dismiss error messages after a given number of seconds. Setting the value to 0 will cause default behaviour (ie. error messages will remain until clicked on). This is primarily aimed at those using scanners with integrated screens.
+
+- In the Opportunities, Products, Services and Purchase Order pages you can now change view settings without losing the current search term entered. This works when recalling saved views, or the Default, or when changing the Per Page setting. This doesn't work for Filter Selection - sadly that's a bit more complicated.
+
+- Added a Recent tab to the top menu bar. This offers quick links to the last 10 opportunities you looked at, in the order than you looked at them.
 
 ## Detail view
 
@@ -88,7 +92,11 @@ Once a container exists on the opportunity it can be accessed without further us
 
 - The OrderView Quick Picker now allows user input across multiple pages.
 
+- The Product/Service picker inputs now have a minimum of 0, so you can't accidentally over-click into a negative number.
+
 - Items that have a Warehouse Note set now have an icon next to them. Mouse over the icon to see the warehouse note in a tooltip.
+
+- You can now click on the opportunity grand total at the bottom of the page to jump to the Deal Price screen more intuitively.
 
 
 ## Costs View

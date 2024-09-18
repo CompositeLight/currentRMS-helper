@@ -106,9 +106,7 @@ function createBlockOutOverlay() {
 
 
 
-// check if we're in Order
-
-//var orderView = document.querySelectorAll('a[name="activities"][class="anchor"]');
+// check if we're in Order View
 var orderView = document.querySelectorAll('div[class="row sticky quick-add-section"]');
 if (orderView.length != 0){
   orderView = true;
@@ -852,7 +850,17 @@ async function addDetails(mode) {
 
     }
 
-
+  // create a Set Deal Price link for the grand total if we're not already in a deal
+  const grandTotal = document.querySelector('td.grand-total, td.opportunity-total');
+  if (grandTotal){
+    if (!grandTotal.querySelector('a')) {
+      const valueString = grandTotal.innerText;
+      grandTotal.innerHTML = `
+      <a data-remote="" href="/opportunities/${opportunityID}/set_deal_price_modal">
+       <span>${valueString}</span>
+     </a>`;
+    }
+  }
 
 
 
@@ -2144,7 +2152,7 @@ function updateHidings(){
     hideNonBulkRows();
   }
   if (subhiresHidden){
-    hideSubhires();
+    hideSubHires();
   }
   if (nonsubsHidden){
     hideNonSubs();
@@ -3075,6 +3083,7 @@ if (detailView){
       }
       }, 10);
   });
+
 }
 
 
@@ -4468,10 +4477,19 @@ if (orderView){
       // Perform your desired actions here
       const pickerModal = document.getElementById('pickerModal');
 
+      var pickerBody = pickerModal.querySelector("tbody");
+
+      // set minimum of all number inputs to 0
+      if (pickerBody){
+          var allPickerRows = pickerBody.querySelectorAll("tr");
+          allPickerRows.forEach((item, i) => {
+          item.querySelector('input[type="number"]').min = "0";
+        });
+      }
+
       let activePageLi = pickerModal.querySelector("li.active");
 
       if (!activePageLi){
-        //console.log("Resetting picker maps");
         pickerPageMemory.clear();
         pickerQtyMemory.clear();
         pickerChosenQtyMemory.clear();
@@ -4481,7 +4499,7 @@ if (orderView){
       }
 
       let activePage = activePageLi.innerText;
-      var pickerBody = pickerModal.querySelector("tbody");
+
 
       // first restore saved values into the rows, if they have been entered Previously
       if (pickerQtyMemory.has(activePage) && pickerPageStorage.has(activePage)){
@@ -4545,7 +4563,6 @@ if (orderView){
         rowsAdded = true;
 
       }
-
 
     }
 

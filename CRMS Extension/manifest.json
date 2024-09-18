@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "CurrentRMS Helper",
-  "version": "1.31.14",
+  "version": "1.31.16",
   "description": "Adding functionality to Current RMS, one reduced click at a time.",
   "icons": {
     "16": "images/icon-16.png",
@@ -30,39 +30,52 @@
       "https://*.current-rms.com/products/*",
       "https://*.current-rms.com/opportunities/*view=c",
       "https://*.current-rms.com/opportunities?*",
-      "https://*.current-rms.com/opportunities"
+      "https://*.current-rms.com/opportunities",
+      "https://*.current-rms.com/products?*",
+      "https://*.current-rms.com/purchase_orders*",
+      "https://*.current-rms.com/services*"
     ],
-    "js": ["scripts/content.js", "scripts/api.js"],
+    "js": ["scripts/content.js", "scripts/addtab.js"],
     "css": ["style.css"]
     },
     {
       "matches": ["https://*.current-rms.com/availability/opportunity/*"],
-      "js": ["scripts/availabilityscrape.js"],
+      "js": ["scripts/availabilityscrape.js", "scripts/addtab.js"],
       "css": ["scrapestyle.css"]
     },
     {
       "matches": ["https://*.current-rms.com/opportunity_items/*/edit?rp=*"],
-      "js": ["scripts/removeasset.js"],
+      "js": ["scripts/removeasset.js", "scripts/addtab.js"],
       "css": ["scrapestyle.css"]
     },
     {
       "matches": ["https://*.current-rms.com/opportunities/*view=c"],
-      "js": ["scripts/costsview.js"],
+      "js": ["scripts/costsview.js", "scripts/addtab.js"],
       "css": ["style.css"]
     },
     {
-      "matches": ["https://*.current-rms.com/products/*"],
-      "js": ["scripts/productpage.js"],
+      "matches": ["https://*.current-rms.com/products/*", "https://*.current-rms.com/products?*"],
+      "js": ["scripts/productpage.js", "scripts/addtab.js"],
       "css": ["style.css"]
     },
     {
       "matches": ["https://*.current-rms.com/opportunities?*", "https://*.current-rms.com/opportunities"],
-      "js": ["scripts/globalsearchoppscrape.js"],
+      "js": ["scripts/globalsearchoppscrape.js", "scripts/addtab.js"],
       "css": ["scrapestyle.css"]
     },
     {
       "matches": ["https://*.current-rms.com/opportunity_items/new?*"],
-      "js": ["scripts/additem.js"],
+      "js": ["scripts/additem.js", "scripts/addtab.js"],
+      "css": ["style.css"]
+    },
+    {
+      "matches": ["https://*.current-rms.com/purchase_orders*"],
+      "js": ["scripts/purchaseorderspage.js", "scripts/addtab.js"],
+      "css": ["style.css"]
+    },
+    {
+      "matches": ["https://*.current-rms.com/services*"],
+      "js": ["scripts/servicespage.js", "scripts/addtab.js"],
       "css": ["style.css"]
     }
   ],
