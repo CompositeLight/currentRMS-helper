@@ -1,4 +1,4 @@
-# currentRMS-helper 1.31.16
+# currentRMS-helper 1.31.17
 This is a work-in-progress Chrome extension to add functionality to the CurrentRMS web interface. It was created out of our frustration waiting on "quality of life" modifications to make the user experience better - specifically, as part of warehouse operations. Our warehouse team has found it helpful, so we've decided to share it with others. As it was created with our own in-house work processes in mind, it may or may not work for other users. However, my hope is that others (who are better at coding that I) might take this forward, or even inspire the CurrentRMS team to implement some of the changes within the main product.
 
 **DISCLAIMER: This is a first attempt work-in-progress written by me, an utter rookie in JavaScript. Use at your own risk. This code is in no way affiliated with InspHire Ltd.**
@@ -25,6 +25,10 @@ Aside from the Chrome Desktop Browser, users have successfully used this extensi
 
 
 ## Features / Updates
+- NEW: 1.31.17 - Detail View Scroll Memory - In Detail View, page reload actions (such as reverting an item) mean you lose your place in the list, which can be very disorientating. This 'Scroll Memory' feature will now log your scroll position any time you click anywhere on the page, and try to return you to that position after the reload. It will also return extension view filters (yellow buttons) to their previous state (as this has an impact on the scroll position). Known limitation: The in-built filters (accessed via the funnel button under the Functions tab are not currently remembered, so if you use those you might not return to where you expect. I'll try to work this in when I can).
+
+- FIXED: 1.31.17 - Using the view filters in Detail View (yellow buttons) could cause the down down menues at the end of lines to not function properly.
+
 - NEW: 1.31.16 - Recent Tab: The top menu bar now features a "Recent" menu item. This offers quick links to the last 10 opportunities you looked at, in the order than you looked at them. I'm hoping to add Favourites in the future, but this was actually easier to do. When you're generally bouncing between the same few jobs on any given day, this should be a lot faster than going via the Opportunities list.
 
 - NEW: 1.31.16 - In Order View, you can now click on the opportunity grand total at the bottom of the page to jump to the Deal Price screen more intuitively.

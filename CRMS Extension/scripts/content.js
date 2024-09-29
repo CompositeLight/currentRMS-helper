@@ -404,9 +404,86 @@ if (editOppView){
     console.log('Schedule not found');
   }
 
+}
 
+
+
+// Code chunk to enable auto-scrolling to last position in Order or Detail View.
+if (detailView || orderView){
+
+  var currentView = "order";
+  if (detailView){
+    currentView = "detail";
+  }
+
+  chrome.storage.local.get(["last-scroll"]).then((result) => {
+      if (result){
+        console.log(result);
+        if (result["last-scroll"].opp == opportunityID && result["last-scroll"].view == currentView){
+          console.log("Reloading scroll position!");
+          window.scrollTo(0, result["last-scroll"].scroll);
+
+          if (result["last-scroll"].notesHidden == true){
+            document.getElementById("notes-button").click();
+          }
+
+          if (result["last-scroll"].preparedHidden == true){
+            document.getElementById("prepared-button").click();
+          }
+
+          if (result["last-scroll"].bookedOutHidden == true){
+            document.getElementById("booked-out-button").click();
+          }
+
+          if (result["last-scroll"].checkedInHidden == true){
+            document.getElementById("checked-in-button").click();
+          }
+
+          if (result["last-scroll"].bulkOnly == true){
+            document.getElementById("bulk-button").click();
+          }
+
+          if (result["last-scroll"].subhiresHidden == true){
+            document.getElementById("subhires-button").click();
+          }
+
+          if (result["last-scroll"].nonsubsHidden == true){
+            document.getElementById("nonsubs-button").click();
+          }
+
+          if (result["last-scroll"].nonShortsHidden == true){
+            document.getElementById("nonshorts-button").click();
+          }
+
+        } else {
+
+        }
+      }
+  });
+
+  // Save scroll position on click
+  document.addEventListener('click', () => {
+      const scrollPosition = window.scrollY;
+      var currentView = "order";
+      if (detailView){
+        currentView = "detail";
+      }
+
+      chrome.storage.local.set({ 'last-scroll': {opp: opportunityID, view: currentView, scroll: scrollPosition, notesHidden: notesHidden, preparedHidden: preparedHidden, bookedOutHidden: bookedOutHidden, checkedInHidden:checkedInHidden, bulkOnly: bulkOnly, subhiresHidden: subhiresHidden, nonsubsHidden: nonsubsHidden, nonShortsHidden: nonShortsHidden} }).then(() => {
+         console.log("Scroll position was updated");
+      });
+  });
 
 }
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1366,6 +1443,13 @@ function hidePrepared() {
 
         // Iterate through each <li> element
         for (var i = 0; i < listItems.length; i++) {
+
+            // ignore dropdown menu elements
+            if (listItems[i].parentElement.tagName === 'UL' && listItems[i].parentElement.classList.contains('dropdown-menu')) {
+              // If the parent is a UL with class "dropdown-menu"
+              break;
+            }
+
             // Get all <tr> elements with class "status-column" within the current <li>
             var statusRows = listItems[i].getElementsByClassName("status-column");
             // Assume the default background color is yellow
@@ -1440,8 +1524,17 @@ function hideBookedOut() {
         // Get all <li> elements within the <ol>
         var listItems = opportunityList.getElementsByTagName("li");
 
+
+
         // Iterate through each <li> element
         for (var i = 0; i < listItems.length; i++) {
+
+            // ignore dropdown menu elements
+            if (listItems[i].parentElement.tagName === 'UL' && listItems[i].parentElement.classList.contains('dropdown-menu')) {
+              // If the parent is a UL with class "dropdown-menu"
+              break;
+            }
+
             // Get all <tr> elements with class "status-column" within the current <li>
             var statusRows = listItems[i].getElementsByClassName("status-column");
 
@@ -1518,6 +1611,13 @@ function hideCheckedIn() {
 
         // Iterate through each <li> element
         for (var i = 0; i < listItems.length; i++) {
+
+            // ignore dropdown menu elements
+            if (listItems[i].parentElement.tagName === 'UL' && listItems[i].parentElement.classList.contains('dropdown-menu')) {
+              // If the parent is a UL with class "dropdown-menu"
+              break;
+            }
+
             // Get all <tr> elements with class "status-column" within the current <li>
             var statusRows = listItems[i].getElementsByClassName("status-column");
 
