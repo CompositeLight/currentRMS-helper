@@ -1444,12 +1444,6 @@ function hidePrepared() {
         // Iterate through each <li> element
         for (var i = 0; i < listItems.length; i++) {
 
-            // ignore dropdown menu elements
-            if (listItems[i].parentElement.tagName === 'UL' && listItems[i].parentElement.classList.contains('dropdown-menu')) {
-              // If the parent is a UL with class "dropdown-menu"
-              break;
-            }
-
             // Get all <tr> elements with class "status-column" within the current <li>
             var statusRows = listItems[i].getElementsByClassName("status-column");
             // Assume the default background color is yellow
@@ -1463,6 +1457,14 @@ function hidePrepared() {
                     break; // No need to check further
                 }
             }
+
+            // ignore dropdown menu elements
+            if (listItems[i].parentElement.tagName === 'UL' && listItems[i].parentElement.classList.contains('dropdown-menu')) {
+              // If the parent is a UL with class "dropdown-menu"
+              hideThis = false;
+            }
+
+
             // Hide the row
             if (hideThis){
               listItems[i].classList.add("hide-prepared");
@@ -1529,12 +1531,6 @@ function hideBookedOut() {
         // Iterate through each <li> element
         for (var i = 0; i < listItems.length; i++) {
 
-            // ignore dropdown menu elements
-            if (listItems[i].parentElement.tagName === 'UL' && listItems[i].parentElement.classList.contains('dropdown-menu')) {
-              // If the parent is a UL with class "dropdown-menu"
-              break;
-            }
-
             // Get all <tr> elements with class "status-column" within the current <li>
             var statusRows = listItems[i].getElementsByClassName("status-column");
 
@@ -1546,6 +1542,14 @@ function hideBookedOut() {
                     break; // If found, we will ignore this item in the list
                 }
             }
+
+            // ignore dropdown menu elements
+            if (listItems[i].parentElement.tagName === 'UL' && listItems[i].parentElement.classList.contains('dropdown-menu')) {
+              // If the parent is a UL with class "dropdown-menu"
+              hideThis = false;
+            }
+
+
             // Hide the row
             if (hideThis){
               listItems[i].classList.add("hide-booked-out");
@@ -1612,12 +1616,6 @@ function hideCheckedIn() {
         // Iterate through each <li> element
         for (var i = 0; i < listItems.length; i++) {
 
-            // ignore dropdown menu elements
-            if (listItems[i].parentElement.tagName === 'UL' && listItems[i].parentElement.classList.contains('dropdown-menu')) {
-              // If the parent is a UL with class "dropdown-menu"
-              break;
-            }
-
             // Get all <tr> elements with class "status-column" within the current <li>
             var statusRows = listItems[i].getElementsByClassName("status-column");
 
@@ -1631,6 +1629,13 @@ function hideCheckedIn() {
                     break; // No need to check further
                 }
             }
+
+            // ignore dropdown menu elements
+            if (listItems[i].parentElement.tagName === 'UL' && listItems[i].parentElement.classList.contains('dropdown-menu')) {
+              // If the parent is a UL with class "dropdown-menu"
+              hideThis = false;
+            }
+
             // Hide the row
             if (hideThis){
               listItems[i].classList.add("hide-checked-in");
@@ -2731,9 +2736,9 @@ function newCalculateContainerWeights() {
 
       var rowId = rows[i].id;
 
+      // get the status of the row
       var statusCell = rows[i].querySelector('td.status-column');
       var thisStatus = statusCell.textContent.trim();
-      console.log(thisStatus);
 
       // get the weight of the item
       var thisItemWeight = rows[i].getAttribute('data-weight') * 1; // muliply to convert to number. note: the value given for bulk items it already multiplied by the quantity listed

@@ -657,7 +657,6 @@ async function warehouseNotesScrape(opp){
 async function qtyInUseScrape(prod, opp){
   await recallApiDetails();
   if (apiSubdomain){
-
     var scrapeURL = 'https://'+apiSubdomain+'.current-rms.com/availability/opportunity/'+opp+'?'+prod+'&scrapeqty';
     console.log(scrapeURL);
     chrome.tabs.create({
@@ -673,7 +672,6 @@ async function qtyInUseScrape(prod, opp){
 async function globalSearchScrape(toSearch){
   await recallApiDetails();
   if (apiSubdomain){
-https://amps.current-rms.com/opportunities?utf8=%E2%9C%93&per_page=48&view_id=0&filtermode%5B%5D=inactive
     var scrapeURL = 'https://'+apiSubdomain+'.current-rms.com/opportunities?utf8=✓&per_page=48&view_id=0&q%5Bs%5D%5B%5D=starts_at+desc&filtermode%5B%5D=inactive&q%5Bsubject_or_description_or_number_or_reference_or_member_name_or_tags_name_cont%5D='+toSearch+'&scrape';
     console.log(scrapeURL);
     chrome.tabs.create({
