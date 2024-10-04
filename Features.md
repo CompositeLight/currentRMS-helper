@@ -1,4 +1,4 @@
-# currentRMS-helper 1.31.16
+# currentRMS-helper 1.31.17
 
 Below is a list of current features. It's the same information as the Readme change log, but listed "per area" to make it easier for new users to see what the extension adds.
 
@@ -74,6 +74,8 @@ Once a container exists on the opportunity it can be accessed without further us
 - The Attributes panel on the right shows the weight of equipment on the opportunity. Now, when you book items out a new field of "Booked Out Weight" is shown. Useful when loading multiple vehicles.
 
 - Option to disable the controversial "Delete from Detail View" feature recently added to CurrentRMS. Active by default.
+
+- Scroll Memory - In Detail View, page reload actions (such as reverting an item) mean you lose your place in the list, which can be very disorientating. This 'Scroll Memory' feature will now log your scroll position any time you click anywhere on the page, and try to return you to that position after the reload. It will also return extension view filters (yellow buttons) to their previous state (as this has an impact on the scroll position). Known limitation: The in-built filters (accessed via the funnel button under the Functions tab are not currently remembered, so if you use those you might not return to where you expect. I'll try to work this in when I can).
 
 ## Serialised Containers
 
