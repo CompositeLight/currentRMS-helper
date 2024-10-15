@@ -37,6 +37,9 @@ containerList = [];
 let containerisationData;
 
 bookedOutWeight = 0;
+subhireWeight = 0;
+stockWeight = 0;
+
 
 detailViewMode = "functions";
 allProducts = {};
@@ -167,6 +170,80 @@ if (editOppView){
 if (globalCheckinView){
   console.log("Global Check-in view: "+globalCheckinView);
 }
+
+
+
+// Code chunk to enable auto-scrolling to last position in Order or Detail View.
+if (detailView || orderView){
+
+  var currentView = "order";
+  if (detailView){
+    currentView = "detail";
+  }
+
+  chrome.storage.local.get(["last-scroll"]).then((result) => {
+      if (result){
+        console.log(result);
+        if (result["last-scroll"].opp == opportunityID && result["last-scroll"].view == currentView){
+          console.log("Reloading scroll position!");
+          window.scrollTo(0, result["last-scroll"].scroll);
+
+          if (result["last-scroll"].notesHidden == true){
+            document.getElementById("notes-button").click();
+          }
+
+          if (result["last-scroll"].preparedHidden == true){
+            document.getElementById("prepared-button").click();
+          }
+
+          if (result["last-scroll"].bookedOutHidden == true){
+            document.getElementById("booked-out-button").click();
+          }
+
+          if (result["last-scroll"].checkedInHidden == true){
+            document.getElementById("checked-in-button").click();
+          }
+
+          if (result["last-scroll"].bulkOnly == true){
+            document.getElementById("bulk-button").click();
+          }
+
+          if (result["last-scroll"].subhiresHidden == true){
+            document.getElementById("subhires-button").click();
+          }
+
+          if (result["last-scroll"].nonsubsHidden == true){
+            document.getElementById("nonsubs-button").click();
+          }
+
+          if (result["last-scroll"].nonShortsHidden == true){
+            document.getElementById("nonshorts-button").click();
+          }
+
+        } else {
+
+        }
+      }
+  });
+
+  // Save scroll position on click
+  document.addEventListener('click', () => {
+      const scrollPosition = window.scrollY;
+      var currentView = "order";
+      if (detailView){
+        currentView = "detail";
+      }
+
+      chrome.storage.local.set({ 'last-scroll': {opp: opportunityID, view: currentView, scroll: scrollPosition, notesHidden: notesHidden, preparedHidden: preparedHidden, bookedOutHidden: bookedOutHidden, checkedInHidden:checkedInHidden, bulkOnly: bulkOnly, subhiresHidden: subhiresHidden, nonsubsHidden: nonsubsHidden, nonShortsHidden: nonShortsHidden} }).then(() => {
+         console.log("Scroll position was updated");
+      });
+  });
+
+}
+
+
+
+
 
 
 // If in a detail/order/check in view create the modal ready for reference image.
@@ -366,7 +443,7 @@ if (detailView || orderView || globalCheckinView){
             }
         });
         addDetails();
-
+        console.log(allStock);
       }
   });
 
@@ -405,86 +482,6 @@ if (editOppView){
   }
 
 }
-
-
-
-// Code chunk to enable auto-scrolling to last position in Order or Detail View.
-if (detailView || orderView){
-
-  var currentView = "order";
-  if (detailView){
-    currentView = "detail";
-  }
-
-  chrome.storage.local.get(["last-scroll"]).then((result) => {
-      if (result){
-        console.log(result);
-        if (result["last-scroll"].opp == opportunityID && result["last-scroll"].view == currentView){
-          console.log("Reloading scroll position!");
-          window.scrollTo(0, result["last-scroll"].scroll);
-
-          if (result["last-scroll"].notesHidden == true){
-            document.getElementById("notes-button").click();
-          }
-
-          if (result["last-scroll"].preparedHidden == true){
-            document.getElementById("prepared-button").click();
-          }
-
-          if (result["last-scroll"].bookedOutHidden == true){
-            document.getElementById("booked-out-button").click();
-          }
-
-          if (result["last-scroll"].checkedInHidden == true){
-            document.getElementById("checked-in-button").click();
-          }
-
-          if (result["last-scroll"].bulkOnly == true){
-            document.getElementById("bulk-button").click();
-          }
-
-          if (result["last-scroll"].subhiresHidden == true){
-            document.getElementById("subhires-button").click();
-          }
-
-          if (result["last-scroll"].nonsubsHidden == true){
-            document.getElementById("nonsubs-button").click();
-          }
-
-          if (result["last-scroll"].nonShortsHidden == true){
-            document.getElementById("nonshorts-button").click();
-          }
-
-        } else {
-
-        }
-      }
-  });
-
-  // Save scroll position on click
-  document.addEventListener('click', () => {
-      const scrollPosition = window.scrollY;
-      var currentView = "order";
-      if (detailView){
-        currentView = "detail";
-      }
-
-      chrome.storage.local.set({ 'last-scroll': {opp: opportunityID, view: currentView, scroll: scrollPosition, notesHidden: notesHidden, preparedHidden: preparedHidden, bookedOutHidden: bookedOutHidden, checkedInHidden:checkedInHidden, bulkOnly: bulkOnly, subhiresHidden: subhiresHidden, nonsubsHidden: nonsubsHidden, nonShortsHidden: nonShortsHidden} }).then(() => {
-         console.log("Scroll position was updated");
-      });
-  });
-
-}
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2707,6 +2704,8 @@ function newCalculateContainerWeights() {
   // Initialize an object to store container information
   containerisationData = {};
   bookedOutWeight = 0;
+  subhireWeight = 0;
+  stockWeight = 0;
 
   // Get all table rows in the document
   var rows = document.querySelectorAll('tr');
@@ -2748,7 +2747,19 @@ function newCalculateContainerWeights() {
           containerisationData[rowId] = {asset: thisAsset, name: rowName, container: thisContainer, weight: thisItemWeight, contents: {}};
           if (thisStatus == "Booked Out"){
             bookedOutWeight += (thisItemWeight*1);
+            bookedOutWeight = Math.round(bookedOutWeight * 100) / 100;
           }
+          if (thisAsset.includes("Sub-Rent Booking")){
+            subhireWeight += (thisItemWeight*1);
+            subhireWeight = Math.round(subhireWeight * 100) / 100;
+          } else {
+            stockWeight += (thisItemWeight*1);
+            stockWeight = Math.round(stockWeight * 100) / 100;
+          }
+
+
+
+
       }
 
     } catch(err) {
@@ -2868,6 +2879,50 @@ function newCalculateContainerWeights() {
     }
 
   }
+
+  if (subhireWeight > 0){
+    //const existingWeightElement =
+    console.log(subhireWeight);
+
+    var subhireWeightLi = document.getElementById("subhire_weight");
+    var stockWeightLi = document.getElementById("stock_weight");
+
+    if (subhireWeightLi){
+      subhireWeightLi.innerHTML = `${subhireWeight} ${weightUnit}`;
+      stockWeightLi.innerHTML = `${stockWeight} ${weightUnit}`;
+    } else {
+      // Find the <li> element that contains the weight
+      var weightLi = document.querySelector('#weight_total').closest('li');
+
+      // Create a new <li> element
+      var subLi = document.createElement('li');
+      subLi.innerHTML = `<span>&#8627; Sub-hire Weight:</span>
+                         <span id="subhire_weight";>
+                         ${subhireWeight} ${weightUnit}
+                         </span>`;
+
+      // Insert the new <li> after the existing one
+      weightLi.parentNode.insertBefore(subLi, weightLi.nextSibling);
+
+
+      // Create a new <li> element
+      var stockLi = document.createElement('li');
+      stockLi.innerHTML = `<span>&#8627; Stock Weight:</span>
+                         <span id="stock_weight";>
+                         ${stockWeight} ${weightUnit}
+                         </span>`;
+
+      // Insert the new <li> after the existing one
+      weightLi.parentNode.insertBefore(stockLi, weightLi.nextSibling);
+
+
+
+
+    }
+
+  }
+
+
 }
 
 
@@ -3190,13 +3245,6 @@ if (detailView){
   });
 
 }
-
-
-
-
-
-
-
 
 
 

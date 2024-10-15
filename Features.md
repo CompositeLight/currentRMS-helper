@@ -1,4 +1,4 @@
-# currentRMS-helper 1.31.17
+# currentRMS-helper 1.31.19
 
 Below is a list of current features. It's the same information as the Readme change log, but listed "per area" to make it easier for new users to see what the extension adds.
 
@@ -77,9 +77,13 @@ Once a container exists on the opportunity it can be accessed without further us
 
 - Scroll Memory - In Detail View, page reload actions (such as reverting an item) mean you lose your place in the list, which can be very disorientating. This 'Scroll Memory' feature will now log your scroll position any time you click anywhere on the page, and try to return you to that position after the reload. It will also return extension view filters (yellow buttons) to their previous state (as this has an impact on the scroll position). Known limitation: The in-built filters (accessed via the funnel button under the Functions tab are not currently remembered, so if you use those you might not return to where you expect. I'll try to work this in when I can).
 
+- Sub-Hire Weight - If an opportunity includes sub-hires, the seperate weights of stock and sub-hired kit are shown under the normal weight value.
+
 ## Serialised Containers
 
 - When scanning assets into a container you will receive a verbal warning when trying to scan in an item that already is, or already is in, a container.
+
+- Container View Check-in - Previously, we were frustrated by the fact that getting items back into temporary containers was a two step process: First scan the items in, then scan them into a temporary container. This new feature makes it a one step process. To use this, create a temporary container as normal. Once all items are scanned in, press the yellow "Global Check-in" button. The process should take a few seconds, after which any item that was sucessfully checked in will gain a green tick next to it (including the container asset number at the top). Items without a green tick were not checked in, so if you beleive they should have been this should be investigated before moving on (and if it was a legit error please let me know!). Bulk items are ignored, so you need to put them in a temp container these will need to be checked in elsewhere as normal. Note: The auto Global Check-in will apply to all opportunities the item is booked out to.
 
 
 ## Order View
@@ -124,6 +128,8 @@ Once a container exists on the opportunity it can be accessed without further us
 
 ## Global Search
 - Global Search results now include an "Inactive Opportunities" section (whereas the standard global search will only find active ones).
+
+- If you global search for an asset number (for example, if you scan an asset into the top global search field) you now jump straight to the asset's page (rather than ending up in the global search results page and then having to click on the one asset found). Requires API.
 
 
 ## Stock Check

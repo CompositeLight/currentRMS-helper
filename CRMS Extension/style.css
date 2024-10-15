@@ -466,3 +466,14 @@ a.allocation-link{
 .hide-delete{
   display: none !important;
 }
+
+.global-check-button{
+  background-color: #ffeb3b !important;
+  color: #666666 !important;
+}
+
+.global-check-button:hover, .global-check-button:focus {
+    color: #fff !important;
+    text-decoration: none;
+    background-color: gold !important;
+}
