@@ -3242,6 +3242,7 @@ if (detailView){
     let newElement = document.createElement('div');
     newElement.classList.add("row");
     newElement.classList.add("sticky");
+	newElement.classList.add("helper-control-panel-parent");
     // Insert `newElement` after `referenceElement`
     titleRow.insertAdjacentElement('afterend', newElement);
 
