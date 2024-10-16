@@ -113,6 +113,8 @@ Once a container exists on the opportunity it can be accessed without further us
 
 - Service items now show their cost duration in the days column. A tool-tip over this value reveals days charged and days costed. If there is a mismatch between the 'days' costed and 'days' charged the entry is shown as [daysCosted/daysCharged], and the text turns red to draw attention to the issue. If the charge type doesn't match the cost type (eg. charging per day, but costed by hour) the value is highlighted in amber.
 
+- Add To Existing Purchase Order - The modal box that appears now offers a list of active POs from the supplier of the selected item. Previously you had to guess / look up the correct PO.
+
 
 ## Edit Opportunity
 - The Edit Opportunity Scheduling section now has a button to clear all dates for the detailed schedule boxes. You still need to Update Order to apply any changes.
