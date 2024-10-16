@@ -12,7 +12,9 @@ muteExtensionSounds = false;
 errorTimeout = 0;
 
 assetsOnTheJob = [];
+assetsBookedOut = [];
 assetsGlobalScanned = [];
+assetsInContainer = [];
 
 notesHidden = false;
 preparedHidden = false;
@@ -35,6 +37,8 @@ containers = [];
 containerList = [];
 
 let containerisationData;
+
+let containerUnderEdit;
 
 bookedOutWeight = 0;
 subhireWeight = 0;
@@ -93,6 +97,27 @@ if (pageUrl.endsWith("view=d&scrape")){
   chrome.runtime.sendMessage({ action: "closeTab" });
 }
 
+
+// block to retrieve the error timeout setting from local storage
+try {
+  chrome.storage.local.get(["errorTimeout"]).then((result) => {
+    console.log("errorTimeout = "+result.errorTimeout);
+    if (result.errorTimeout){
+      errorTimeout = result.errorTimeout;
+    } else {
+      console.log("errorTimeout not retrieved");
+    }
+  });
+} catch (e) {
+  console.log(e);
+}
+
+
+
+
+
+
+
 function createBlockOutOverlay() {
     var overlay = document.createElement('div');
     overlay.className = 'block-out';
@@ -134,6 +159,16 @@ if (editOppView.length != 0){
 }
 
 
+// check if we're in edit container view
+
+var editContainerView = document.getElementById('container_mode_div');
+if (editContainerView){
+  editContainerView = true;
+} else {
+  editContainerView = false;
+}
+
+
 
 // check if we're in Global Check-in view
 var globalCheckinView = document.querySelectorAll('div[class="col-sm-12 global_check_ins main-content"]');
@@ -171,7 +206,9 @@ if (globalCheckinView){
   console.log("Global Check-in view: "+globalCheckinView);
 }
 
-
+if (editContainerView){
+  console.log("Edit container view: "+editContainerView);
+}
 
 // Code chunk to enable auto-scrolling to last position in Order or Detail View.
 if (detailView || orderView){
@@ -448,6 +485,68 @@ if (detailView || orderView || globalCheckinView){
   });
 
 };
+
+if (editContainerView){
+  // Load the stock item list from local storage
+  chrome.storage.local.get(["allStock"]).then((result) => {
+      if (result.allStock == undefined){
+        // If the variable is empty, it might not have been got yet (first use)
+        console.log("Stock list was not found. Requesting refresh.");
+        chrome.runtime.sendMessage("refreshProducts");
+      } else {
+        const allStockString = result.allStock;
+        // Parse the JSON string back into an object
+        allStock = JSON.parse(allStockString);
+        console.log("Retrieved allStock from storage:");
+        //console.log(allStock.stock_levels);
+        chrome.storage.local.get(["api-details"]).then((result) => {
+            if (result["api-details"].apiKey && result["api-details"].apiSubdomain){
+              apiKey = result["api-details"].apiKey;
+              apiSubdomain = result["api-details"].apiSubdomain;
+            } else {
+              console.log("API details have not been found.");
+              //makeToast("toast-info", "API details have not found.", 5);
+            }
+        });
+        console.log(allStock);
+      }
+  });
+
+
+  // work out which container we're editing
+  const containerSection = document.querySelector("div.content.detailspage.row.serialised_containers");
+  if (containerSection){
+    containerUnderEdit = containerSection.querySelector("div.subtitle").innerText.trim();
+    console.log(containerUnderEdit);
+  }
+
+  // start monitoring the scan box
+  var scanComponentBox = document.getElementById('component_stock_level_asset_number');
+
+  scanComponentBox.addEventListener("keypress", function(event) {
+    if (event.key === "Enter") {
+
+      var myScan = scanComponentBox.value;
+
+      if (myScan == containerUnderEdit){
+        // we have scanned the container, so we should go back to the list
+        event.preventDefault();
+        containerScanSound();
+        const backButton = document.querySelector("i.icn-cobra-goback");
+        setTimeout(function () {
+          backButton.click();
+        }, 250);
+      }
+    }
+  });
+
+
+
+
+}
+
+
+
 
 
 if (editOppView){
@@ -1254,6 +1353,9 @@ function listAssets() {
 
   // Create an array to store the cell values
   assetsOnTheJob = [];
+
+  // Create an array to store values that are also booked out
+  assetsBookedOut = [];
   // Loop through each cell
   cells.forEach((cell) => {
     // Get the trimmed text content of the cell
@@ -1262,6 +1364,11 @@ function listAssets() {
     // Exclude values that are "Group Booking" or "Bulk Stock"
     if (cellValue !== "Group Booking" && cellValue !== "Bulk Stock") {
       assetsOnTheJob.push(cellValue); // Add the cell value to the array
+      const cellRow = cell.closest("tr");
+      const statusCell = cellRow.querySelector("td.status-column");
+      if (statusCell.innerText == "Booked Out"){
+        assetsBookedOut.push(cellValue); // Add the cell value to the array
+      }
     }
   });
 }
@@ -1278,6 +1385,21 @@ function listGlobalCheckedItems() {
   });
 }
 
+
+// function that scrapes the global check-in page for items listed as being already scanned.
+function listContainerAssets() {
+  assetsInContainer = [];
+  const containerBody = document.getElementById('serialised_components_body');
+
+  const containerRows = containerBody.querySelectorAll('tr');
+
+  containerRows.forEach((row) => {
+    const rowValue = row.querySelector('td.essential').innerText.trim();
+    if (rowValue != "Bulk Stock"){
+      assetsInContainer.push(rowValue); // Add the cell value to the array
+    }
+  });
+}
 
 
 
@@ -2268,6 +2390,7 @@ function updateHidings(){
 function listToastPosts() {
   // Select all elements with the toast message type classes
   const cells = document.querySelectorAll('.toast.toast-error, .toast.toast-success, .toast.toast-warning');
+
   // Create an array to store the cell values
   toastPosts = []; // for storing text content
   toastPostsHtml = []; // for storing innerHTML
@@ -2281,8 +2404,12 @@ function listToastPosts() {
     toastPostsHtml.push(cellHtml);
     //console.log("This ToastPost:");
     //console.log(cell.innerHTML);
+    setTimeout(function () {
+      destroyAfterTime(cell, errorTimeout);
+    }, 500);
 
   });
+
   if (toastPosts.length > 0) {
 
     // Overide the css display properties of the toast container so that it is readable if it overflows the height of the window.
@@ -2333,6 +2460,13 @@ function listToastPosts() {
       setTimeout(function() {
         sayWord("Failed to revert.");
       }, 900);
+
+    } else if (toastPosts.includes("The requested record could not be found. It may have been removed by another user.")){
+      error_sound.play();
+      setTimeout(function() {
+        sayWord("Container not found.");
+      }, 900);
+
     } else if (toastPosts.includes("The status of the allocation(s) was successfully reverted")){
       scanSound();
     } else if (toastPosts.includes("Asset(s) successfully reset")){
@@ -2482,7 +2616,7 @@ const observer = new MutationObserver((mutations) => {
         }, 900);
 
       // play an error sound for basic fail messages
-    } else if (messageText.includes('Failed to allocate asset(s)') || messageText.includes('Failed to mark item(s) as prepared') || messageText.includes('Failed to check in item(s)')  || messageText.includes('as it does not have an active stock allocation with a sufficient quantity.') || messageText.includes('Failed to add container component')  || messageText.includes('Failed to stock check item')){
+    } else if (messageText.includes('Failed to allocate asset(s)') || messageText.includes('Failed to mark item(s) as prepared') || messageText.includes('Failed to check in item(s)')  || messageText.includes('as it does not have an active stock allocation with a sufficient quantity.') || messageText.includes('Failed to add container component')  || messageText.includes('Failed to stock check item')  || messageText.includes('Failed to book out')){
         //error_sound.play();
         errorSound();
         destroyAfterTime(toastMessage, errorTimeout);
@@ -2510,8 +2644,32 @@ const observer = new MutationObserver((mutations) => {
           }
           destroyAfterTime(toastMessage, errorTimeout);
 
+    // Handle an attempt to Book Out scan an item that's not on the job
+    } else if (messageText.includes("No reserved, allocated or prepared stock allocations could be found using")) {
+        theAsset = extractAsset(messageText);
+        listAssets();
+        if (assetsBookedOut.includes(theAsset)){
+          // Means it's already booked out
+          theAsset = extractAssetToSay(messageText);
+          setTimeout(function() {
+            sayWord("Already booked out "+theAsset);
+            console.log(messageText);
+          }, 900);
+
+
+        } else {
+        theAsset = extractAssetToSay(messageText);
+        setTimeout(function() {
+          sayWord(theAsset +" is not on the job.");
+          console.log(messageText);
+        }, 900);
+      }
+      destroyAfterTime(toastMessage, errorTimeout);
+
+
+
       // Handle messages related to at item being overdue an inspection
-    }else if (messageText.includes('Inspect Now')){
+    } else if (messageText.includes('Inspect Now')){
 
       switch(inspectionAlerts) {
         case "full":
@@ -2544,13 +2702,14 @@ const observer = new MutationObserver((mutations) => {
       // Handle a warning about stock shortage
     }else if (messageText.includes("A shortage exists for the Rental of Product")){
             // no action required.
-
+            destroyAfterTime(toastMessage, errorTimeout);
       // Handle an error where an item cannot be added because it's a container that's already allocated
     }else if (messageText.includes("Quantity is invalid")){
             setTimeout(function() {
               sayWord("Quantity invalid.");
               console.log(messageText);
       }, 900);
+      destroyAfterTime(toastMessage, errorTimeout);
 
     }else if (messageText.slice(11) == 'None of the selected stock allocations are allocated or reserved.'){
           setTimeout(function() {
@@ -2580,7 +2739,7 @@ const observer = new MutationObserver((mutations) => {
             // asset isn't booked out anywhere.
             error_sound.play();
           }
-
+          destroyAfterTime(toastMessage, errorTimeout);
 
     // Handle an error during check-in that is caused by an item already being checked in
     } else if (messageText.includes('No booked out or part checked in stock allocations could be found using')){
@@ -2598,14 +2757,53 @@ const observer = new MutationObserver((mutations) => {
           sayWord("A shortage exists for asset " + theAsset + ". It may be in quarantine.");
           console.log(messageText);
         }, 900);
+        destroyAfterTime(toastMessage, errorTimeout);
 
-      // Handle an error when trying to add an item to a container which is already in a container, or is itself a container
+      // Handle an error when trying to add an item to a container (could be non item or invalid item)
     }else if (messageText.includes('No active rental stock level that is not already a container component could be found')){
-        theAsset = extractAssetToSay(messageText);
+
+
+
+
+      // function to get the asset number from this kind of toast message
+      function findLastAssetInMessage(input) {
+        const matches = input.match(/'([^']+)'/g);
+        if (matches && matches.length > 0) {
+          // Get the last match, remove the single quotes, and trim any extra spaces
+          return matches[matches.length - 1].slice(1, -1).trim();
+        }
+        return null; // Return null if no matches are found
+      }
+
+      theAsset = findLastAssetInMessage(messageText);
+
+      // check if it's already in the container
+      listContainerAssets();
+      if (assetsInContainer.includes(theAsset)){
+        // Means it's already scanned
         setTimeout(function() {
-          sayWord("Asset already containerized.");
-          console.log(messageText);
+          sayWord("Already in container");
         }, 900);
+      } else {
+
+        const exists = allStock.stock_levels.some(obj => obj.asset_number === theAsset);
+
+        if (exists){
+          setTimeout(function() {
+            sayWord("Asset unavailable.");
+            console.log(messageText);
+          }, 900);
+        } else {
+          setTimeout(function() {
+            sayWord("Asset not recognized.");
+            console.log(messageText);
+          }, 900);
+        }
+
+      }
+      destroyAfterTime(toastMessage, errorTimeout);
+
+
 
       // handle the user hitting enter on an empty input box
       } else if (messageText.includes("You must select an asset.")) {
@@ -2622,6 +2820,7 @@ const observer = new MutationObserver((mutations) => {
           sayWord("Out of scope.");
           console.log(messageText);
         }, 700);
+        destroyAfterTime(toastMessage, errorTimeout);
 
       } else if (messageText.includes('Stock check item successful')) {
         // Normally redundant except global check in doesn't do error boxes.
@@ -2650,8 +2849,8 @@ const observer = new MutationObserver((mutations) => {
           alertSound();
         }
         // alert(`Unhandled Alert Message:\n\n${messageText}`);
-        console.log("The following message was not handled by CurrentRMS Helper");
-        console.log("Sliced 11 messageText:" + messageText.slice(11)); // The bit I'd use to add a handler.
+        console.log("The following message was not handled by CurrentRMS Helper. Please report it as an issue on gitHub:");
+        console.log(messageText); // The bit I'd use to add a handler.
       }
 
       if (!messageText.includes("Container error(s) found:")){
@@ -3332,24 +3531,14 @@ if (detailView){
       }
     });
 
-    chrome.storage.local.get(["errorTimeout"]).then((result) => {
-      console.log("errorTimeout = "+result.errorTimeout);
-      if (result.errorTimeout){
-        errorTimeout = result.errorTimeout;
-      } else {
-        console.log("errorTimeout not retrieved");
-      }
-    });
-
-
   }
   catch(err) {
     console.log(err);
   }
 
-
-
 }
+
+
 
 
 
@@ -3738,13 +3927,21 @@ function activeIntercept(){
 
     // book out panel items
     bookoutScanBox = document.getElementById("bo_stock_level_asset_number");
+    boContainerBox = document.getElementById('bo_container');
 
     function resetScanBox(){
-      // block to clear the allocate box after an intercept
+      // block to clear the allocate and book out boxes after an intercept
       allocateScanBox.value = '';
+      bookoutScanBox.value = '';
+
       parentSpan = allocateScanBox.parentNode;
       var htmlFudge = parentSpan.innerHTML;
       parentSpan.innerHTML = htmlFudge;
+
+      boParentSpan = bookoutScanBox.parentNode;
+      var boHtmlFudge = boParentSpan.innerHTML;
+      boParentSpan.innerHTML = boHtmlFudge;
+
       setTimeout(focusInput, 100); // delayed to avoid the jQuery function messing it up
       activeIntercept(); // need to re-run because we've just nuked the scan section DOM so the event listener won't work
     }
@@ -3754,7 +3951,6 @@ function activeIntercept(){
       if (event.key === "Enter") {
 
         var myScan = allocateScanBox.value;
-
 
         if (myScan.toLowerCase() != "revert" && revertScan){
           // we have prompted the user for an item to revert
@@ -3960,16 +4156,139 @@ function activeIntercept(){
 
     });
 
+
+    // BOOK OUT //
     // Event listener for the scanbox in the Book Out panel
     bookoutScanBox.addEventListener("keypress", function(event) {
       if (event.key === "Enter") {
         var myScan = bookoutScanBox.value;
         console.log(myScan);
+        console.log(containerScan);
         console.log(bookOutContainers);
-        if (containerExists(myScan) && bookOutContainers){
-          bookOutNested(myScan);
+
+        if (myScan.toLowerCase() != "revert" && revertScan){
+          // we have prompted the user for an item to revert
+          event.preventDefault();
+          resetScanBox();
+          listAssets();
+          if (assetsOnTheJob.includes(myScan)){
+            clickAndRevert(myScan);
+            revertScan = false;
+          } else {
+            errorSound();
+            revertScan = false;
+            makeToast("toast-error", "Failed to revert "+myScan+" because it is not currently allocated.");
+            sayWord("Failed to revert. Not on the job.")
+          }
+
+        } else if (myScan.toLowerCase() != "remove" && removeScan){
+            // we have prompted the user for an item to revert
+            event.preventDefault();
+            resetScanBox();
+            listAssets();
+            if (assetsOnTheJob.includes(myScan)){
+              removeAsset(myScan);
+              removeScan = false;
+            } else {
+              errorSound();
+              removeScan = false;
+              makeToast("toast-error", "Failed to remove "+myScan+" because it is not currently allocated.");
+              sayWord("Failed to remove. Not on the job.");
+            }
+
+        } else if (containerExists(myScan) && bookOutContainers && !containerScan){
+          if (myScan == boContainerBox.value && boContainerBox.value != "") {
+            // we scanned an asset that is already set as the current container, which means "clear the container field"
+            containerScan = false;
+            shortAlertSound();
+            sayWord("Container cleared.")
+            containerBox.value = '';
+            boContainerBox.value = '';
+            event.preventDefault();
+            makeToast("toast-info", "Container cleared.", 5);
+            resetScanBox();
+          } else {
+            bookOutNested(myScan);
+          }
+        // In the case that we have scanned a *container* barcode
+        } else if (myScan.toLowerCase() == "container"){
+          if (containerScan){
+            // Means the user scanned *container* twice and we want to clear the container field
+            containerScan = false;
+            shortAlertSound();
+            sayWord("Container cleared.")
+            containerBox.value = '';
+            boContainerBox.value = '';
+            event.preventDefault();
+            makeToast("toast-info", "Container cleared.", 5);
+            resetScanBox();
+          } else {
+            // We need to prompt the user to scan a container
+            event.preventDefault();
+            sayWord("Scan container");
+            containerScan = true;
+            makeToast("toast-info", "Now scan the container.", 5);
+            resetScanBox();
+          }
+
+        }else if (containerScan){
+          // we are set to receive a value for the container field.
+          listAssets();
+          if (assetsOnTheJob.includes(myScan)){
+            // the container is already listed on the opportunity
+            event.preventDefault();
+            containerScan = false;
+            scanSound();
+            boContainerBox.value = myScan;
+            makeToast("toast-info", "Container set to "+containerBox.value, 5);
+            resetScanBox();
+            setTimeout(sayWord("Container set."), 500);
+
+          } else {
+            // the container is not yet allocated.
+            containerScan = false;
+            // this will go through and error because the asset isn't allocated
+          }
+
+        } else if (myScan.toLowerCase() === 'remove'){
+          // this is a special scan to invoke remove on an item
+            if (removeScan){ // Means double scan of *revert*
+              event.preventDefault();
+              sayWord("Remove cancelled.");
+              removeScan = false;
+              makeToast("toast-info", "Remove scan cancelled.", 5);
+              // block to clear the allocate box after an intercept
+              resetScanBox();
+            } else {
+              // We need to prompt the user to scan the item to be reverted
+              event.preventDefault();
+              sayWord("Scan item to remove");
+              removeScan = true;
+              makeToast("toast-info", "Scan the item to be removed.", 5);
+              // block to clear the allocate box after an intercept
+              resetScanBox();
+            }
+        } else if (myScan.toLowerCase() === 'revert'){
+          // this is a special scan to invoke revert status on an item
+          if (revertScan){ // Means double scan of *revert*
+            event.preventDefault();
+            sayWord("Revert cancelled.");
+            revertScan = false;
+            makeToast("toast-info", "Revert scan cancelled.", 5);
+            // block to clear the allocate box after an intercept
+            resetScanBox();
+          } else {
+            // We need to prompt the user to scan the item to be reverted
+            event.preventDefault();
+            sayWord("Scan item to revert");
+            revertScan = true;
+            makeToast("toast-info", "Scan the item to be reverted.", 5);
+            // block to clear the allocate box after an intercept
+            resetScanBox();
+          }
         }
-      }
+
+      } // end of "Enter" event on Book Out panel
     });
   }
 }

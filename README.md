@@ -1,4 +1,4 @@
-# currentRMS-helper 1.31.19
+# currentRMS-helper 1.31.21
 This is a work-in-progress Chrome extension to add functionality to the CurrentRMS web interface. It was created out of our frustration waiting on "quality of life" modifications to make the user experience better - specifically, as part of warehouse operations. Our warehouse team has found it helpful, so we've decided to share it with others. As it was created with our own in-house work processes in mind, it may or may not work for other users. However, my hope is that others (who are better at coding that I) might take this forward, or even inspire the CurrentRMS team to implement some of the changes within the main product.
 
 **DISCLAIMER: This is a first attempt work-in-progress written by me, an utter rookie in JavaScript. Use at your own risk. This code is in no way affiliated with InspHire Ltd.**
@@ -25,7 +25,12 @@ Aside from the Chrome Desktop Browser, users have successfully used this extensi
 
 
 ## Features / Updates
-- NEW 1.31.20 - Cost View - Add To Existing Purchase Order - The modal box that appears now offers a list of active POs from the supplier of the selected item. Previously you had to guess / look up the correct PO.
+
+- NEW/IMPROVED: 1.31.21 - Serialised Containers - Various improvements: Better feedback on incorrect scans. ErrorTimeouts (dissapearing error messages) should now work. You can now scan the container you're currently working on to take you back to the containers list.
+
+- IMPROVED: 1.31.21 - The special barcodes "container", "revert" and "remove" now work from the Book Out panel of Detail View.
+
+- NEW: 1.31.20 - Cost View - Add To Existing Purchase Order - The modal box that appears now offers a list of active POs from the supplier of the selected item. Previously you had to guess / look up the correct PO.
 
 - NEW: 1.31.19 - Container View Check-in - Previously, we were frustrated by the fact that getting items back into temporary containers was a two step process: First scan the items in, then scan them into a temporary container. This new feature makes it a one step process. To use this, create a temporary container as normal. Once all items are scanned in, press the yellow "Global Check-in" button. The process should take a few seconds, after which any item that was sucessfully checked in will gain a green tick next to it (including the container asset number at the top). Items without a green tick were not checked in, so if you beleive they should have been this should be investigated before moving on (and if it was a legit error please let me know!). Bulk items are ignored, so you need to put them in a temp container these will need to be checked in elsewhere as normal. Note: The auto Global Check-in will apply to all opportunities the item is booked out to.
 
