@@ -25,6 +25,8 @@ Aside from the Chrome Desktop Browser, users have successfully used this extensi
 
 
 ## Features / Updates
+- NEW 1.31.20 - Cost View - Add To Existing Purchase Order - The modal box that appears now offers a list of active POs from the supplier of the selected item. Previously you had to guess / look up the correct PO.
+
 - NEW: 1.31.19 - Container View Check-in - Previously, we were frustrated by the fact that getting items back into temporary containers was a two step process: First scan the items in, then scan them into a temporary container. This new feature makes it a one step process. To use this, create a temporary container as normal. Once all items are scanned in, press the yellow "Global Check-in" button. The process should take a few seconds, after which any item that was sucessfully checked in will gain a green tick next to it (including the container asset number at the top). Items without a green tick were not checked in, so if you beleive they should have been this should be investigated before moving on (and if it was a legit error please let me know!). Bulk items are ignored, so you need to put them in a temp container these will need to be checked in elsewhere as normal. Note: The auto Global Check-in will apply to all opportunities the item is booked out to.
 
 - NEW: 1.31.19 - Global Search Asset Shortcut - If you global search for an asset number (for example, if you scan an asset into the top global search field) you now jump straight to the asset's page (rather than ending up in the global search results page and then having to click on the one asset found). This also provides a cleaner way to get an item to quarantine. Requires API.

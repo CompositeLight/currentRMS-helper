@@ -171,6 +171,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           }
         });
 
+  } else if (message.messageType === "getPOsFor") {
+          purchaseOrderScrape(message.supplier);
+
+  } else if (message.messageType === "POsFound") {
+    // response regarding scraping of POs
+
+    // Forward the message to all tabs
+    chrome.tabs.query({}, function(tabs) {
+      if (tabs.length > 0){
+        tabs.forEach(function(tab) {
+            chrome.tabs.sendMessage(tab.id, message);
+        });
+      }
+    });
+
+
   } else {
 
     (async () => {
@@ -700,4 +716,36 @@ async function containercheckin(containerRef){
     });
   }
 
+}
+
+
+async function purchaseOrderScrape(supplier){
+  await recallApiDetails();
+
+  if (apiSubdomain){
+
+    var supplierSearchString = reformatString(supplier);
+
+    chrome.tabs.create({
+        url: `https://${apiSubdomain}.current-rms.com/purchase_orders?utf8=✓&per_page=48&view_id=0&q%5Bmember_name_cont%5D=${supplierSearchString}&supplierscrape`,
+        active: false
+      }, function(tab) {
+      // You can perform actions here after the tab is created
+    });
+  }
+
+}
+
+
+function reformatString(input) {
+    // Convert the string to lowercase
+    const lowerCaseString = input.toLowerCase();
+
+    // Encode the entire string to handle special characters like parentheses
+    const encodedString = encodeURIComponent(lowerCaseString);
+
+    // Replace encoded spaces ("%20") with "+"
+    const finalString = encodedString.replace(/%20/g, '+');
+
+    return finalString;
 }

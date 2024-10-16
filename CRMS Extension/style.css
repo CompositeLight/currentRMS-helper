@@ -477,3 +477,22 @@ a.allocation-link{
     text-decoration: none;
     background-color: gold !important;
 }
+
+.po-select{
+
+  background-color: #00bdff;
+  color: white;
+  width: 100%;
+  padding: 8px;
+  margin-top: 3px;
+  text-align: center;
+}
+
+.po-select:hover{
+  background-color: #0088f0;
+}
+
+.supplier-name{
+  color: black;
+  font-weight: bold;
+}

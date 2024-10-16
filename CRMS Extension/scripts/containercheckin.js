@@ -34,7 +34,7 @@ if (globalOption && submitButton && submitButton.parentElement.tagName === 'DIV'
     });
 
 } else {
-    console.error('Submit button with value "scan" not found or it does not have a parent div.');
+    console.log('Submit button with value "scan" not found or it does not have a parent div.');
 }
 
 

@@ -452,9 +452,118 @@ observer.observe(document.body, {
   characterData: true
 });
 
-// Stop observing when the extension is disabled or uninstalled
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.message === "stopObserver") {
+
+
+
+
+// Add To Existing Purchase Order improvement section
+const addToPoButton = document.querySelector('a[href="#add-to-purchase-order-modal"]');
+
+if (addToPoButton) {
+  addToPoButton.addEventListener('click', function(event) {
+      //event.preventDefault(); // Prevent the default anchor behavior if needed
+      getPoSupplier();
+  });
+} else {
+    console.log("Add to PO Button not found.");
+}
+
+
+
+function getPoSupplier(){
+  var supplier;
+  const tickBoxes = document.querySelectorAll("input.item-select");
+  for (let i = 0; i < tickBoxes.length; i++) {
+    var item = tickBoxes[i];
+    if (item.checked){
+      var thisRow = item.closest("tr");
+      supplier = thisRow.querySelector('td.optional-01.asset.asset-column').innerText;
+      break;
+    }
+  };
+  console.log(supplier);
+  const poAddModal = document.getElementById("add-to-purchase-order-modal");
+  const infoLine = poAddModal.querySelector("p.subtitle");
+  infoLine.innerHTML = `Items will need to have the same supplier as the existing purchase order:<br><span class="supplier-name">${supplier}</span>`;
+
+  chrome.runtime.sendMessage({
+    messageType: "getPOsFor",
+    supplier: supplier
+  });
+
+}
+
+// List supplier POs when returned from a scrape
+function listPOs(poArray){
+
+  const poAddModal = document.getElementById("add-to-purchase-order-modal");
+  const targetDiv = poAddModal.querySelector("div.modal-body");
+
+  var poListDiv = document.getElementById('po-list');
+
+  if (poListDiv){
+    poListDiv.innerHTML = "";
+  } else {
+    poListDiv = document.createElement('div');
+    poListDiv.classList.add("po-list");
+    poListDiv.id = "po-list";
+    targetDiv.appendChild(poListDiv);
+  }
+
+  const thisJob = document.querySelector("h1.subject-title").innerText.trim();
+  console.log(thisJob);
+
+  const sortedArray = prioritiseMatches(poArray, thisJob);
+
+  sortedArray.forEach((item) => {
+    const newElement = document.createElement('div');
+    newElement.classList.add("po-select")
+    newElement.innerHTML = `${item}`;
+    poListDiv.appendChild(newElement);
+  });
+
+
+}
+
+document.addEventListener('click', (event) => {
+    // Check if the clicked element has the class "po-select"
+    if (event.target.classList.contains('po-select')) {
+        console.log(event.target.textContent);
+        document.getElementById("purchase_order_name").value = event.target.textContent;
+    }
+});
+
+
+
+
+// Messages from the extension service worker to trigger changes
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  console.log("Message received from service-worker:");
+  console.log(message);
+
+  // Stop observing when the extension is disabled or uninstalled
+  if (message.message === "stopObserver") {
     observer.disconnect();
   }
+
+  if (message.messageType == "POsFound"){
+      console.log("PO list was received");
+      console.log(message.activePurchaseOrders);
+      listPOs(message.activePurchaseOrders);
+
+  }
+
 });
+
+
+
+function prioritiseMatches(array, input) {
+    // Create a new array of matches, where each item includes the input string (case-insensitive)
+    const matches = array.filter(item => item.toLowerCase().includes(input.toLowerCase()));
+
+    // Create a new array of non-matches
+    const nonMatches = array.filter(item => !item.toLowerCase().includes(input.toLowerCase()));
+
+    // Combine matches and non-matches, with matches moved to the start of the array
+    return [...matches, ...nonMatches];
+}
