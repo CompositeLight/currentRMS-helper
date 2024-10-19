@@ -114,9 +114,6 @@ document.querySelectorAll('table').forEach(function(table) {
     }
 });
 
-//console.log(oppsList);
-//chrome.runtime.sendMessage({messageType: "qtyInUseScrape", messageProduct:productId, messageOpp:468});
-
 
 // Function to send message and wait for a specific response
 function sendMessageAndWaitForResponse(productId, oppValue) {

@@ -466,3 +466,33 @@ a.allocation-link{
 .hide-delete{
   display: none !important;
 }
+
+.global-check-button{
+  background-color: #ffeb3b !important;
+  color: #666666 !important;
+}
+
+.global-check-button:hover, .global-check-button:focus {
+    color: #fff !important;
+    text-decoration: none;
+    background-color: gold !important;
+}
+
+.po-select{
+
+  background-color: #00bdff;
+  color: white;
+  width: 100%;
+  padding: 8px;
+  margin-top: 3px;
+  text-align: center;
+}
+
+.po-select:hover{
+  background-color: #0088f0;
+}
+
+.supplier-name{
+  color: black;
+  font-weight: bold;
+}

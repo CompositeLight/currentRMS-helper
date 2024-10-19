@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "CurrentRMS Helper",
-  "version": "1.31.18",
+  "version": "1.31.21",
   "description": "Adding functionality to Current RMS, one reduced click at a time.",
   "icons": {
     "16": "images/icon-16.png",
@@ -33,7 +33,8 @@
       "https://*.current-rms.com/opportunities",
       "https://*.current-rms.com/products?*",
       "https://*.current-rms.com/purchase_orders*",
-      "https://*.current-rms.com/services*"
+      "https://*.current-rms.com/services*",
+      "https://*.current-rms.com/global_check_in?autocheckin&*"
     ],
     "js": ["scripts/content.js", "scripts/addtab.js"],
     "css": ["style.css"]
@@ -77,7 +78,21 @@
       "matches": ["https://*.current-rms.com/services*"],
       "js": ["scripts/servicespage.js", "scripts/addtab.js"],
       "css": ["style.css"]
+    },
+    {
+      "matches": ["https://*.current-rms.com/*"],
+      "js": ["scripts/globalassetshortcut.js"]
+    },
+    {
+      "matches": ["https://*.current-rms.com/serialised_containers/*"],
+      "js": ["scripts/containercheckin.js"],
+      "css": ["style.css"]
+    },
+    {
+      "matches": ["https://*.current-rms.com/global_check_in?autocheckin&*"],
+      "js": ["scripts/autocheckin.js"]
     }
+
   ],
   "background": {
     "service_worker": "/service-worker.js",

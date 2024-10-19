@@ -59,6 +59,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         globalSearchScrape(message.messageText);
       }
 
+  } else if (message.messageType == "containercheckin"){
+      console.log("Container check-in was requested for "+message.containerRef);
+      containercheckin(message.containerRef);
 
 
   } else if (message.action === "closeTab") {
@@ -155,6 +158,34 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             });
           }
         });
+
+  } else if (message.messageType === "autocheckinreport") {
+        // response regarding auto-checkin of items
+
+        // Forward the message to all tabs
+        chrome.tabs.query({}, function(tabs) {
+          if (tabs.length > 0){
+            tabs.forEach(function(tab) {
+                chrome.tabs.sendMessage(tab.id, message);
+            });
+          }
+        });
+
+  } else if (message.messageType === "getPOsFor") {
+          purchaseOrderScrape(message.supplier);
+
+  } else if (message.messageType === "POsFound") {
+    // response regarding scraping of POs
+
+    // Forward the message to all tabs
+    chrome.tabs.query({}, function(tabs) {
+      if (tabs.length > 0){
+        tabs.forEach(function(tab) {
+            chrome.tabs.sendMessage(tab.id, message);
+        });
+      }
+    });
+
 
   } else {
 
@@ -442,9 +473,6 @@ async function retrieveApiData(opp) {
     // const objectWithId837 = allProducts.products.find(products => products.id === 148);
     const allProductsString = JSON.stringify(allProducts);
     console.log("Products list was updated")
-    //chrome.storage.local.set({ 'allProducts': allProductsString, 'myTest': 1234 }).then(() => {
-    //   console.log("Products list was updated");
-    // });
 
      // Refresh stock item list
      var result = await getStock();
@@ -457,8 +485,6 @@ async function retrieveApiData(opp) {
      pageNumber = 1;
      var numberOfStock = allStock.stock_levels.length;
      console.log("Number of  stock items: " + numberOfStock);
-     //console.log(allStock.stock_levels);
-     //console.log(allStock.meta);
 
 
      const allStockString = JSON.stringify(allStock);
@@ -649,11 +675,6 @@ async function warehouseNotesScrape(opp){
 
 
 
-
-
-
-
-
 async function qtyInUseScrape(prod, opp){
   await recallApiDetails();
   if (apiSubdomain){
@@ -681,4 +702,50 @@ async function globalSearchScrape(toSearch){
       // You can perform actions here after the tab is created
     });
   }
+}
+
+
+async function containercheckin(containerRef){
+  await recallApiDetails();
+  if (apiSubdomain){
+    chrome.tabs.create({
+        url: `https://${apiSubdomain}.current-rms.com/global_check_in?autocheckin&${containerRef}`,
+        active: false
+      }, function(tab) {
+      // You can perform actions here after the tab is created
+    });
+  }
+
+}
+
+
+async function purchaseOrderScrape(supplier){
+  await recallApiDetails();
+
+  if (apiSubdomain){
+
+    var supplierSearchString = reformatString(supplier);
+
+    chrome.tabs.create({
+        url: `https://${apiSubdomain}.current-rms.com/purchase_orders?utf8=✓&per_page=48&view_id=0&q%5Bmember_name_cont%5D=${supplierSearchString}&supplierscrape`,
+        active: false
+      }, function(tab) {
+      // You can perform actions here after the tab is created
+    });
+  }
+
+}
+
+
+function reformatString(input) {
+    // Convert the string to lowercase
+    const lowerCaseString = input.toLowerCase();
+
+    // Encode the entire string to handle special characters like parentheses
+    const encodedString = encodeURIComponent(lowerCaseString);
+
+    // Replace encoded spaces ("%20") with "+"
+    const finalString = encodedString.replace(/%20/g, '+');
+
+    return finalString;
 }

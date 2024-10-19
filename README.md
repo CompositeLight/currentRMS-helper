@@ -1,4 +1,4 @@
-# currentRMS-helper 1.31.18
+# currentRMS-helper 1.31.21
 This is a work-in-progress Chrome extension to add functionality to the CurrentRMS web interface. It was created out of our frustration waiting on "quality of life" modifications to make the user experience better - specifically, as part of warehouse operations. Our warehouse team has found it helpful, so we've decided to share it with others. As it was created with our own in-house work processes in mind, it may or may not work for other users. However, my hope is that others (who are better at coding that I) might take this forward, or even inspire the CurrentRMS team to implement some of the changes within the main product.
 
 **DISCLAIMER: This is a first attempt work-in-progress written by me, an utter rookie in JavaScript. Use at your own risk. This code is in no way affiliated with InspHire Ltd.**
@@ -25,6 +25,25 @@ Aside from the Chrome Desktop Browser, users have successfully used this extensi
 
 
 ## Features / Updates
+
+- NEW/IMPROVED: 1.31.21 - Serialised Containers - Various improvements: Better feedback on incorrect scans. ErrorTimeouts (dissapearing error messages) should now work. You can now scan the container you're currently working on to take you back to the containers list.
+
+- IMPROVED: 1.31.21 - The special barcodes "container", "revert" and "remove" now work from the Book Out panel of Detail View.
+
+- NEW: 1.31.20 - Cost View - Add To Existing Purchase Order - The modal box that appears now offers a list of active POs from the supplier of the selected item. Previously you had to guess / look up the correct PO.
+
+- NEW: 1.31.19 - Container View Check-in - Previously, we were frustrated by the fact that getting items back into temporary containers was a two step process: First scan the items in, then scan them into a temporary container. This new feature makes it a one step process. To use this, create a temporary container as normal. Once all items are scanned in, press the yellow "Global Check-in" button. The process should take a few seconds, after which any item that was sucessfully checked in will gain a green tick next to it (including the container asset number at the top). Items without a green tick were not checked in, so if you beleive they should have been this should be investigated before moving on (and if it was a legit error please let me know!). Bulk items are ignored, so you need to put them in a temp container these will need to be checked in elsewhere as normal. Note: The auto Global Check-in will apply to all opportunities the item is booked out to.
+
+- NEW: 1.31.19 - Global Search Asset Shortcut - If you global search for an asset number (for example, if you scan an asset into the top global search field) you now jump straight to the asset's page (rather than ending up in the global search results page and then having to click on the one asset found). This also provides a cleaner way to get an item to quarantine. Requires API.
+
+- NEW: 1.31.19 - Detail View Sub-Hire Weight: If an opportunity includes sub-hires, the seperate weights of stock and sub-hired kit are shown under the normal weight value.
+
+- FIXED: 1.31.19 - In Detail View, rounding errors when calculating weights were creating crazy decimals.
+
+- IMPROVED: 1.31.19 - The Scroll Memory function now fires before the API calls, so there's now less/no delay before the scroll.
+
+----
+
 - FIXED: 1.31.18 - View filters in Detail View (yellow buttons) were broken by my haste and incompetence. Hopefully working properly again now.
 
 - NEW: 1.31.17 - Detail View Scroll Memory - In Detail View, page reload actions (such as reverting an item) mean you lose your place in the list, which can be very disorientating. This 'Scroll Memory' feature will now log your scroll position any time you click anywhere on the page, and try to return you to that position after the reload. It will also return extension view filters (yellow buttons) to their previous state (as this has an impact on the scroll position). Known limitation: The in-built filters (accessed via the funnel button under the Functions tab are not currently remembered, so if you use those you might not return to where you expect. I'll try to work this in when I can).
@@ -70,8 +89,6 @@ Aside from the Chrome Desktop Browser, users have successfully used this extensi
 - IMPROVED 1.31.9: The Container Weights sidebar section has been rewritten to implement several fixes and suggestions. It now accounts for the weight of all items and nested containers (previously the contents of nested containers were ignored), and shows the weight of each sub-container beneath. This should make it easier to use nested containers for multi-van planning. Containers are now listed in alphabetical/numberical order (previously the display order was arbitary). A "Loose items" listing has been added to the bottom to indicate the remaining job weight not assigned to any container. NOTE: CurrentRMS allows circular containerisation. That is to say: Item A can be stored inside Item B, which is stored inside Item A, which as I said earlier is stored inside Item B... I consider this to be a bug, and it causes chaos when you try to calculate the combined weight of nested containers. My solution to this is that if you do create a circular container scenario, a warning will alert you to the error, and red text in the Container Weights panel will suggest where the problem is. No weight is given for the impossible container until you fix the issue. I cannot think of any real world scenario or work flow where you would actually nest a container inside of itself; if you can please let me know!
 
 - NEW 1.31.9: Opportunities List: Clicking the order Avatar (the circular icon to the left hand side) is now a shortcut to take you directly to Detail View for that opportunity.
-
-----
 
 - IMPROVED 1.31.8: Added a "seconds" label to the error timeout box and added timeout to "You must select an asset" messages.
 
