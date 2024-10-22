@@ -115,5 +115,17 @@ function addMenuItemToNavbar() {
       event.preventDefault();  // Prevent default link behavior
       clearRecentOpportunitiesList();
     });
+
+    // modify the normal menu items to make room for the new one
+    var dashButton = document.querySelector("li.menu00");
+    dashButton.querySelector("a").innerText = "Dash";
+
+    var peopleButton = document.querySelector("li.menu01");
+    peopleButton.querySelector("a").innerText = "People & Orgs";
+
+
+
+
+
   }
 }

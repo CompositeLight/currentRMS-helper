@@ -1,4 +1,4 @@
-# currentRMS-helper 1.31.21
+# currentRMS-helper 1.31.22
 This is a work-in-progress Chrome extension to add functionality to the CurrentRMS web interface. It was created out of our frustration waiting on "quality of life" modifications to make the user experience better - specifically, as part of warehouse operations. Our warehouse team has found it helpful, so we've decided to share it with others. As it was created with our own in-house work processes in mind, it may or may not work for other users. However, my hope is that others (who are better at coding that I) might take this forward, or even inspire the CurrentRMS team to implement some of the changes within the main product.
 
 **DISCLAIMER: This is a first attempt work-in-progress written by me, an utter rookie in JavaScript. Use at your own risk. This code is in no way affiliated with InspHire Ltd.**
@@ -25,6 +25,9 @@ Aside from the Chrome Desktop Browser, users have successfully used this extensi
 
 
 ## Features / Updates
+- NEW: 1.31.22 - Re-worked CSS for the Details Page to better handle the yellow buttons on various screen sizes. The menu top bar items have also been shortened slighting (Dashboard -> Dash, Organisations -> Orgs) to prevent that top bar from going to two lines on small screens.
+
+- IMPROVED: 1.31.22 - Global Search Asset Shortcut has been re-written for better performance with large stock lists.
 
 - NEW/IMPROVED: 1.31.21 - Serialised Containers - Various improvements: Better feedback on incorrect scans. ErrorTimeouts (dissapearing error messages) should now work. You can now scan the container you're currently working on to take you back to the containers list.
 
