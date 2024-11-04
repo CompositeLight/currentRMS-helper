@@ -1750,8 +1750,9 @@ function hideCheckedIn() {
 
             // Check if any <tr> has inner text not including "Checked In" or "Completed"
             for (var j = 0; j < statusRows.length; j++) {
-                if (statusRows[j].innerText.indexOf("Checked In") === -1 && statusRows[j].innerText.indexOf("Completed") === -1) {
-                    // If found, we will ignore this item in the list
+                if ((statusRows[j].innerText.indexOf("Part") !== -1) || (statusRows[j].innerText.indexOf("Checked In") === -1 && statusRows[j].innerText.indexOf("Completed") === -1)) {
+
+                    // If found, we will ignore this item in the list and it won't be hidden
                     hideThis = false;
                     break; // No need to check further
                 }
@@ -3335,17 +3336,15 @@ if (detailView){
     // end of new gui
 
 
-    // Remove the quick-function-section class from the existing GUI and add helper-quick-function-section instead
-    // This is to break the JQuery dynamic resizing. Not at all clear why they did this rather than use CSS like everywhere else!
-    const existingPanel = document.querySelector(".quick-function-section");
-    existingPanel.classList.add("helper-quick-function-section");
-    existingPanel.style.removeProperty('top');
-    existingPanel.classList.remove("quick-function-section");
+    document.addEventListener("dblclick", function(event) {
+      // Check if the clicked element is an <a> inside an <li> within #od-function-tabs
+      const listItem = event.target.closest("li");
+      if (listItem && listItem.classList.contains("active")) {
+          // Scroll the window to the top only if the <li> has the "active" class
+          window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    });
 
-    // Remove the top property from the table header so we can make its position dynamic
-    const existingHeader = document.getElementById('opportunity_item_header_sticky');
-    existingHeader.style.removeProperty('top');
-    existingHeader.classList.add("helper-list-header");
 
   } catch (err){
     console.log(err);
