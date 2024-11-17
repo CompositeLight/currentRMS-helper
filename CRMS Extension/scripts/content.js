@@ -1087,6 +1087,10 @@ function opportunityApiCall(opp){
         .catch(error => {
           // Handle errors here
           console.error('Error making API request:', error);
+          console.error('Failed URL was:', apiUrl);
+          console.error('Last oppData.meta was:');
+          console.error(oppData.meta);
+
         });
     //console.log(oppData.opportunity_items);
     });

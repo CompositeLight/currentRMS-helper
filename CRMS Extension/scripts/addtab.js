@@ -24,7 +24,13 @@ function getSetRecents(){
     // now check if we need to add a new entry to the list
     if (orderView || detailView){
 
-      var title = document.querySelector("h1.subject-title").innerText;
+      //var title = document.querySelector("h1.subject-title").innerText;
+      var titleElement = document.querySelector("h1.subject-title");
+      var title = Array.from(titleElement.childNodes)
+    .filter(node => node.nodeType === Node.TEXT_NODE)
+    .map(node => node.textContent.trim())
+    .join(" ");
+
 
       // scrape the opportunity ID from the page URL if there is one
       let opportunityID = (function() {
