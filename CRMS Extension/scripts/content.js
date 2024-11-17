@@ -1087,6 +1087,10 @@ function opportunityApiCall(opp){
         .catch(error => {
           // Handle errors here
           console.error('Error making API request:', error);
+          console.error('Failed URL was:', apiUrl);
+          console.error('Last oppData.meta was:');
+          console.error(oppData.meta);
+
         });
     //console.log(oppData.opportunity_items);
     });
@@ -1492,12 +1496,14 @@ function notesButton(){
     notesHidden = false;
     unhideItemDescriptions();
     element.classList.remove("turned-on");
-    element.innerHTML = "Hide Notes";
+    element.classList.remove("strike-through");
+    //element.innerHTML = "Hide Notes";
   } else {
     notesHidden = true;
     hideItemDescriptions();
     element.classList.add("turned-on");
-    element.innerHTML = "Notes Hidden";
+    element.classList.add("strike-through");
+    //element.innerHTML = "Notes Hidden";
   }
   focusInput();
 }
@@ -1539,12 +1545,14 @@ function preparedButton(){
     preparedHidden = false;
     unhidePrepared();
     element.classList.remove("turned-on");
-    element.innerHTML = "Hide Prepared";
+    element.classList.remove("strike-through");
+    //element.innerHTML = "Hide Prepared";
   } else {
     preparedHidden = true;
     hidePrepared();
     element.classList.add("turned-on");
-    element.innerHTML = "Prepared Hidden";
+    element.classList.add("strike-through");
+    //element.innerHTML = "Prepared Hidden";
   }
   focusInput();
 }
@@ -1624,12 +1632,14 @@ function bookedOutButton(){
     bookedOutHidden = false;
     unhideBookedOut();
     element.classList.remove("turned-on");
-    element.innerHTML = "Hide Booked Out";
+    element.classList.remove("strike-through");
+    element.innerHTML = "Booked Out";
   } else {
     bookedOutHidden = true;
     hideBookedOut();
     element.classList.add("turned-on");
-    element.innerHTML = "Booked Out Hidden";
+    element.classList.add("strike-through");
+    element.innerHTML = "Booked Out";
   }
   focusInput();
 }
@@ -1711,12 +1721,14 @@ function checkedInButton(){
     checkedInHidden = false;
     unhideCheckedIn();
     element.classList.remove("turned-on");
-    element.innerHTML = "Hide Checked In";
+    element.classList.remove("strike-through");
+    //element.innerHTML = "Checked In";
   } else {
     checkedInHidden = true;
     hideCheckedIn();
     element.classList.add("turned-on");
-    element.innerHTML = "Checked In Hidden";
+    element.classList.add("strike-through");
+    //element.innerHTML = "Checked In";
   }
   focusInput();
 }
@@ -1742,8 +1754,9 @@ function hideCheckedIn() {
 
             // Check if any <tr> has inner text not including "Checked In" or "Completed"
             for (var j = 0; j < statusRows.length; j++) {
-                if (statusRows[j].innerText.indexOf("Checked In") === -1 && statusRows[j].innerText.indexOf("Completed") === -1) {
-                    // If found, we will ignore this item in the list
+                if ((statusRows[j].innerText.indexOf("Part") !== -1) || (statusRows[j].innerText.indexOf("Checked In") === -1 && statusRows[j].innerText.indexOf("Completed") === -1)) {
+
+                    // If found, we will ignore this item in the list and it won't be hidden
                     hideThis = false;
                     break; // No need to check further
                 }
@@ -1901,12 +1914,14 @@ function subhiresButton(){
     subhiresHidden = false;
     unHideSubHires();
     element.classList.remove("turned-on");
-    element.innerHTML = "Hide Sub-Rents";
+    element.classList.remove("strike-through");
+    //element.innerHTML = "Hide Sub-Rents";
   } else {
     subhiresHidden = true;
     hideSubHires();
     element.classList.add("turned-on");
-    element.innerHTML = "Sub-Rents Hidden";
+    element.classList.add("strike-through");
+    //element.innerHTML = "Sub-Rents Hidden";
   }
   focusInput();
 }
@@ -1984,7 +1999,7 @@ function nonsubsButton(){
     nonsubsHidden = true;
     hideNonSubs();
     element.classList.add("turned-on");
-    element.innerHTML = "Non-Subs Hidden";
+    element.innerHTML = "Sub-Rents Only";
     console.log("hiding non subs");
   }
   focusInput();
@@ -3241,7 +3256,8 @@ if (detailView){
     // Create a new row element
     let newElement = document.createElement('div');
     newElement.classList.add("row");
-    newElement.classList.add("sticky");
+    //newElement.classList.add("sticky");
+    newElement.classList.add("helper-sticky");
     // Insert `newElement` after `referenceElement`
     titleRow.insertAdjacentElement('afterend', newElement);
 
@@ -3254,43 +3270,33 @@ if (detailView){
     newElement.appendChild(newDiv);
 
 
-
-    // end of new gui
-
-    // Create a tab spacer
-    //var listItem = document.createElement("li");
-    //listItem.classList.add("helper-spacer");
-    //listItem.textContent = "_____";
-    //var listContainer = document.getElementById("od-function-tabs");
     var listContainer = document.getElementById("helper-control-panel");
-    //listContainer.appendChild(listItem);
 
     // Create a tab button for hiding items descriptions
     var listItem = document.createElement("li");
     listItem.classList.add("helper-btn");
-    listItem.textContent = "Hide Notes";
+    listItem.textContent = "Notes";
     listItem.id = "notes-button";
-    //var listContainer = document.getElementById("od-function-tabs");
     listContainer.appendChild(listItem);
 
     // Create a tab button for hiding prepared items
     var listItem = document.createElement("li");
     listItem.classList.add("helper-btn");
-    listItem.textContent = "Hide Prepared";
+    listItem.textContent = "Prepared";
     listItem.id = "prepared-button";
     listContainer.appendChild(listItem);
 
     // Create a tab button for hiding booked out items
     var listItem = document.createElement("li");
     listItem.classList.add("helper-btn");
-    listItem.textContent = "Hide Booked Out";
+    listItem.textContent = "Booked Out";
     listItem.id = "booked-out-button";
     listContainer.appendChild(listItem);
 
     // Create a tab button for hiding checked in items
     var listItem = document.createElement("li");
     listItem.classList.add("helper-btn");
-    listItem.textContent = "Hide Checked In";
+    listItem.textContent = "Checked In";
     listItem.id = "checked-in-button";
     listContainer.appendChild(listItem);
 
@@ -3304,7 +3310,7 @@ if (detailView){
     // Create a tab button for hiding Subhires
     var listItem = document.createElement("li");
     listItem.classList.add("helper-btn");
-    listItem.textContent = "Hide Sub-Rents";
+    listItem.textContent = "Sub-Rents Shown";
     listItem.id = "subhires-button";
     listContainer.appendChild(listItem);
 
@@ -3330,6 +3336,19 @@ if (detailView){
     document.getElementById("subhires-button").addEventListener("click", subhiresButton);
     document.getElementById("nonsubs-button").addEventListener("click", nonsubsButton);
     document.getElementById("nonshorts-button").addEventListener("click", nonShortsButton);
+
+    // end of new gui
+
+
+    document.addEventListener("dblclick", function(event) {
+      // Check if the clicked element is an <a> inside an <li> within #od-function-tabs
+      const listItem = event.target.closest("li");
+      if (listItem && listItem.classList.contains("active")) {
+          // Scroll the window to the top only if the <li> has the "active" class
+          window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    });
+
 
   } catch (err){
     console.log(err);

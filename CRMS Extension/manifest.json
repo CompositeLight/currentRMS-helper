@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "CurrentRMS Helper",
-  "version": "1.31.21",
+  "version": "1.31.24",
   "description": "Adding functionality to Current RMS, one reduced click at a time.",
   "icons": {
     "16": "images/icon-16.png",
@@ -80,7 +80,7 @@
       "css": ["style.css"]
     },
     {
-      "matches": ["https://*.current-rms.com/*"],
+      "matches": ["https://*.current-rms.com/global_search?*"],
       "js": ["scripts/globalassetshortcut.js"]
     },
     {

@@ -103,8 +103,96 @@
 .helper-btn-default:hover,.helper-btn-default:focus,.helper-btn-default:active,.helper-btn-default.active {
     color: #fff;
     background-color: #9f9f9f;
-    border-color: #adadad
+    border-color: #adadad;
 }
+
+.helper-quick-function-section {
+  padding-bottom: 10px;
+  z-index: 1029 !important;
+}
+
+.helper-sticky {
+  background-color: white;
+}
+
+.helper-list-header{
+
+}
+
+@media (max-width: 767px) {
+    .helper-btn {
+        margin-bottom: 5px;
+        width: 100%;
+    }
+    .helper-sticky {
+      position: static;
+      margin-left: 0px !important;
+      margin-right: 0px !important;
+    }
+
+
+
+}
+
+@media (min-width: 768px) {
+    .helper-btn {
+    }
+    .helper-sticky {
+      position: sticky;
+      top: 95px;
+      z-index: 1001;
+    }
+}
+
+/* For 767px wide or smaller */
+@media (max-width: 767px){
+  .helper-quick-function-section {
+    top: 54px !important;
+  }
+
+}
+
+/* For between 768px and 880px wide */
+@media (min-width: 768px) and (max-width: 880px) {
+  .helper-quick-function-section {
+    top: 170px !important;
+  }
+  .helper-list-header{
+        top: 347px !important;
+  }
+}
+
+/* For between 881px and 1000px wide */
+@media (min-width: 881px) and (max-width: 1000px) {
+  .helper-quick-function-section {
+    top: 140px !important;
+  }
+  .helper-list-header{
+        top: 317px !important;
+  }
+}
+
+/* For between 1001px and 1312px wide */
+@media (min-width: 1001px) and (max-width: 1312px) {
+  .helper-quick-function-section {
+    top: 170px !important;
+  }
+  .helper-list-header{
+        top: 347px !important;
+  }
+}
+/* For over 1312px wide */
+@media (min-width: 1313px) {
+  .helper-quick-function-section {
+    top: 140px !important;
+  }
+  .helper-list-header{
+        top: 317px !important;
+  }
+}
+
+
+
 
 .helper-bar{
   width: 100%;
@@ -123,7 +211,7 @@
   font-weight: bold;
 }
 
-.inspect-link: hover{
+.inspect-link:hover{
   background-color: #a6db00 !important;
 }
 
@@ -202,7 +290,7 @@ span.loss-warning {
   background-color: red;
   color: white;
   padding: .1em .4em .2em;
-  border-radius: .25em
+  border-radius: .25em;
 }
 
 .popover-help-added{
@@ -318,7 +406,6 @@ div.float-right{
   z-index: 1;
   top: -5px;
   right: 130%;
-
   opacity: 0;
   transition: opacity 0.3s;
 }
@@ -342,7 +429,7 @@ div.float-right{
 
 
 .cost-group-total{
-  float:right;
+  float: right;
   padding-right: 5px;
   font-weight: normal;
   color: grey;
@@ -495,4 +582,8 @@ a.allocation-link{
 .supplier-name{
   color: black;
   font-weight: bold;
+}
+
+.strike-through, .strike-through:hover {
+  text-decoration: line-through;
 }
