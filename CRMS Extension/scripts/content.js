@@ -210,73 +210,7 @@ if (editContainerView){
   console.log("Edit container view: "+editContainerView);
 }
 
-// Code chunk to enable auto-scrolling to last position in Order or Detail View.
-if (detailView || orderView){
 
-  var currentView = "order";
-  if (detailView){
-    currentView = "detail";
-  }
-
-  chrome.storage.local.get(["last-scroll"]).then((result) => {
-      if (result){
-        console.log(result);
-        if (result["last-scroll"].opp == opportunityID && result["last-scroll"].view == currentView){
-          console.log("Reloading scroll position!");
-          window.scrollTo(0, result["last-scroll"].scroll);
-
-          if (result["last-scroll"].notesHidden == true){
-            document.getElementById("notes-button").click();
-          }
-
-          if (result["last-scroll"].preparedHidden == true){
-            document.getElementById("prepared-button").click();
-          }
-
-          if (result["last-scroll"].bookedOutHidden == true){
-            document.getElementById("booked-out-button").click();
-          }
-
-          if (result["last-scroll"].checkedInHidden == true){
-            document.getElementById("checked-in-button").click();
-          }
-
-          if (result["last-scroll"].bulkOnly == true){
-            document.getElementById("bulk-button").click();
-          }
-
-          if (result["last-scroll"].subhiresHidden == true){
-            document.getElementById("subhires-button").click();
-          }
-
-          if (result["last-scroll"].nonsubsHidden == true){
-            document.getElementById("nonsubs-button").click();
-          }
-
-          if (result["last-scroll"].nonShortsHidden == true){
-            document.getElementById("nonshorts-button").click();
-          }
-
-        } else {
-
-        }
-      }
-  });
-
-  // Save scroll position on click
-  document.addEventListener('click', () => {
-      const scrollPosition = window.scrollY;
-      var currentView = "order";
-      if (detailView){
-        currentView = "detail";
-      }
-
-      chrome.storage.local.set({ 'last-scroll': {opp: opportunityID, view: currentView, scroll: scrollPosition, notesHidden: notesHidden, preparedHidden: preparedHidden, bookedOutHidden: bookedOutHidden, checkedInHidden:checkedInHidden, bulkOnly: bulkOnly, subhiresHidden: subhiresHidden, nonsubsHidden: nonsubsHidden, nonShortsHidden: nonShortsHidden} }).then(() => {
-         console.log("Scroll position was updated");
-      });
-  });
-
-}
 
 
 
@@ -1090,6 +1024,20 @@ function opportunityApiCall(opp){
           console.error('Failed URL was:', apiUrl);
           console.error('Last oppData.meta was:');
           console.error(oppData.meta);
+
+          console.log('Error making API request:', error);
+          console.log('Failed URL was:', apiUrl);
+          console.log('Last oppData.meta was:');
+          Object.values(oppData.meta).forEach(value => {
+            console.log(value);
+          });
+
+          if (error.message.includes('Failed to fetch')) {
+            setTimeout(function () {
+              makeToast("toast-error", "Helper failed to fetch from API. Retrying.", 5);
+              addDetails();
+            }, 5000);
+          }
 
         });
     //console.log(oppData.opportunity_items);
