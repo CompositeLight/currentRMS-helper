@@ -1,4 +1,4 @@
-# currentRMS-helper 1.31.24
+# currentRMS-helper 1.31.25
 This is a work-in-progress Chrome extension to add functionality to the CurrentRMS web interface. It was created out of our frustration waiting on "quality of life" modifications to make the user experience better - specifically, as part of warehouse operations. Our warehouse team has found it helpful, so we've decided to share it with others. As it was created with our own in-house work processes in mind, it may or may not work for other users. However, my hope is that others (who are better at coding that I) might take this forward, or even inspire the CurrentRMS team to implement some of the changes within the main product.
 
 **DISCLAIMER: This is a first attempt work-in-progress written by me, an utter rookie in JavaScript. Use at your own risk. This code is in no way affiliated with InspHire Ltd.**
@@ -25,6 +25,8 @@ Aside from the Chrome Desktop Browser, users have successfully used this extensi
 
 
 ## Features / Updates
+- REMOVED: 1.31.25 - The auto-scroll feature when refreshing a page has now been adopted by CurrentRMS(!). Removing this code as it was now fighting with the built in positioning.
+
 - FIXED: 1.31.24 - The entries in Recent previously added the text content of "badges" like "Customer Collecting"
 
 - FIXED: 1.31.23 - In Detail View, Tick box functions were broken by attempts to manipulate the page layout. This has now been rolled back, but means that the yellow buttons now get hidden by the vanilla function tabs, which is not what I intended... The way the GUI gets resized by JQuery, rather than CSS, is proving very difficult to manipulate.
