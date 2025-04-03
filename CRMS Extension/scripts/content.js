@@ -443,6 +443,62 @@ if (editContainerView){
             }
         });
         console.log(allStock);
+
+        let thisContainerWeight = 0;
+        let thisContainerSelfWeight = 0;
+        let thisContainerTotalWeight = 0;
+
+        const containerID = document.querySelector("div.subtitle").innerText.trim();
+
+        if (containerID){
+          const thisContainer = allStock.stock_levels.find(item => item.asset_number === containerID);
+          if (thisContainer){
+            thisContainerSelfWeight = parseFloat(thisContainer.item.weight);
+            thisContainerSelfWeight = Math.round(thisContainerSelfWeight * 100) / 100;
+          }
+        }
+
+
+
+
+
+        const serialisedComponentsBody = document.getElementById('serialised_components_body');
+        if (serialisedComponentsBody){
+          const serialisedComponentRows = serialisedComponentsBody.querySelectorAll('tr');
+          serialisedComponentRows.forEach((row, i) => {
+            const assetNumber = row.querySelector('td.essential').innerText.trim();
+            const thisItem = allStock.stock_levels.find(item => item.asset_number === assetNumber);
+            if (thisItem){
+              const thisWeight = thisItem.item.weight;
+              if (thisWeight && thisWeight != null){
+                thisContainerWeight = thisContainerWeight + parseFloat(thisWeight);
+              }
+            }
+            
+          });
+          // rounding to fix float issues
+          thisContainerWeight = Math.round(thisContainerWeight * 100) / 100;
+
+          thisContainerTotalWeight = Math.round((thisContainerWeight + thisContainerSelfWeight) * 100) / 100;
+
+
+          console.log("Container weight: "+thisContainerWeight);
+          console.log("Container self weight: "+thisContainerSelfWeight);
+          console.log("Total weight: "+thisContainerTotalWeight);
+
+          // add info to the side bar
+          const attributeList = document.querySelector("ul.number-list");
+          const newHtml = `
+          <li><span>Container Item: ${thisContainerSelfWeight} ${weightUnit}</span></li>
+          <li><span>Container Contents: ${thisContainerWeight} ${weightUnit}</span></li>
+          <li><span>Container Total Weight: ${thisContainerTotalWeight} ${weightUnit}</span></li>
+          `;
+          attributeList.insertAdjacentHTML('beforeend', newHtml);
+
+
+        }
+
+
       }
   });
 
