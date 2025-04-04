@@ -587,3 +587,8 @@ a.allocation-link{
 .strike-through, .strike-through:hover {
   text-decoration: line-through;
 }
+
+
+.requirement-error, .requirement-error:focus{
+  border: 2px solid red !important;
+}

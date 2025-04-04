@@ -75,8 +75,16 @@ quarantineData = {quarantines:[], meta:[]};
 quarantinedItemList = [];
 
 
+console.log(`Content.js was triggered at ${performance.now()}ms`);
+
+
 // check if we're scraping warehouse notes for another window
 pageUrl = window.location.href;
+
+
+
+
+
 if (pageUrl.endsWith("view=d&scrape")){
   createBlockOutOverlay();
   var warehouseNotesLog = {};
@@ -151,8 +159,12 @@ if (detailView.length != 0){
 }
 
 // check if we're in Opp Edit view
-var editOppView = document.querySelectorAll('form[class="simple_form edit_opportunity"]');
-if (editOppView.length != 0){
+var editOppView;
+
+const editForms = document.querySelectorAll('form[class="simple_form edit_opportunity"]');
+const newForms = document.querySelectorAll('form[class="simple_form new_opportunity"]');
+
+if (editForms.length != 0 || newForms.length != 0){
   editOppView = true;
 } else {
   editOppView = false;
@@ -489,9 +501,9 @@ if (editContainerView){
           // add info to the side bar
           const attributeList = document.querySelector("ul.number-list");
           const newHtml = `
-          <li><span>Container Item: ${thisContainerSelfWeight} ${weightUnit}</span></li>
-          <li><span>Container Contents: ${thisContainerWeight} ${weightUnit}</span></li>
           <li><span>Container Total Weight: ${thisContainerTotalWeight} ${weightUnit}</span></li>
+          <li><span><i>&#8627; Container Contents: ${thisContainerWeight} ${weightUnit}</i></span></li>
+          <li><span><i>&#8627; Container Item: ${thisContainerSelfWeight} ${weightUnit}</i></span></li>
           `;
           attributeList.insertAdjacentHTML('beforeend', newHtml);
 
@@ -541,6 +553,8 @@ if (editContainerView){
 
 if (editOppView){
 
+  // Create Reset All Dates button
+
   const schedule = Array.from(document.querySelectorAll('div')).find(el => el.textContent.trim() === 'Scheduling');
 
   if (schedule) {
@@ -570,6 +584,85 @@ if (editOppView){
     console.log('Schedule not found');
   }
 
+  // Prevent form from submitting if any input has a value of "Required"
+  let oppForm = document.querySelector('form.simple_form.edit_opportunity');
+  if (!oppForm) {
+    oppForm = document.querySelector('form.simple_form.new_opportunity');
+  }
+
+  if (oppForm) {
+
+    let hasError = false;
+    let buttonText;
+
+    oppForm.addEventListener('submit', function(event) {
+      hasError = false;
+      let firstErrorElement = null;
+      
+      // Select all input elements within the form
+      // Get all select elements on the page
+      const selects = Array.from(oppForm.querySelectorAll('select'));
+
+      // Filter select elements that have at least one option whose textContent starts with "required"
+      const matchingSelects = selects.filter(select => {
+        return Array.from(select.options).some(option => {
+          return option.textContent.trim().toLowerCase().startsWith('required');
+        });
+      });
+      
+      // now iterate through the matching selects
+      matchingSelects.forEach(select => {
+        // Find the option whose text starts with "required"
+        const requiredOption = Array.from(select.options).find(option =>
+          option.textContent.trim().toLowerCase().startsWith('required')
+        );
+      
+        // If such an option exists and its value equals the select's current value...
+        if (requiredOption && select.value === requiredOption.value) {
+          hasError = true;
+          firstErrorElement = select;
+          select.classList.add('requirement-error');
+        }
+      });
+      
+      // Prevent the form submission if any input had the error
+      if (hasError) {
+        event.preventDefault();
+        
+        oppForm.querySelectorAll('input[type="submit"]').forEach(button => {
+          console.log("Enable buttons");
+          button.removeAttribute('disabled');
+        });
+
+        if (firstErrorElement) {
+          firstErrorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    });
+
+    oppForm.querySelectorAll('input[type="submit"]').forEach(button => {
+      // Ensure the button is enabled initially.
+      button.disabled = false;
+      button.removeAttribute('disabled');
+      buttonText = button.value;
+    
+      // Create an observer to watch for changes to the disabled attribute.
+      const observer = new MutationObserver(mutations => {
+        mutations.forEach(mutation => {
+          if (mutation.attributeName === 'disabled' && button.hasAttribute('disabled') && hasError) {
+            button.disabled = false;
+            button.removeAttribute('disabled');
+            button.value = buttonText;
+          }
+        });
+      });
+      
+      // Start observing the button for attribute changes.
+      observer.observe(button, { attributes: true });
+    });
+  
+  }
+
 }
 
 
@@ -579,28 +672,108 @@ if (editOppView){
 // Function to add inspector details and item descriptions to the Details page
 async function addDetails(mode) {
   if (!addDetailsRunning){
+    
+    
+    const overallStartTime = performance.now();
+    console.log(`addDetails started at ${overallStartTime}ms`);
 
-  addDetailsRunning = true;
+
+    addDetailsRunning = true;
+
+    const startTime = performance.now();
+    let apiCallCount = 0;
+
+
   if (detailView){
 
     if (!mode){
+      
+      
+      const recallApiStartTime = performance.now();
+      console.log(`Starting recallAPI function at ${recallApiStartTime}ms`);
+      
+
+      // Count the number of lines in the opportunity items table to work out number of 100 row pages needed
+      const itemCount = document.getElementById("opportunity_items").querySelectorAll("tr").length;
+      console.log("Item count: ", itemCount);
+
+      // Add 1 to the item count to allow for services
+      const callCount = 1 + (Math.ceil(itemCount / 100));
+
+      
       await recallApiDetails();
       pageNumber = 1;
 
       // remove existing opp data
       oppData = {opportunity_items:[], meta:[]}
 
-      var result = await opportunityApiCall(opportunityID);
-      while (oppData.meta.row_count > 0){
-        pageNumber ++;
-        var result = await opportunityApiCall(opportunityID);
+
+      const initialStartTime = performance.now();
+      console.log(`Starting initial API call at ${initialStartTime}ms`);
+
+      // First API call to get initial data and total row count
+      const initialResult = await opportunityApiCall(opportunityID, 1 , "detail");
+
+      const initialEndTime = performance.now();
+      console.log(`Initial API call completed in ${initialEndTime - initialStartTime}ms`);
+
+
+
+      oppData.opportunity_items.push(...initialResult.opportunity_items);
+      oppData.meta = initialResult.meta;
+      apiCallCount ++;
+
+      console.log(oppData.meta);
+
+      const totalRows = oppData.meta.total_row_count;
+      const pageSize = 100;
+      const totalPages = Math.ceil(totalRows / pageSize);
+
+    
+
+      console.log("Total pages: "+totalPages);
+      console.log("Total rows: "+totalRows);
+      
+    
+      
+      // Helper function to log API call duration
+      async function timedApiCall(opportunityID, page) {
+        const startTime = performance.now();
+        console.log(`Starting API call for page ${page} at ${startTime}ms`);
+
+        const result = await opportunityApiCall(opportunityID, page, "detail");
+
+        const endTime = performance.now();
+        console.log(`API call for page ${page} completed in ${endTime - startTime}ms`);
+
+        return result;
       }
+
+      // Generate an array of promises for all pages
+      const apiCalls = [];
+      for (let page = 2; page <= totalPages; page++) {
+        apiCalls.push(timedApiCall(opportunityID, page));
+      }
+
+
+      // Execute all API calls concurrently
+      const results = await Promise.all(apiCalls);
+
+      apiCallCount += results.length;
+      
+
+      // Combine results into oppData
+      results.forEach(result => {
+        oppData.opportunity_items.push(...result.opportunity_items);
+        oppData.meta = result.meta;
+      });
+
     } else {
       console.log("Running offline addDetails");
     }
 
-    //console.log("oppData:");
-    //console.log(oppData);
+    console.log("oppData:");
+    console.log(oppData);
 
     // Find all elements with class "optional-01 asset asset-column"
     var assetColumns = document.querySelectorAll('td.optional-01.asset.asset-column');
@@ -733,6 +906,7 @@ async function addDetails(mode) {
     if (firstTimeLoadingApiData){
       firstTimeLoadingApiData = false;
       makeToast("toast-info", "API information loaded.", 3);
+
     }
 
 
@@ -768,16 +942,58 @@ async function addDetails(mode) {
     chrome.runtime.sendMessage({messageType: "availabilityscape", messageText: opportunityID, messageStartDate:startDateValue, messageEndDate:endDateValue});
 
     var currencyPrefix = getCurrencySymbol();
+    console.log(`Calling recallApiDetails at ${performance.now()}ms`);
+
+
+    // Count the number of lines in the opportunity items table to work out number of 100 row pages needed
+    const itemCount = document.getElementById("opportunity_items").querySelectorAll("tr").length;
+    console.log("Item count: ", itemCount);
+
+    // Add 1 to the item count to allow for services
+    const callCount = 1 + (Math.ceil(itemCount / 100));
+
 
     await recallApiDetails();
+
+
     pageNumber = 1;
-    // remove existing opp data
-    oppData = {opportunity_items:[], meta:[]}
-    var result = await opportunityApiCall(opportunityID);
-    while (oppData.meta.row_count > 0){
-      pageNumber ++;
-      var result = await opportunityApiCall(opportunityID);
-    }
+
+      // remove existing opp data
+      oppData = {opportunity_items:[], meta:[]}
+
+      const totalPages = callCount;
+
+      // Helper function to log API call duration
+      async function timedApiCall(opportunityID, page) {
+        const startTime = performance.now();
+        console.log(`Starting API call for page ${page} at ${startTime}ms`);
+
+        const result = await opportunityApiCall(opportunityID, page);
+
+        const endTime = performance.now();
+        console.log(`API call for page ${page} completed in ${endTime - startTime}ms`);
+
+        return result;
+      }
+
+      // Generate an array of promises for all remaining pages
+      const apiCalls = [];
+      for (let page = 1; page <= totalPages; page++) {
+        apiCalls.push(timedApiCall(opportunityID, page));
+      }
+
+      // Execute all API calls concurrently
+      const results = await Promise.all(apiCalls);
+
+      apiCallCount += results.length;
+      
+      // Combine results into oppData
+      results.forEach(result => {
+        oppData.opportunity_items.push(...result.opportunity_items);
+        oppData.meta = result.meta;
+      });
+
+
 
     for (let n = 0; n < oppData.opportunity_items.length; n++) {
 
@@ -1013,23 +1229,34 @@ async function addDetails(mode) {
 
     }
 
-  // create a Set Deal Price link for the grand total if we're not already in a deal
-  const grandTotal = document.querySelector('td.grand-total, td.opportunity-total');
-  if (grandTotal){
-    if (!grandTotal.querySelector('a')) {
-      const valueString = grandTotal.innerText;
-      grandTotal.innerHTML = `
-      <a data-remote="" href="/opportunities/${opportunityID}/set_deal_price_modal">
-       <span>${valueString}</span>
-     </a>`;
+    // create a Set Deal Price link for the grand total if we're not already in a deal
+    const grandTotal = document.querySelector('td.grand-total, td.opportunity-total');
+    if (grandTotal){
+      if (!grandTotal.querySelector('a')) {
+        const valueString = grandTotal.innerText;
+        grandTotal.innerHTML = `
+        <a data-remote="" href="/opportunities/${opportunityID}/set_deal_price_modal">
+        <span>${valueString}</span>
+      </a>`;
+      }
     }
-  }
-
 
 
   }
 
   addDetailsRunning = false;
+  const endTime = performance.now();
+  const duration = endTime - startTime;
+  console.log(`addDetails took ${duration} milliseconds`);
+  console.log("API call count: "+apiCallCount);
+  console.log("Total opportunity_items retrieved: ", oppData.opportunity_items.length);
+  console.log("Meta reported an item count of: ", oppData.meta.total_row_count);
+
+  if (oppData.opportunity_items.length != oppData.meta.total_row_count){
+    makeToast("toast-error", "API data appear incomplete. This may be due to rate limiting... Recommend you refresh this page.", 5);
+
+  console.log(oppData);
+  }
   }
 }
 
@@ -1041,11 +1268,60 @@ async function addDetails(mode) {
 
 
 
+// New API Call for addDetails
+async function opportunityApiCall(opportunityID, page = 1, type) {
+  if (apiKey && apiSubdomain) {
+
+    let apiUrl = `https://api.current-rms.com/api/v1/opportunities/${opportunityID}/opportunity_items?page=${page}&per_page=100`;
+
+    if (type == "detail"){
+      console.log("Calling detail API");
+      apiUrl = `https://api.current-rms.com/api/v1/opportunities/${opportunityID}/opportunity_items?page=${page}&q[description_present]=1&per_page=100`;
+    }
+
+    // Options for the fetch request
+    const fetchOptions = {
+      method: 'GET',
+      headers: {
+        'X-SUBDOMAIN': apiSubdomain,
+        'X-AUTH-TOKEN': apiKey,
+      },
+    };
+
+    try {
+      // Make the API call
+      const response = await fetch(apiUrl, fetchOptions);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      // Parse and return the JSON response
+      return await response.json();
+    } catch (error) {
+      console.error('Error making API request:', error);
+      console.error('Failed URL was:', apiUrl);
+
+      // Retry logic if the error is a network issue
+      if (error.message.includes('Failed to fetch')) {
+        setTimeout(() => {
+          makeToast("toast-error", "Helper failed to fetch from API. Retrying.", 5);
+          addDetails();
+        }, 5000);
+      }
+
+      throw error; // Re-throw the error for further handling
+    }
+  } else {
+    throw new Error('API key or subdomain is missing.');
+  }
+}
+
 
 
 
 // API Call for addDetails
-function opportunityApiCall(opp){
+function OLDopportunityApiCall(opp){
 
   if (apiKey && apiSubdomain){
     return new Promise(function (resolve, reject) {
@@ -1080,6 +1356,7 @@ function opportunityApiCall(opp){
           console.error('Failed URL was:', apiUrl);
           console.error('Last oppData.meta was:');
           console.error(oppData.meta);
+          console.error(JSON.stringify(oppData.meta, null, 2));
 
           console.log('Error making API request:', error);
           console.log('Failed URL was:', apiUrl);
@@ -2544,12 +2821,17 @@ const observer = new MutationObserver((mutations) => {
         var d = new Date();
         var timeNow = d.toLocaleTimeString();
 
+        // strip out the list elements and flatten them
+
+        if (!orderView){
         node.querySelectorAll('ul').forEach(function (element) {
           element.outerHTML = element.innerHTML;
         });
         node.querySelectorAll('li').forEach(function (element) {
           element.outerHTML = element.innerHTML;
         });
+
+        }
 
         if (node.innerHTML.includes("freescan")){
           node.innerHTML = "("+timeNow+") Free Scan toggle only applies when using Allocate.";
@@ -2574,6 +2856,7 @@ const observer = new MutationObserver((mutations) => {
 
 
       const messageText = toastMessage.textContent;
+      console.log(toastMessage);
 
       // log the message
       console.log("Toast message: " + messageText);
@@ -2719,11 +3002,11 @@ const observer = new MutationObserver((mutations) => {
       }, 900);
 
       // Handle a warning about stock shortage
-    }else if (messageText.includes("A shortage exists for the Rental of Product")){
+    } else if (messageText.includes("A shortage exists for the Rental of Product")){
             // no action required.
             destroyAfterTime(toastMessage, errorTimeout);
       // Handle an error where an item cannot be added because it's a container that's already allocated
-    }else if (messageText.includes("Quantity is invalid")){
+    } else if (messageText.includes("Quantity is invalid")){
             setTimeout(function() {
               sayWord("Quantity invalid.");
               console.log(messageText);
@@ -2846,7 +3129,7 @@ const observer = new MutationObserver((mutations) => {
         scanSound();
 
       // Handle myriad messages that are good, and just need a confirmatory "ding"
-    } else if (messageText.includes('Allocation successful') || messageText.includes('Items successfully marked as prepared') || messageText.includes('Items successfully checked in') || messageText.includes('Container Component was successfully destroyed.') || messageText.includes('Opportunity Item was successfully destroyed.') || messageText.includes('Container component was successfully added') || messageText.includes('Opportunity Item was successfully updated.')  ||  messageText.includes('Items successfully booked out') || messageText.includes('Container component was successfully removed')  || messageText.includes('Check-in details updated successfully') || messageText.includes('Opportunity Item was updated.') || messageText.includes('Set container successfully') || messageText.includes('Asset(s) successfully checked in')){
+      } else if (messageText.includes('Allocation successful') || messageText.includes('Items successfully marked as prepared') || messageText.includes('Items successfully checked in') || messageText.includes('Container Component was successfully destroyed.') || messageText.includes('Opportunity Item was successfully destroyed.') || messageText.includes('Container component was successfully added') || messageText.includes('Opportunity Item was successfully updated.')  ||  messageText.includes('Items successfully booked out') || messageText.includes('Container component was successfully removed')  || messageText.includes('Check-in details updated successfully') || messageText.includes('Opportunity Item was updated.') || messageText.includes('Set container successfully') || messageText.includes('Asset(s) successfully checked in')){
         addDetails(true);
         if (detailView && (document.querySelector('input[type="text"][name="container"]').value)){
           containerScanSound();
@@ -2860,6 +3143,13 @@ const observer = new MutationObserver((mutations) => {
             smartScanSetup(lastScan);
           }
         }
+
+      } else if (messageText.includes('Helper failed to fetch from API. Retrying.')){
+        // do nothing
+        console.log("Re-trying to fetch from API");
+      
+
+
 
       // If any other alert appears, log it so that I can spot it and add it to this code
       } else {

@@ -1,4 +1,4 @@
-# currentRMS-helper 1.31.26
+# currentRMS-helper 1.31.27
 This is a work-in-progress Chrome extension to add functionality to the CurrentRMS web interface. It was created out of our frustration waiting on "quality of life" modifications to make the user experience better - specifically, as part of warehouse operations. Our warehouse team has found it helpful, so we've decided to share it with others. As it was created with our own in-house work processes in mind, it may or may not work for other users. However, my hope is that others (who are better at coding that I) might take this forward, or even inspire the CurrentRMS team to implement some of the changes within the main product.
 
 **DISCLAIMER: This is a first attempt work-in-progress written by me, an utter rookie in JavaScript. Use at your own risk. This code is in no way affiliated with InspHire Ltd.**
@@ -25,6 +25,16 @@ Aside from the Chrome Desktop Browser, users have successfully used this extensi
 
 
 ## Features / Updates
+
+- IMPROVED / FIXED: 1.31.27 - At some point a few versions ago I was trying something and accidently caused a MASSIVE slow down of Detail View loading - primarily noticable on larger jobs. This should now be fixed. orderView is now also improved for larger jobs - time to execute the extension's code should be massively reduced. This has been achieved by making simultaneous API calls, rather than consecutive ones. This could cause issues in terms of rate limiting... So if this happens to you please let me know by raising an issue! If you're reading this you ARE the beta tester - thanks!
+
+- FIXED: 1.31.27 - Hopefully fixed a bug where some Order View toast messages lost their formatting.
+
+- NEW: 1.31.27 - Control popup now reacts to the system setting for Light/Dark mode.
+
+- NEW: 1.31.27 - Required fields. When creating or editing an opportunity you're now blocked from submitting if the value of any 'List of Values' input is set to a value that starts with "Required" (case insensitive). So for your Custom Fields, you can set the Default value to "Required" (or "required", "Required!!!!!!", "Required please" etc, doesn't matter so long as the first 8 characters are 'required'). On submission attempt the input is highlighted in red, and the page will scroll to view it to make it clear to the user what the issue is.
+
+
 - NEW: 1.31.26 - Serialised Container View now lists the weight of the container, its contents and the total weight in the Attibutes side bar section.
 
 - REMOVED: 1.31.25 - The auto-scroll feature when refreshing a page has now been adopted by CurrentRMS(!). Removing this code as it was now fighting with the built in positioning.

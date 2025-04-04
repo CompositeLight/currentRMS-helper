@@ -168,9 +168,10 @@ chrome.storage.local.get(["setPrepared"]).then((result) => {
 
 // Code for the Announce Inspections setting:
 chrome.storage.local.get(["inspectionAlert"]).then((result) => {
-  var selectedOption = "input[name='inspectionalert'][value='" + result.inspectionAlert + "']";
-  document.querySelector(selectedOption).checked = true;
-
+  if (result.inspectionAlert){
+    var selectedOption = "input[name='inspectionalert'][value='" + result.inspectionAlert + "']";
+    document.querySelector(selectedOption).checked = true;
+  }
 });
 
 document.querySelectorAll('input[name="inspectionalert"]').forEach(function(radio) {
@@ -187,8 +188,10 @@ document.querySelectorAll('input[name="inspectionalert"]').forEach(function(radi
 
 // Code for the Global Check-in setting:
 chrome.storage.local.get(["multiGlobal"]).then((result) => {
-  var selectedOption = "input[name='multiglobal'][value='" + result.multiGlobal + "']";
-  document.querySelector(selectedOption).checked = true;
+  if (result.multiGlobal){
+    var selectedOption = "input[name='multiglobal'][value='" + result.multiGlobal + "']";
+    document.querySelector(selectedOption).checked = true;
+  }
 });
 
 document.querySelectorAll('input[name="multiglobal"]').forEach(function(radio) {
@@ -210,8 +213,10 @@ document.querySelectorAll('input[name="multiglobal"]').forEach(function(radio) {
 // Code for the auto book out nested containers setting:
 chrome.storage.local.get(["bookOutContainers"]).then((result) => {
   console.log(result.bookOutContainers);
-  var selectedOption = "input[name='bookoutcontainers'][value='" + result.bookOutContainers + "']";
-  document.querySelector(selectedOption).checked = true;
+  if (result.bookOutContainers){
+    var selectedOption = "input[name='bookoutcontainers'][value='" + result.bookOutContainers + "']";
+    document.querySelector(selectedOption).checked = true;
+  }
 });
 
 document.querySelectorAll('input[name="bookoutcontainers"]').forEach(function(radio) {
@@ -369,4 +374,16 @@ function convertMillisToDateTimeString(milliseconds) {
 
     // Formatting to "hh:mm:ss dd:mm:yy"
     return `${hours}:${minutes}:${seconds} ${day}/${month}/${year}`;
+}
+
+
+
+
+if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+  // It's dark mode
+  document.body.classList.add('dark-mode');
+} else {
+  console.log("Light mode");
+  // It's light mode
+  document.body.classList.add('light-mode');
 }

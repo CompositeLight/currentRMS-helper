@@ -1,4 +1,4 @@
-# currentRMS-helper 1.31.21
+# currentRMS-helper 1.31.27
 
 Below is a list of current features. It's the same information as the Readme change log, but listed "per area" to make it easier for new users to see what the extension adds.
 
@@ -79,6 +79,9 @@ Once a container exists on the opportunity it can be accessed without further us
 
 - Sub-Hire Weight - If an opportunity includes sub-hires, the seperate weights of stock and sub-hired kit are shown under the normal weight value.
 
+- In Detail View, double clicking on a function tab (Function, Allocate, Prepate, Book out, Check-in) now scrolls the page to the top.
+
+
 ## Serialised Containers
 
 - When scanning assets into a container you will receive a verbal warning when trying to scan in an item that already is, or already is in, a container.
@@ -86,6 +89,8 @@ Once a container exists on the opportunity it can be accessed without further us
 - Container View Check-in - Previously, we were frustrated by the fact that getting items back into temporary containers was a two step process: First scan the items in, then scan them into a temporary container. This new feature makes it a one step process. To use this, create a temporary container as normal. Once all items are scanned in, press the yellow "Global Check-in" button. The process should take a few seconds, after which any item that was sucessfully checked in will gain a green tick next to it (including the container asset number at the top). Items without a green tick were not checked in, so if you beleive they should have been this should be investigated before moving on (and if it was a legit error please let me know!). Bulk items are ignored, so you need to put them in a temp container these will need to be checked in elsewhere as normal. Note: The auto Global Check-in will apply to all opportunities the item is booked out to.
 
 - You can now scan the container you're currently working on to take you back to the containers list.
+
+- Serialised Container View now lists the weight of the container, its contents and the total weight in the Attibutes side bar section.
 
 
 ## Order View
@@ -118,8 +123,10 @@ Once a container exists on the opportunity it can be accessed without further us
 - Add To Existing Purchase Order - The modal box that appears now offers a list of active POs from the supplier of the selected item. Previously you had to guess / look up the correct PO.
 
 
-## Edit Opportunity
-- The Edit Opportunity Scheduling section now has a button to clear all dates for the detailed schedule boxes. You still need to Update Order to apply any changes.
+## Create and Edit Opportunity
+- The Create and Edit Opportunity Scheduling sections now have a button to clear all dates for the detailed schedule boxes. You still need to Update Order to apply any changes.
+
+- Required fields. When creating or editing an opportunity you're now blocked from submitting if the value of any 'List of Values' input is set to a value that starts with "Required" (case insensitive). So for your Custom Fields, you can set the Default value to "Required" (or "required", "Required!!!!!!", "Required please" etc, doesn't matter so long as the first 8 characters are 'required'). On submission attempt the input is highlighted in red, and the page will scroll to view it to make it clear to the user what the issue is.
 
 
 ## Add Opportunity Item
