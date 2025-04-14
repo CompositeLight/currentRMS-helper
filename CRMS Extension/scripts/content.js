@@ -993,11 +993,13 @@ async function addDetails(mode) {
         oppData.meta = result.meta;
       });
 
-
+      console.log(oppData.opportunity_items);
+      console.log(oppData.meta);
 
     for (let n = 0; n < oppData.opportunity_items.length; n++) {
 
-      if (oppData.opportunity_items[n].opportunity_item_type_name != "Group" && !oppData.opportunity_items[n].is_in_deal && oppData.opportunity_items[n].opportunity_item_type_name != false) {
+      if (oppData.opportunity_items[n].opportunity_item_type_name != "Group" && oppData.opportunity_items[n].opportunity_item_type_name != false) {
+        
         var thisName = oppData.opportunity_items[n].name;
         var thisID = oppData.opportunity_items[n].id;
         var thisTotalCharge = parseFloat(oppData.opportunity_items[n].charge_excluding_tax_total);
@@ -1030,62 +1032,7 @@ async function addDetails(mode) {
         }
 
 
-
-        // SECTION TO LIST ALLOCATED SERVICES BELOW ITEMS
-        if (oppData.opportunity_items[n].item_type == "Service"){
-          // logging for dev purposes
-          //console.log(oppData.opportunity_items[n]);
-
-          var trElement = tdElement.closest("tr");
-
-          // remove previous rows in case they have changed
-          const rowsToRemove = liElement.querySelectorAll('.allocation-detail-tr');
-          // Loop through each element and remove it
-          rowsToRemove.forEach(function(element) {
-            element.parentNode.removeChild(element);
-          });
-
-
-          var elementToGoAfter = trElement;
-
-          if (oppData.opportunity_items[n].status == 5 && oppData.opportunity_items[n].item_assets[0].stock_level_asset_number == "Group Booking"){
-            trElement.classList.add("unallocated");
-          } else {
-            trElement.classList.remove("unallocated");
-            // Iterate through the item_assets in reverse order
-            var assetCount = 1;
-            //for (let i = oppData.opportunity_items[n].item_assets.length - 1; i >= 0; i--) {
-            for (let i = 0; i < oppData.opportunity_items[n].item_assets.length; i++) {
-              var thisAsset = oppData.opportunity_items[n].item_assets[i];
-              if (thisAsset.stock_level_asset_number == "Group Booking"){
-                var quantityOfGroup = parseInt(thisAsset.quantity);
-                  trElement.classList.add("unallocated");
-
-              } else {
-
-                var textForTheAllocation = thisAsset.stock_level_asset_number;
-                if (apiSubdomain && thisAsset.stock_level_member_id){
-                  textForTheAllocation = `<a href="https://${apiSubdomain}.current-rms.com/members/${thisAsset.stock_level_member_id}" class="allocation-link"  target="_blank" data-memberemail="${thisAsset.stock_level_member_work_email_address ? thisAsset.stock_level_member_work_email_address : ''}">${thisAsset.stock_level_asset_number}</a>`;
-
-                } else if (apiSubdomain && thisAsset.supplier_id){
-                  textForTheAllocation = `<a href="https://${apiSubdomain}.current-rms.com/members/${thisAsset.supplier_id}" class="allocation-link"  target="_blank">${thisAsset.stock_level_asset_number}</a>`;
-                }
-
-
-                // Create the new element you want to add
-                const newElement = document.createElement('tr');
-                newElement.classList.add("allocation-detail-tr");
-                newElement.innerHTML = `<td>&nbsp;</td><td class="allocation-detail" colspan="11">${assetCount}: ${textForTheAllocation}</td>`;
-                // Insert the new element after the tr
-                elementToGoAfter.insertAdjacentElement('afterend', newElement);
-                elementToGoAfter = newElement;
-                assetCount ++;
-              }
-
-            }
-          }
-        }
-
+        if (!oppData.opportunity_items[n].is_in_deal){
         // SECTION TO ADD POP UP DATA
         var spanElement = tdElement.querySelector('span');
         var currentDataContent = "";
@@ -1120,6 +1067,63 @@ async function addDetails(mode) {
         } else {
           spanElement.classList.remove("loss-warning");
         }
+      }
+
+        // SECTION TO LIST ALLOCATED SERVICES BELOW ITEMS
+      if (oppData.opportunity_items[n].item_type == "Service"){
+        // logging for dev purposes
+        //console.log(oppData.opportunity_items[n]);
+
+        var trElement = tdElement.closest("tr");
+
+        // remove previous rows in case they have changed
+        const rowsToRemove = liElement.querySelectorAll('.allocation-detail-tr');
+        // Loop through each element and remove it
+        rowsToRemove.forEach(function(element) {
+          element.parentNode.removeChild(element);
+        });
+
+
+        var elementToGoAfter = trElement;
+
+        if (oppData.opportunity_items[n].status == 5 && oppData.opportunity_items[n].item_assets[0].stock_level_asset_number == "Group Booking"){
+          trElement.classList.add("unallocated");
+        } else {
+          trElement.classList.remove("unallocated");
+          // Iterate through the item_assets in reverse order
+          var assetCount = 1;
+          //for (let i = oppData.opportunity_items[n].item_assets.length - 1; i >= 0; i--) {
+          for (let i = 0; i < oppData.opportunity_items[n].item_assets.length; i++) {
+            var thisAsset = oppData.opportunity_items[n].item_assets[i];
+            if (thisAsset.stock_level_asset_number == "Group Booking"){
+              var quantityOfGroup = parseInt(thisAsset.quantity);
+                trElement.classList.add("unallocated");
+
+            } else {
+
+              var textForTheAllocation = thisAsset.stock_level_asset_number;
+              if (apiSubdomain && thisAsset.stock_level_member_id){
+                textForTheAllocation = `<a href="https://${apiSubdomain}.current-rms.com/members/${thisAsset.stock_level_member_id}" class="allocation-link"  target="_blank" data-memberemail="${thisAsset.stock_level_member_work_email_address ? thisAsset.stock_level_member_work_email_address : ''}">${thisAsset.stock_level_asset_number}</a>`;
+
+              } else if (apiSubdomain && thisAsset.supplier_id){
+                textForTheAllocation = `<a href="https://${apiSubdomain}.current-rms.com/members/${thisAsset.supplier_id}" class="allocation-link"  target="_blank">${thisAsset.stock_level_asset_number}</a>`;
+              }
+
+
+              // Create the new element you want to add
+              const newElement = document.createElement('tr');
+              newElement.classList.add("allocation-detail-tr");
+              newElement.innerHTML = `<td>&nbsp;</td><td class="allocation-detail" colspan="11">${assetCount}: ${textForTheAllocation}</td>`;
+              // Insert the new element after the tr
+              elementToGoAfter.insertAdjacentElement('afterend', newElement);
+              elementToGoAfter = newElement;
+              assetCount ++;
+            }
+
+          }
+        }
+
+      }      // end of service item allocation section
 
 
 
@@ -1174,7 +1178,24 @@ async function addDetails(mode) {
 
 
       }// end of if a group with deal set
+
+
+      
+
+
+
+
     }
+
+
+        
+
+
+
+
+
+
+
 
     // Sort out listing charged days for serviced items
     var daysHeader = document.querySelector('td.days-column.align-right');

@@ -26,6 +26,8 @@ Aside from the Chrome Desktop Browser, users have successfully used this extensi
 
 ## Features / Updates
 
+- FIXED: 1.37.28 - Listing of allocation details in Order View now works when the item is within a deal (issue 104).
+
 - IMPROVED / FIXED: 1.31.27 - At some point a few versions ago I was trying something and accidently caused a MASSIVE slow down of Detail View loading - primarily noticable on larger jobs. This should now be fixed. orderView is now also improved for larger jobs - time to execute the extension's code should be massively reduced. This has been achieved by making simultaneous API calls, rather than consecutive ones. This could cause issues in terms of rate limiting... So if this happens to you please let me know by raising an issue! If you're reading this you ARE the beta tester - thanks!
 
 - FIXED: 1.31.27 - Hopefully fixed a bug where some Order View toast messages lost their formatting.
