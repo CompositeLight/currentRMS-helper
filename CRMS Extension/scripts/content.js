@@ -1134,7 +1134,7 @@ async function addDetails(mode) {
         var thisGroupPath = oppData.opportunity_items[n].path;
         var thisTotalCost = 0.0;
 
-        for (let g = n+1; g < (oppData.opportunity_items.length-n-1); g++) {
+        for (let g = n+1; g < oppData.opportunity_items.length; g++) {
           if (oppData.opportunity_items[g].opportunity_item_type_name != "Group" && oppData.opportunity_items[g].path.startsWith(thisGroupPath)) {
             for (let i = 0; i < oppData.opportunity_items[g].item_assets.length; i++) {
               if (oppData.opportunity_items[g].item_assets[i].opportunity_cost){
