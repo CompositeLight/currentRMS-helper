@@ -99,7 +99,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           }
         });
   } else if (message.messageType === "warehouseNotesData") {
-        // response regarding inactive opps found for global search
+        // response regarding scraping of warehouse notes
         iAmScraping = false;
         // Forward the message to Content Script
         chrome.tabs.query({}, function(tabs) {
@@ -109,6 +109,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             });
           }
         });
+        
   } else if (message.messageType === "productQtyData") {
       iAmScraping = false;
       // Forward the message to Content Script
@@ -749,3 +750,5 @@ function reformatString(input) {
 
     return finalString;
 }
+
+

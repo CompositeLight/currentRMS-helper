@@ -1,4 +1,4 @@
-# currentRMS-helper 1.31.29
+# currentRMS-helper 2.0.0
 This is a work-in-progress Chrome extension to add functionality to the CurrentRMS web interface. It was created out of our frustration waiting on "quality of life" modifications to make the user experience better - specifically, as part of warehouse operations. Our warehouse team has found it helpful, so we've decided to share it with others. As it was created with our own in-house work processes in mind, it may or may not work for other users. However, my hope is that others (who are better at coding that I) might take this forward, or even inspire the CurrentRMS team to implement some of the changes within the main product.
 
 **DISCLAIMER: This is a first attempt work-in-progress written by me, an utter rookie in JavaScript. Use at your own risk. This code is in no way affiliated with InspHire Ltd.**
@@ -25,6 +25,36 @@ Aside from the Chrome Desktop Browser, users have successfully used this extensi
 
 
 ## Features / Updates
+
+** NEW MAJOR VERSION 2.0.0 - PLEASE TEST WITH CAUTION AND REPORT ISSUES **
+
+- MAJOR CHANGE: 2.0.0 - In Order View, the way in which opportunity data is loaded has substantially changed. The opportunity_items object is now stored in chrome.local.storage, and the API call is only to retrieve updated items after the first load. On big jobs especially, this massively improves load time / performance as less API data is required. In order that local.storage doesn't become too massive, any opportunities not looked at for more than a week will be deleted, meaning that if you go back to them the first reload will require a full API run. In theory you won't really notice any difference (except it'll be faster), but please report any issues that appear... If for any reason your opportunity API data gets out of whack 1) Let me know by creating an issue, 2) Go to the edit opportunity page where you'll find a new yellow button to purge the locally held data for that opportunity.
+
+- NEW 2.0.0 - Description Magic - In Order View you can now add a description to an item or group by using the drop down (blue arrow to the right) menu. You can also remove a description by deleting the contents and clicking away (issue 54).
+
+- NEW 2.0.0 - Warehouse Notes Magic - In Order View you can also now add or edit a Warehouse Note by using the drop down (blue arrow to the right) menu. To quickly edit a Warehouse Note you can also just click on the clipboard T icon next to an item (you can still mouse over that icon to see a quick popup of the note).
+
+- NEW: 2.0.0 - In Order View, you can now edit chargable days / miles / hours by clicking on them as you would a rental product (so no need to edit the item to adjust it). NOTE: Changing the chargable days in this way has no effect on the days costed, so you'll still need to go and adjust this if it effects your profit calculations etc (issue 100). This however, will be a bit easier than it used to be because...
+
+- NEW: 2.0.0 - In Cost View, you can also now edit chargable days / miles / hours by clicking on them as you would a rental product. You can also change whether a service item is costed by Days/Hours/Distance/Flat-Rate directly from the Costs page, so you don't need to navigate to the opportunity item edit page so much.
+
+- NEW: 2.0.0 - Sub-Rent weight is now also shown in Order View under the Attributes panel of the side bar (issue 75). As well as giving an overally break-down of stock weight vs sub-rent weight, the weight associated with each supplier is given beneath. Clicking the supplier name takes you to their member page.
+
+- NEW 2.0.0 - In Order View, items that include sub-rents are highlighted in blue if any of the sub-rented allocations don't yet have a supplier set. This is to make it harder to miss a sub-hire you haven't sorted out (issue 96 AKA The Extra Chain Motors Incident).
+
+- IMPROVED 2.0.0 - Not On The Job - When you scan an item that isn't on the opportunity, the voice prompt listing the incorrect asset number can be annoying because it sometimes takes a long time to say... New behaviour is that the first scan will only prompt "Not on the job". Subsequent scans will read out the full asset number as before.
+
+IMPROVED 2.0.0 - Sticky Helper Buttons - The yellow buttons in Order and Detail View now stick to the top of the page again, but leave enough space for the normal green buttons (issue 79).
+
+- CHANGED 2.0.0 - I've disabled the 'new' in built feature that makes rows orange if they are break-even or loss making. I've been reluctant to do it, but in the end have concluded that a) it's a duplication of the extension's method of highlighting loss making rows, b) it's a poorer implementation of the feature because break-even is typically ok for most people, c) it clashes with other row highlights such as the in-built red rows for shortages, and the extension's yellow rows for unallocated service items. If anyone out there really loves the orange rows for some reason and wants them back, raise an issue and I'll have a look at it (I could add it back as an optional thing in the settings panel). 
+
+- FIXED 2.0.0 - API Rate Limiting warnings were firing inappropriately (issue 106).
+
+
+
+------------
+
+- FIXED: 1.31.30 - In Detail View, item descriptions were hidden when the window was narrower than 768px. Have also increased the column span of these elements for better viewing in narrower windows.
 
 - FIXED: 1.31.29 - Where a Deal Price was set on a group the profit/loss tool stip was not calculating correctly (issue 97).
 

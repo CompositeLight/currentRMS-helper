@@ -1,5 +1,32 @@
 console.log("CurrentRMS Helper Activated - costsview.js");
 
+// Inject an external script into the page context
+const script = document.createElement('script');
+script.src = chrome.runtime.getURL('scripts/cost-injected.js'); // Path to the external script
+document.documentElement.appendChild(script);
+script.remove();
+
+
+
+// Reduce the unecessary width of the supplier column
+document.querySelectorAll('td.quantity-column').forEach(function(element) {
+  element.classList.add("center-column");
+});
+
+
+// Add a cost-type column immediately after the days column
+document.querySelectorAll('td.optional-04.align-right.days-column').forEach(function(element) {
+
+  var thisCostTypeCell = document.createElement('td');
+  thisCostTypeCell.classList.add("force-left", "cost-type-select-column");
+  element.insertAdjacentElement('afterend', thisCostTypeCell);
+
+  
+});
+
+
+
+
 storeLocation = "";
 apiKey="";
 apiSubdomain="";
@@ -51,11 +78,22 @@ function recallApiDetails(){
 }
 
 
-// API Call for addDetails
-function opportunityApiCall(opp){
-  return new Promise(function (resolve, reject) {
-    //const apiUrl = 'https://api.current-rms.com/api/v1/opportunities/'+opp+'/opportunity_items?page='+pageNumber+'&q[description_present]=1&per_page=100';
-    const apiUrl = 'https://api.current-rms.com/api/v1/opportunities/'+opp+'/opportunity_items?page='+pageNumber+'&per_page=100';
+
+// New API Call for addDetails
+async function opportunityApiCall(opportunityID, page = 1, type) {
+  if (apiKey && apiSubdomain) {
+
+    let apiUrl = `https://api.current-rms.com/api/v1/opportunities/${opportunityID}/opportunity_items?page=${page}&per_page=100`;
+
+    if (type == "detail"){
+      console.log("Calling detail API");
+      apiUrl = `https://api.current-rms.com/api/v1/opportunities/${opportunityID}/opportunity_items?page=${page}&q[description_present]=1&per_page=100`;
+    } else if (type == "update"){
+      console.log("Calling update detail API");
+      console.log(oppData.time);
+      apiUrl = `https://api.current-rms.com/api/v1/opportunities/${opportunityID}/opportunity_items?page=${page}&per_page=100&q[updated_at_or_item_assets_updated_at_or_item_assets_opportunity_cost_updated_at_gt]=${oppData.time}`;
+    }
+
     // Options for the fetch request
     const fetchOptions = {
       method: 'GET',
@@ -64,26 +102,34 @@ function opportunityApiCall(opp){
         'X-AUTH-TOKEN': apiKey,
       },
     };
-    // Make the API call
-    fetch(apiUrl, fetchOptions)
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        return response.json();
-      })
-      .then(data => {
-        // Handle the API response data here
-        oppData.opportunity_items = oppData.opportunity_items.concat(data.opportunity_items); // merge new page of data into stock_levels
-        oppData.meta = data.meta; // merge new page of data into meta
-        resolve("ok");
-      })
-      .catch(error => {
-        // Handle errors here
-        console.error('Error making API request:', error);
-      });
 
-  });
+    try {
+      // Make the API call
+      const response = await fetch(apiUrl, fetchOptions);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      // Parse and return the JSON response
+      return await response.json();
+    } catch (error) {
+      console.error('Error making API request:', error);
+      console.error('Failed URL was:', apiUrl);
+
+      // Retry logic if the error is a network issue
+      if (error.message.includes('Failed to fetch')) {
+        setTimeout(() => {
+          makeToast("toast-error", "Helper failed to fetch from API. Retrying.", 5);
+          addDetails();
+        }, 5000);
+      }
+
+      throw error; // Re-throw the error for further handling
+    }
+  } else {
+    throw new Error('API key or subdomain is missing.');
+  }
 }
 
 function findItemIdByOpportunityCostId(opportunityCostId) {
@@ -105,7 +151,7 @@ function findItemIdByOpportunityCostId(opportunityCostId) {
   return null;
 }
 
-function findDaysChargedByOpportunityCostId(opportunityCostId) {
+function findDaysCostedByOpportunityCostId(opportunityCostId) {
   // Iterate over each item in the provided data array
   for (let item of oppData.opportunity_items) {
     // Check if the item has an 'item_assets' property
@@ -273,16 +319,207 @@ costDetails();
 
 
 async function costDetails(){
-
   var currencyPrefix = getCurrencySymbol();
+  let apiCallCount = 0;
 
-  await recallApiDetails();
-  pageNumber = 1;
-  var result = await opportunityApiCall(opportunityID);
-  while (oppData.meta.row_count > 0){
-    pageNumber ++;
-    var result = await opportunityApiCall(opportunityID);
+  oppData = await recallOppDetails(opportunityID);
+  console.log("Recalled oppData:");
+  console.log(oppData);
+
+  if (!oppData){
+    console.log("No opp data found in local storage");
+
+    const recallApiStartTime = performance.now();
+    console.log(`Starting recallAPI function at ${recallApiStartTime}ms`);
+    
+    
+    await recallApiDetails();
+    pageNumber = 1;
+
+    // initialise oppData
+    oppData = {opportunity_items:[], meta:[]}
+
+
+    const initialStartTime = performance.now();
+    console.log(`Starting initial API call at ${initialStartTime}ms`);
+
+    // First API call to get initial data and total row count
+    const initialResult = await opportunityApiCall(opportunityID, 1 , "detail");
+
+    const initialEndTime = performance.now();
+    console.log(`Initial API call completed in ${initialEndTime - initialStartTime}ms`);
+
+
+
+    oppData.opportunity_items.push(...initialResult.opportunity_items);
+    oppData.meta = initialResult.meta;
+    apiCallCount ++;
+
+    console.log(oppData.meta);
+
+    const totalRows = oppData.meta.total_row_count;
+    const pageSize = 100;
+    const totalPages = Math.ceil(totalRows / pageSize);
+
+  
+
+    console.log("Total pages: "+totalPages);
+    console.log("Total rows: "+totalRows);
+    
+  
+    
+    // Helper function to log API call duration
+    async function timedApiCall(opportunityID, page) {
+      const startTime = performance.now();
+      console.log(`Starting API call for page ${page} at ${startTime}ms`);
+
+      const result = await opportunityApiCall(opportunityID, page, "detail");
+
+      const endTime = performance.now();
+      console.log(`API call for page ${page} completed in ${endTime - startTime}ms`);
+
+      return result;
+    }
+
+    // Generate an array of promises for all pages
+    const apiCalls = [];
+    for (let page = 2; page <= totalPages; page++) {
+      apiCalls.push(timedApiCall(opportunityID, page));
+    }
+
+
+    // Execute all API calls concurrently
+    const results = await Promise.all(apiCalls);
+
+    apiCallCount += results.length;
+    
+
+    // Combine results into oppData
+    results.forEach(result => {
+      oppData.opportunity_items.push(...result.opportunity_items);
+      oppData.meta = result.meta;
+    });
+
+    console.log(oppData.opportunity_items);
+    console.log(oppData.meta);
+
+    const oppItemsString = JSON.stringify(oppData.opportunity_items);
+    const oppMetaString = JSON.stringify(oppData.meta);
+    const currentTimeString = new Date().toISOString();
+    
+    chrome.storage.local.set({ 
+      [`opp-${opportunityID}`]: {
+        opportunity_items: oppItemsString, 
+        meta: oppMetaString,
+        time: currentTimeString
+      }
+    }).then(() => {
+      console.log(`Opportunity data saved for opp ID ${opportunityID}`);
+    });
+
+  } else {
+    console.log("Recalled oppData:");
+      console.log(oppData);
+
+      // refreshing oppData
+      const recallApiStartTime = performance.now();
+      console.log(`Starting recallAPI function at ${recallApiStartTime}ms`);
+      
+      await recallApiDetails();
+      pageNumber = 1;
+
+      // initialise updateOppData
+      let updateOppData = {opportunity_items:[], meta:[]}
+
+      const initialStartTime = performance.now();
+      console.log(`Starting initial update API call at ${initialStartTime}ms`);
+
+      // First API call to get initial data and total row count
+      const initialResult = await opportunityApiCall(opportunityID, 1 , "update");
+
+      const initialEndTime = performance.now();
+      console.log(`Initial API call completed in ${initialEndTime - initialStartTime}ms`);
+
+      updateOppData.opportunity_items.push(...initialResult.opportunity_items);
+      updateOppData.meta = initialResult.meta;
+      apiCallCount ++;
+
+      const totalRows = updateOppData.meta.total_row_count;
+      const pageSize = 100;
+      const totalPages = Math.ceil(totalRows / pageSize);
+
+    
+
+      console.log("Total pages: "+totalPages);
+      console.log("Total rows: "+totalRows);
+      
+    
+      
+      // Helper function to log API call duration
+      async function timedApiCall(opportunityID, page) {
+        const startTime = performance.now();
+        console.log(`Starting API call for page ${page} at ${startTime}ms`);
+
+        const result = await opportunityApiCall(opportunityID, page , "update");
+
+        const endTime = performance.now();
+        console.log(`API call for page ${page} completed in ${endTime - startTime}ms`);
+
+        return result;
+      }
+
+      // Generate an array of promises for all pages
+      const apiCalls = [];
+      for (let page = 2; page <= totalPages; page++) {
+        apiCalls.push(timedApiCall(opportunityID, page));
+      }
+
+
+      // Execute all API calls concurrently
+      const results = await Promise.all(apiCalls);
+
+      apiCallCount += results.length;
+      
+
+      // Combine results into oppData
+      results.forEach(result => {
+        updateOppData.opportunity_items.push(...result.opportunity_items);
+        updateOppData.meta = result.meta;
+      });
+
+      if (updateOppData.opportunity_items.length > 0){
+        console.log("Updates to oppData:");
+        console.log(updateOppData);
+      }
+      
+      // now merge new data with existing oppData
+      oppData.opportunity_items = mergeById(oppData.opportunity_items, updateOppData.opportunity_items);
+
+      // In the normal content.js code for OrderView this is where we would check whether the number of items in oppData
+      // matches the number of items in the table. However, in this cost view not every item is listed, so this step is skipped.
+      // It shouldn't matter, but it is now possible that there is an item in the oppData that has been deleted elsewhere.
+      // So, for example, totalling all cost items in the oppData might not be correct...
+
+      // Now save the updated oppData to local storage
+      const oppItemsString = JSON.stringify(oppData.opportunity_items);
+      const oppMetaString = JSON.stringify(oppData.meta);
+      const currentTimeString = new Date().toISOString();
+      
+      chrome.storage.local.set({ 
+        [`opp-${opportunityID}`]: {
+          opportunity_items: oppItemsString, 
+          meta: oppMetaString,
+          time: currentTimeString
+        }
+      }).then(() => {
+        console.log(`Opportunity data updated for opp ID ${opportunityID}`);
+      });
+
+      cleanUpOldEntries();
+
   }
+
+
   //console.log(oppData.opportunity_items);
 
   theList = document.getElementById("nestable-grid");
@@ -314,7 +551,7 @@ async function costDetails(){
 
         }
 
-        var thisDaysCosted = findDaysChargedByOpportunityCostId(thisProd.id);
+        var thisDaysCosted = findDaysCostedByOpportunityCostId(thisProd.id);
         thisDaysCosted = parseFloat(thisDaysCosted);
         thisDaysCosted = parseFloat(thisDaysCosted.toFixed(1));
 
@@ -326,7 +563,9 @@ async function costDetails(){
 
         if (thisType == "Service"){
           var daysBox = assetBodies[n].querySelector('td.optional-04.align-right.days-column');
-          var thisDays = daysBox.getAttribute("data-value");
+
+          daysBox.classList.remove("cost-warning");
+          daysBox.classList.remove("mismatch-warning");
 
           if (thisDaysCosted == thisChargeableDays || (thisChargeServiceRateType != thisCostServiceRateType)){
 
@@ -336,15 +575,18 @@ async function costDetails(){
               oldSpan.remove();
             }
 
-            const newSpan = document.createElement('span');
+            
+            if (thisCostServiceRateType != "Flat Rate"){
+              const newSpan = document.createElement('span');
+              newSpan.classList.add("popover-help-added", "days-tooltip");
 
-            newSpan.classList.add("popover-help-added", "days-tooltip");
-
-            var htmlString = (thisChargeableDays +'<span class="days-tooltiptext">'+thisCostServiceRateType+'s Costed: '+ thisDaysCosted +'<br>'+thisChargeServiceRateType+'s Charged: '+ thisChargeableDays +'</span>');
-            newSpan.innerHTML += htmlString;
-            daysBox.appendChild(newSpan);
-            if (thisChargeServiceRateType != thisCostServiceRateType){
-              daysBox.classList.add("mismatch-warning");
+              var htmlString = (thisDaysCosted +'<span class="days-tooltiptext">'+thisCostServiceRateType+'s Costed: '+ thisDaysCosted +'<br>'+thisChargeServiceRateType+'s Charged: '+ thisChargeableDays +'</span>');
+              newSpan.innerHTML += htmlString;
+              daysBox.appendChild(newSpan);
+              if (thisChargeServiceRateType != thisCostServiceRateType){
+                daysBox.classList.add("mismatch-warning");
+              }
+              daysBox.dataset.costed = thisDaysCosted;
             }
 
           } else {
@@ -354,18 +596,69 @@ async function costDetails(){
               oldSpan.remove();
             }
 
-            const newSpan = document.createElement('span');
-
-            newSpan.classList.add("popover-help-added", "days-tooltip");
-
-            var htmlString = (thisDaysCosted + "/" + thisChargeableDays +'<span class="days-tooltiptext">'+thisCostServiceRateType+'s Costed: '+ thisDaysCosted +'<br>'+thisChargeServiceRateType+'s Charged: '+ thisChargeableDays +'</span>');
-            newSpan.innerHTML += htmlString;
-            daysBox.appendChild(newSpan);
-            daysBox.classList.add("cost-warning");
-
+            if (thisCostServiceRateType != "Flat Rate"){
+              const newSpan = document.createElement('span');
+              newSpan.classList.add("popover-help-added", "days-tooltip");
+              var htmlString = `${thisDaysCosted} [${thisChargeableDays}]<span class="days-tooltiptext">${thisCostServiceRateType}s Costed: ${thisDaysCosted}<br>${thisChargeServiceRateType}s Charged: ${thisChargeableDays}</span>`;
+              newSpan.innerHTML += htmlString;
+              daysBox.appendChild(newSpan);
+              daysBox.classList.add("cost-warning");
+              daysBox.dataset.costed = thisDaysCosted;
+            }
 
           }
-        }
+
+          // Add cost type selectors
+          var thisCostTypeCell = thisProd.querySelector('td.cost-type-select-column');
+
+          var oldSelect = thisCostTypeCell.querySelector('select');
+            if (oldSelect){
+              oldSelect.remove();
+            }
+
+
+
+          let newSelectInput = document.createElement('select');
+          newSelectInput.classList.add("cost-type-select");
+          newSelectInput.setAttribute("data-cost-id", thisProd.id);
+          newSelectInput.setAttribute("data-cost-type", thisCostServiceRateType);
+
+          let shortServiceType;
+
+          if (thisCostServiceRateType == "Day"){
+            shortServiceType = "Day";
+          } else if (thisCostServiceRateType == "Hour"){
+            shortServiceType = "Hour";
+          } else if (thisCostServiceRateType == "Distance"){
+            shortServiceType = "Dist";
+          } else if (thisCostServiceRateType == "Flat Rate"){
+            shortServiceType = "Flat";
+          }
+
+          // now define your four rate‑types
+          const rateTypes = ['Day','Hour','Dist','Flat'];
+
+          // for each one, make an <option>…
+          rateTypes.forEach(type => {
+            const opt = document.createElement('option');
+            // set the option’s value (you can customize this if you need a different value)
+            opt.value = type.toLowerCase();
+            // the visible text
+            opt.textContent = type;
+            // optionally pre‑select the one that matches your current rate type
+            if (type === shortServiceType) {
+              opt.selected = true;
+            }
+
+            newSelectInput.appendChild(opt);
+          });
+
+
+          thisCostTypeCell.appendChild(newSelectInput);
+          
+
+
+        } // end of if service
       } else { // this means a cost ID exists, but it isn't in the opp.data, so assume it's a manual cost entry.
         // Do nothing here?
       }
@@ -566,4 +859,81 @@ function prioritiseMatches(array, input) {
 
     // Combine matches and non-matches, with matches moved to the start of the array
     return [...matches, ...nonMatches];
+}
+
+
+async function recallOppDetails(oppID) {
+  // Retrieve the stored data
+
+  /* removal block used for dev testing
+  try {
+    await chrome.storage.local.remove([`opp-${oppID}`]);
+    console.log(`opp-${oppID} removed`);
+  } catch (err) {
+    console.error('Error removing key:', err);
+  }
+  */
+
+  const result = await chrome.storage.local.get([`opp-${oppID}`]);
+  
+  // Ensure the result exists and the specific key is available.
+  if (result && result[`opp-${oppID}`]) {
+    const oppData = result[`opp-${oppID}`];
+    return {
+      opportunity_items: JSON.parse(oppData.opportunity_items),
+      meta: JSON.parse(oppData.meta),
+      time: oppData.time
+    };
+  }
+  return null;
+}
+
+
+// Remove any entries in chrome.storage.local whose value.time is older than one week.
+ 
+async function cleanUpOldEntries() {
+  try {
+    // Grab all stored items
+    const items = await chrome.storage.local.get(null);
+    
+    // Compute cutoff timestamp (one week ago)
+    const now = Date.now();
+    const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
+    const cutoff = now - oneWeekMs;
+    
+    // Collect keys to remove
+    const keysToRemove = Object.entries(items)
+      .filter(([key, value]) => {
+        // Check existence of a .time property, and that it's a valid date
+        if (value && typeof value.time === 'string') {
+          const t = Date.parse(value.time);
+          return !isNaN(t) && t < cutoff;
+        }
+        return false;
+      })
+      .map(([key]) => key);
+    
+    // Remove stale entries (if any)
+    if (keysToRemove.length) {
+      await chrome.storage.local.remove(keysToRemove);
+      console.log(`Removed ${keysToRemove.length} stale entr${keysToRemove.length > 1 ? 'ies' : 'y'}:`, keysToRemove);
+    } else {
+      console.log('No entries older than one week found.');
+    }
+    
+  } catch (err) {
+    console.error('Error cleaning up old entries:', err);
+  }
+}
+
+
+// function to use when combining oppData with updateOppData
+function mergeById(arrayInitial, arrayUpdate) {
+  // 1) Take only the initial items whose id isn’t in the updates
+  const filtered = arrayInitial.filter(
+    init => !arrayUpdate.some(upd => upd.id === init.id)
+  );
+
+  // 2) Concatenate those “survivors” with all of the updates
+  return [...filtered, ...arrayUpdate];
 }

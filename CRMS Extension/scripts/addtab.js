@@ -57,9 +57,9 @@ function getSetRecents(){
       }
 
       chrome.storage.local.set({'recentsOpps': recentOppsList}).then(() => {
-         console.log("Recent opps list was updated");
-         console.log("Recent Opps:");
-         console.log(recentOppsList);
+         //console.log("Recent opps list was updated");
+         //console.log("Recent Opps:");
+         //console.log(recentOppsList);
        });
 
 

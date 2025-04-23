@@ -3,6 +3,13 @@ console.log("CurrentRMS Helper Activated.");
 
 
 
+// Inject an external script into the page context
+const script = document.createElement('script');
+script.src = chrome.runtime.getURL('scripts/injected.js'); // Path to the external script
+document.documentElement.appendChild(script);
+script.remove();
+
+
 
 // MAKE THIS VARIABLE true IF YOU WANT TO MUTE THE SUCCESS / FAIL SOUNDS FROM THE EXTENSION //
 // NOTE: THIS METHID IS NOW DEPRECIATED. USE THE SOUNDS SETTING IN THE EXTENSION POP-UP INSTEAD //
@@ -32,6 +39,8 @@ detailDelete = true;
 containerScan = false;
 scanningContainer = "";
 freeScanReset = false;
+
+wrongItem = "";
 
 containers = [];
 containerList = [];
@@ -82,9 +91,6 @@ console.log(`Content.js was triggered at ${performance.now()}ms`);
 pageUrl = window.location.href;
 
 
-
-
-
 if (pageUrl.endsWith("view=d&scrape")){
   createBlockOutOverlay();
   var warehouseNotesLog = {};
@@ -98,10 +104,49 @@ if (pageUrl.endsWith("view=d&scrape")){
     warehouseNotesLog[itemRef] = thisNote;
   });
   console.log("NOTES:");
-  console.log(warehouseNotesLog);
-  if (Object.keys(warehouseNotesLog).length > 0){
-    chrome.runtime.sendMessage({messageType: "warehouseNotesData", messageData: warehouseNotesLog});
-  }
+
+
+  
+  // get all td elements with class "optional-01 asset asset-column"
+  var assetColumns = document.querySelectorAll('td.optional-01.asset.asset-column');
+
+  let members = {};
+
+  assetColumns.forEach((asset, i) => {
+    // check if the td inner text starts with "Sub-Rent Booking"
+    if (asset.innerText.startsWith("Sub-Rent Booking")){
+
+      // check if there is an <a> element inside the td
+      const thisLink = asset.querySelector("a");
+      if (thisLink){
+        // get the text content of the <a> element inside the td
+        var memberName = asset.querySelector("a").innerText;
+    
+        // get the HREF of the <a> element inside the td
+        var memberLink = asset.querySelector("a").href;
+        // get the asset number from the HREF
+        const memberMatch = memberLink.match(/\/members\/(\d+)(?=\?)/);
+        if (memberMatch) {
+          const memberId = memberMatch[1];
+          
+          // add this member to members
+          members[memberId] = memberName;
+
+        } else {
+          console.log("No member ID found");
+        }
+      }
+    }
+
+    });
+
+    if (Object.keys(warehouseNotesLog).length > 0 || Object.keys(members).length > 0){
+      chrome.runtime.sendMessage({messageType: "warehouseNotesData", messageData: {warehouseNotesLog: warehouseNotesLog, members: members}});
+    }
+
+
+
+
   chrome.runtime.sendMessage({ action: "closeTab" });
 }
 
@@ -663,6 +708,88 @@ if (editOppView){
   
   }
 
+
+  // Create button to delete the locally stored data for this opportunity
+
+  // find the element with the id "rp"
+  const rpValue = document.getElementById("rp").value;
+
+  // value will be something like "/opportunities/375" so extract just the bit after the final "/"
+  const opportunityID = rpValue.substring(rpValue.lastIndexOf("/") + 1);
+
+  let opportunityItemsLength = 0;
+
+  // retreive the locally stored data for this opportunity
+
+  chrome.storage.local.get([`opp-${opportunityID}`]).then((result) => {
+      if (result && result[`opp-${opportunityID}`]) {
+        const localOppData = result[`opp-${opportunityID}`];
+        
+          const local_opportunity_items = JSON.parse(localOppData.opportunity_items);
+          opportunityItemsLength = local_opportunity_items.length;
+          
+      } else {
+        console.log("No locally stored data for this opportunity");
+      }
+
+
+
+     
+    
+
+
+
+
+  const subjectDiv = document.querySelector('div.row.string.required.opportunity_subject');
+
+  // find the closest div with col-md-12 col-sm-12
+  const parentDiv = subjectDiv.closest('div.col-md-12.col-sm-12');
+
+  // Create the new element you want to add
+  const localDataDiv = document.createElement('div');
+  localDataDiv.classList.add("form-block");
+
+  localDataDiv.innerHTML = `
+  <fieldset class="row">
+  <div class="col-md-2 col-sm-2 form-icon">
+  <i class="icn-cobra-shuffle"></i>
+  </div>
+  <div class="col-md-8 col-sm-8 form-area">
+    <div class="row check_boxes optional opportunity_assigned_surcharge_group_ids">
+      <div class="col-md-12 col-sm-12">
+      <H3>Helper Extension Local Opportunity Data</H3>
+      <p>Locally stored opportunity items: <span id="opp-data-length">${opportunityItemsLength}</span></p>
+      <li class="helper-btn helper-bar" id="clear-local-data">Clear Local Data</li>
+      </div>
+    </div>
+
+  </div>
+  </fieldset>
+  </div>`
+
+  // Append the new element at the end of the div
+  parentDiv.appendChild(localDataDiv);
+
+  document.addEventListener('click', function(event) {
+    if (event.target && event.target.id === 'clear-local-data') {
+      console.log("Clicked clear local data button");
+      // remove the locally stored data for this opportunity
+      chrome.storage.local.remove(`opp-${opportunityID}`, function() {
+        console.log(`Removed opp-${opportunityID} from local storage`);
+        makeToast("toast-info", `Removed opp-${opportunityID} from local storage`, 5);
+        document.getElementById("opp-data-length").innerText = "0";
+      });
+    }
+  });
+
+});
+
+
+
+
+
+
+
 }
 
 
@@ -681,92 +808,44 @@ async function addDetails(mode) {
     addDetailsRunning = true;
 
     const startTime = performance.now();
-    let apiCallCount = 0;
+  
 
 
   if (detailView){
 
     if (!mode){
-      
-      
-      const recallApiStartTime = performance.now();
-      console.log(`Starting recallAPI function at ${recallApiStartTime}ms`);
-      
 
-      // Count the number of lines in the opportunity items table to work out number of 100 row pages needed
-      const itemCount = document.getElementById("opportunity_items").querySelectorAll("tr").length;
-      console.log("Item count: ", itemCount);
+        //console.log("No opp data found in local storage");
+       
+        const recallApiStartTime = performance.now();
+        console.log(`Starting recallAPI function at ${recallApiStartTime}ms`);
+        
+        
+        await recallApiDetails();
+        pageNumber = 1;
 
-      // Add 1 to the item count to allow for services
-      const callCount = 1 + (Math.ceil(itemCount / 100));
-
-      
-      await recallApiDetails();
-      pageNumber = 1;
-
-      // remove existing opp data
-      oppData = {opportunity_items:[], meta:[]}
+        // initialise oppData
+        oppData = {opportunity_items:[], meta:[]}
 
 
-      const initialStartTime = performance.now();
-      console.log(`Starting initial API call at ${initialStartTime}ms`);
+        const initialStartTime = performance.now();
+        console.log(`Starting oppData API call at ${initialStartTime}ms`);
 
-      // First API call to get initial data and total row count
-      const initialResult = await opportunityApiCall(opportunityID, 1 , "detail");
+        // First API call to get initial data and total row count
+        const initialResult = await opportunityApiCall(opportunityID, "detail");
 
-      const initialEndTime = performance.now();
-      console.log(`Initial API call completed in ${initialEndTime - initialStartTime}ms`);
+        const initialEndTime = performance.now();
+        console.log(`oppData API call completed in ${initialEndTime - initialStartTime}ms`);
 
 
 
-      oppData.opportunity_items.push(...initialResult.opportunity_items);
-      oppData.meta = initialResult.meta;
-      apiCallCount ++;
+        oppData.opportunity_items.push(...initialResult.opportunity_items);
+        oppData.meta = initialResult.meta;
+     
 
-      console.log(oppData.meta);
+        console.log(oppData.meta);
 
-      const totalRows = oppData.meta.total_row_count;
-      const pageSize = 100;
-      const totalPages = Math.ceil(totalRows / pageSize);
-
-    
-
-      console.log("Total pages: "+totalPages);
-      console.log("Total rows: "+totalRows);
-      
-    
-      
-      // Helper function to log API call duration
-      async function timedApiCall(opportunityID, page) {
-        const startTime = performance.now();
-        console.log(`Starting API call for page ${page} at ${startTime}ms`);
-
-        const result = await opportunityApiCall(opportunityID, page, "detail");
-
-        const endTime = performance.now();
-        console.log(`API call for page ${page} completed in ${endTime - startTime}ms`);
-
-        return result;
-      }
-
-      // Generate an array of promises for all pages
-      const apiCalls = [];
-      for (let page = 2; page <= totalPages; page++) {
-        apiCalls.push(timedApiCall(opportunityID, page));
-      }
-
-
-      // Execute all API calls concurrently
-      const results = await Promise.all(apiCalls);
-
-      apiCallCount += results.length;
-      
-
-      // Combine results into oppData
-      results.forEach(result => {
-        oppData.opportunity_items.push(...result.opportunity_items);
-        oppData.meta = result.meta;
-      });
+        const totalRows = oppData.meta.total_row_count;
 
     } else {
       console.log("Running offline addDetails");
@@ -781,7 +860,7 @@ async function addDetails(mode) {
     var notedOppAssetIds = [];
     var thisDescription = "";
 
-    // Loop through each element to find the one with the matching asset number
+  
     for (var i = 0; i < assetColumns.length; i++) {
       var parentRow = assetColumns[i].closest('tr');
       var oppItemId = parentRow.getAttribute("data-oi-id");
@@ -844,7 +923,7 @@ async function addDetails(mode) {
         newNoteRow.className = 'item-description-row';
         const padCell = "<td class='essential padding-column'></td>"
         const padCells = padCell.repeat(1+padCount);
-        newNoteRow.innerHTML = padCells+"<td class='item-description-cell' colspan='1'>"+thisDescription+"</td>";
+        newNoteRow.innerHTML = padCells+"<td class='item-description-cell' colspan='5'>"+thisDescription+"</td>";
 
         // Check if there's already a note row
         var oldNote = parentTableBody.querySelector('tr.item-description-row');
@@ -909,9 +988,55 @@ async function addDetails(mode) {
 
     }
 
+    // catching changes to the table functions header
+    const tableFunctionsHeader = document.querySelector('div.row.sticky.quick-function-section');
+
+    if (tableFunctionsHeader) {
+        const helperButtonRow = document.querySelector('div.row.helper-sticky');
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.target === tableFunctionsHeader) {
+                    // Your logic for handling changes to tableFunctionsHeader
+                    const topValue = tableFunctionsHeader.style.top; // Get the current 'top' style value
+                    console.log('Top style value changed:', topValue);
+                    console.log('Helper row heigh: ', helperButtonRow.offsetHeight);
+                    //tableFunctionsHeader.style.top = (parseInt(topValue) + helperButtonRow.offsetHeight) + 'px';
+
+
+
+
+                }
+            });
+        });
+
+        observer.observe(tableFunctionsHeader, {
+            attributes: true, // Observe attribute changes
+            attributeFilter: ['style'], // Only observe changes to the 'style' attribute
+        });
+    } else {
+        console.warn('Element with class "tableFunctionsHeader" not found.');
+    }
+    
+    const newScript = document.createElement('script');
+    newScript.src = chrome.runtime.getURL('scripts/detail-header-injected.js'); // Path to the external script
+    document.documentElement.appendChild(newScript);
+    newScript.remove();
+
+
 
   } else if (orderView){
     console.log("add Details order view");
+
+    // Find empty descriptions and remove them
+    const allEditableDescs = document.querySelectorAll('div.editable.opportunity-item-description');
+    const emptyDescs = Array.from(allEditableDescs)
+    .filter(el => el.innerText === '');
+    // remove any empty descriptions
+    emptyDescs.forEach(el => {
+      el.remove();
+    });
+  
+
 
     // get the start date and time
     const thisSidebar = document.getElementById("sidebar_content");
@@ -936,65 +1061,146 @@ async function addDetails(mode) {
         }
     });
 
-    //console.log(startDateValue);
-    //console.log(endDateValue);
 
     chrome.runtime.sendMessage({messageType: "availabilityscape", messageText: opportunityID, messageStartDate:startDateValue, messageEndDate:endDateValue});
-
     var currencyPrefix = getCurrencySymbol();
-    console.log(`Calling recallApiDetails at ${performance.now()}ms`);
 
 
-    // Count the number of lines in the opportunity items table to work out number of 100 row pages needed
-    const itemCount = document.getElementById("opportunity_items").querySelectorAll("tr").length;
-    console.log("Item count: ", itemCount);
+    oppData = await recallOppDetails(opportunityID);
 
-    // Add 1 to the item count to allow for services
-    const callCount = 1 + (Math.ceil(itemCount / 100));
+    if (!oppData){
+      console.log("No opp data found in local storage");
 
+      console.log(`Calling recallApiDetails at ${performance.now()}ms`);
 
-    await recallApiDetails();
+      await recallApiDetails();
 
-
-    pageNumber = 1;
-
-      // remove existing opp data
+      // remove any existing opp data
       oppData = {opportunity_items:[], meta:[]}
 
-      const totalPages = callCount;
+      const startTime = performance.now();
+      console.log(`Starting oppData API call at ${startTime}ms`);
 
-      // Helper function to log API call duration
-      async function timedApiCall(opportunityID, page) {
-        const startTime = performance.now();
-        console.log(`Starting API call for page ${page} at ${startTime}ms`);
+      const result = await opportunityApiCall(opportunityID);
 
-        const result = await opportunityApiCall(opportunityID, page);
+      const endTime = performance.now();
+      console.log(`API call for full details of ${opportunityID} completed in ${endTime - startTime}ms`);
 
-        const endTime = performance.now();
-        console.log(`API call for page ${page} completed in ${endTime - startTime}ms`);
 
-        return result;
-      }
-
-      // Generate an array of promises for all remaining pages
-      const apiCalls = [];
-      for (let page = 1; page <= totalPages; page++) {
-        apiCalls.push(timedApiCall(opportunityID, page));
-      }
-
-      // Execute all API calls concurrently
-      const results = await Promise.all(apiCalls);
-
-      apiCallCount += results.length;
-      
-      // Combine results into oppData
-      results.forEach(result => {
-        oppData.opportunity_items.push(...result.opportunity_items);
-        oppData.meta = result.meta;
-      });
+      oppData.opportunity_items.push(...result.opportunity_items);
+      oppData.meta = result.meta;
+  
 
       console.log(oppData.opportunity_items);
       console.log(oppData.meta);
+
+      const oppItemsString = JSON.stringify(oppData.opportunity_items);
+      const oppMetaString = JSON.stringify(oppData.meta);
+
+      // create an ISO time string that is 1 minute in the past to account for CurrentRMS having a slow clock!
+      const currentTimeString = new Date(Date.now() - 60 * 1000).toISOString();
+      
+      chrome.storage.local.set({ 
+        [`opp-${opportunityID}`]: {
+          opportunity_items: oppItemsString, 
+          meta: oppMetaString,
+          time: currentTimeString
+        }
+      }).then(() => {
+        console.log(`Opportunity data saved for opp ID ${opportunityID}`);
+      });
+
+
+    } else {
+      console.log("Recalled oppData:");
+      console.log(oppData);
+
+      // refreshing oppData
+      const recallApiStartTime = performance.now();
+      console.log(`Starting recallAPI function at ${recallApiStartTime}ms`);
+      
+      await recallApiDetails();
+      pageNumber = 1;
+
+      // initialise updateOppData
+      let updateOppData = {opportunity_items:[], meta:[]}
+
+      const initialStartTime = performance.now();
+      console.log(`Starting update opportunity API call at ${initialStartTime}ms`);
+
+      // API call to get new data
+      const initialResult = await opportunityApiCall(opportunityID, "update");
+
+      const initialEndTime = performance.now();
+      console.log(`Update API call completed in ${initialEndTime - initialStartTime}ms`);
+
+      updateOppData.opportunity_items.push(...initialResult.opportunity_items);
+      updateOppData.meta = initialResult.meta;
+
+      const totalRows = updateOppData.meta.total_row_count;
+ 
+      console.log("Total rows of updates: "+totalRows);
+      
+      if (updateOppData.opportunity_items.length > 0){
+        console.log("Updates to oppData:");
+        console.log(updateOppData);
+      }
+      
+      // now merge new data with existing oppData
+      oppData.opportunity_items = mergeById(oppData.opportunity_items, updateOppData.opportunity_items);
+
+      // now check that the length of oppData.opportunity_items is the same as the number of rows (ie. none have been deleted)
+
+      const thisRowsCount = document.getElementById("opportunity_items_body").querySelectorAll("li.grid-body-row").length;
+
+      let currentTimeString = new Date(Date.now() - 60 * 1000).toISOString();
+
+      if (oppData.opportunity_items.length > thisRowsCount){
+        makeToast("toast-error", `Warning: the number of rows in the table (${thisRowsCount}) is less than the number of items in the oppData (${oppData.opportunity_items.length}). oppData will now be purged of deleted items`, 5);
+        console.log(`Warning: the number of rows in the table (${thisRowsCount}) is less than the number of items in the oppData (${oppData.opportunity_items.length}). oppData will now be purged of deleted items`);
+
+        // purge oppData of items that are not in the table
+        // grab all the rows and build a Set of their IDs
+        const ItemRows = document.querySelectorAll('#opportunity_items_body li.grid-body-row');
+        const rowIds = new Set(Array.from(ItemRows, row => row.getAttribute('data-id')));
+
+        // overwrite opportunity_items with only those whose id is in rowIds
+        oppData.opportunity_items = oppData.opportunity_items.filter(item =>
+        rowIds.has(String(item.id))
+        );
+        
+      } else if (oppData.opportunity_items.length < thisRowsCount){
+        makeToast("toast-error", `Warning: the number of rows in the table (${thisRowsCount}) is more than the number of items in the oppData (${oppData.opportunity_items.length}). Refresh this page to reload earlier entries.`, 5);
+        console.log(`Warning: the number of rows in the table (${thisRowsCount}) is more than the number of items in the oppData (${oppData.opportunity_items.length}). Refresh this page to reload earlier entries.`);
+        // get the oppData.time and make a new ISOString that is 12 hours earlier
+        const oppDataTime = new Date(oppData.time);
+        const twelveHoursEarlier = new Date(oppDataTime.getTime() - (12 * 60 * 60 * 1000));
+        currentTimeString = twelveHoursEarlier.toISOString();
+        
+
+      }
+
+      // Now save the updated oppData to local storage
+      const oppItemsString = JSON.stringify(oppData.opportunity_items);
+      const oppMetaString = JSON.stringify(oppData.meta);
+      
+      
+      chrome.storage.local.set({ 
+        [`opp-${opportunityID}`]: {
+          opportunity_items: oppItemsString, 
+          meta: oppMetaString,
+          time: currentTimeString
+        }
+      }).then(() => {
+        console.log(`Opportunity data updated for opp ID ${opportunityID}`);
+      });
+
+      cleanUpOldEntries();
+
+    }
+
+    console.log("oppData:");
+    console.log(oppData);
 
     for (let n = 0; n < oppData.opportunity_items.length; n++) {
 
@@ -1064,6 +1270,7 @@ async function addDetails(mode) {
         }
         if (thisTotalCost > thisTotalCharge){
           spanElement.classList.add("loss-warning");
+          spanElement.closest("tr.item-price-below-cost").classList.remove("item-price-below-cost");
         } else {
           spanElement.classList.remove("loss-warning");
         }
@@ -1125,6 +1332,24 @@ async function addDetails(mode) {
 
       }      // end of service item allocation section
 
+      // section to highlight sub-rent lines with no supplier set
+      if (oppData.opportunity_items[n].sub_rent == true){
+        var trElement = tdElement.closest("tr");
+        let missingSupplier = false;
+        oppData.opportunity_items[n].item_assets.forEach((asset) => {
+          if (asset.stock_level_asset_number == "Sub-Rent Booking" && asset.supplier_id == null){
+            missingSupplier = true;
+          }
+        });
+        if (missingSupplier){
+          trElement.classList.add("missing-supplier");
+        } else {
+          trElement.classList.remove("missing-supplier");
+        }
+
+      }
+
+
 
 
       } else if (oppData.opportunity_items[n].opportunity_item_type_name = "Group" && oppData.opportunity_items[n].has_group_deal && !oppData.opportunity_items[n].is_in_deal) {
@@ -1164,7 +1389,7 @@ async function addDetails(mode) {
           oldSpan.remove();
         }
         spanElement.classList.add("cost-tooltip");
-        //var newContent = "Total Cost: "+thisTotalCost.toFixed(2);
+
         var htmlString = '<span class="cost-tooltiptext">Total Charge: '+currencyPrefix+thisTotalCharge.toFixed(2)+'<br>Total Cost: '+currencyPrefix+thisTotalCost.toFixed(2)+'<br>'+thisProfitLossString+'</span>';
         spanElement.innerHTML += htmlString;
 
@@ -1179,15 +1404,127 @@ async function addDetails(mode) {
 
       }// end of if a group with deal set
 
-
-      
-
-
-
-
     }
 
 
+      // Sort out listing charged days for serviced items
+      var daysHeader = document.querySelector('td.days-column.align-right');
+      if (daysHeader){
+
+        var typeColumnSpans = document.querySelectorAll('td.type-column');
+
+        for (let i = 0; i < (typeColumnSpans.length); i++) {
+          if (typeColumnSpans[i].innerText.includes("Service")){
+
+
+            var parentLi = typeColumnSpans[i].closest('li');
+            var daysTd = parentLi.querySelector('td.days-column.align-right');
+
+            var popOverSpan = parentLi.querySelector('span.popover_help');
+            var popOverContent = popOverSpan.getAttribute('data-content');
+
+            if (popOverContent.startsWith("Days") || popOverContent.startsWith("Hours") || popOverContent.startsWith("Miles") || popOverContent.startsWith("Kilometres")) {
+              var timeSuffix = "";
+              if (popOverContent.startsWith("Hours")){
+                var timeSuffix = "H";
+                daysTd.classList.add("makeItalic");
+                daysTd.classList.add("time-h");
+              } else if (popOverContent.startsWith("Miles")){
+                var timeSuffix = "Mi";
+                daysTd.classList.add("makeItalic");
+                daysTd.classList.add("distance-mi");
+              } else if (popOverContent.startsWith("Kilometres")){
+                var timeSuffix = "km";
+                daysTd.classList.add("makeItalic");
+                daysTd.classList.add("distance-km");
+              } else {
+                daysTd.classList.remove("makeItalic");
+              }
+              // Find the position of the first "<br>"
+              var brPosition = popOverContent.indexOf("<br>");
+              // Check if "<br>" is found
+              if (brPosition !== -1) {
+                // Extract the portion of the string before the first "<br>"
+                popOverContent = popOverContent.substring(0, brPosition);
+                var wordsArray = popOverContent.split(/\s+/);
+                var popOverContent = wordsArray[wordsArray.length - 1];
+
+
+                daysTd.innerHTML = popOverContent+timeSuffix;
+              }
+            }
+
+          }
+        }
+
+
+
+
+      }
+
+      // create a Set Deal Price link for the grand total if we're not already in a deal
+      const grandTotal = document.querySelector('td.grand-total, td.opportunity-total');
+      if (grandTotal){
+        if (!grandTotal.querySelector('a')) {
+          const valueString = grandTotal.innerText;
+          grandTotal.innerHTML = `
+          <a data-remote="" href="/opportunities/${opportunityID}/set_deal_price_modal">
+          <span>${valueString}</span>
+        </a>`;
+        }
+      }
+
+      // add sub hired weight info
+      orderViewWeights();
+
+      // Create add description buttons to each item dropdown menu
+      const itemRows = document.querySelectorAll('#opportunity_items_body li.grid-body-row');
+      itemRows.forEach((itemRow) => {
+
+        const itemId = itemRow.getAttribute('data-id');
+        const itemDropdown = itemRow.querySelector('ul.dropdown-menu');
+
+
+        const existingDescription = itemRow.querySelector('div.opportunity-item-description');
+        const existingButton = itemRow.querySelector('a.add-description-button');
+
+        if (!existingButton){
+          if (!existingDescription){
+            
+            if (itemDropdown) {
+              const addDescriptionButton = document.createElement('li');
+
+              addDescriptionButton.innerHTML = `
+                  <a data-rp="true" class="add-description-button" data-id="${itemId}" href="#">
+                  <i class="icn-cobra-edit"></i>
+                  Add description
+                  </a>`;
+              const lastItem = itemDropdown.lastElementChild;
+              itemDropdown.insertBefore(addDescriptionButton, lastItem);
+            }
+          }
+        }
+
+        // add warehouse note button
+        //const existingDescription = itemRow.querySelector('div.opportunity-item-description');
+        const existingWarehouseButton = itemRow.querySelector('a.add-warehouse-button');
+
+        //if (!existingButton){
+          if (!existingWarehouseButton){
+            if (itemDropdown) {
+              const addWarehouseButton = document.createElement('li');
+
+              addWarehouseButton.innerHTML = `
+                  <a data-rp="true" class="add-warehouse-button" data-id="${itemId}" href="#">
+                  <i class="icn-cobra-paste3"></i>
+                  Warehouse note
+                  </a>`;
+              const lastItem = itemDropdown.lastElementChild;
+              itemDropdown.insertBefore(addWarehouseButton, lastItem);
+            }
+          }
+        //}
+        
         
 
 
@@ -1195,89 +1532,24 @@ async function addDetails(mode) {
 
 
 
+      });
 
 
-    // Sort out listing charged days for serviced items
-    var daysHeader = document.querySelector('td.days-column.align-right');
-    if (daysHeader){
-
-      var typeColumnSpans = document.querySelectorAll('td.type-column');
-
-      for (let i = 0; i < (typeColumnSpans.length); i++) {
-        if (typeColumnSpans[i].innerText.includes("Service")){
-
-
-          var parentLi = typeColumnSpans[i].closest('li');
-          //var thisItemId = parentLi.getAttribute('data-id');
-          var daysTd = parentLi.querySelector('td.days-column.align-right');
-
-          var popOverSpan = parentLi.querySelector('span.popover_help');
-          var popOverContent = popOverSpan.getAttribute('data-content');
-
-          if (popOverContent.startsWith("Days") || popOverContent.startsWith("Hours") || popOverContent.startsWith("Miles") || popOverContent.startsWith("Kilometres")) {
-            var timeSuffix = "";
-            if (popOverContent.startsWith("Hours")){
-              var timeSuffix = "H";
-              daysTd.classList.add("makeItalic");
-            } else if (popOverContent.startsWith("Miles")){
-              var timeSuffix = "Mi";
-              daysTd.classList.add("makeItalic");
-            } else if (popOverContent.startsWith("Kilometres")){
-              var timeSuffix = "km";
-              daysTd.classList.add("makeItalic");
-            } else {
-              daysTd.classList.remove("makeItalic");
-            }
-            // Find the position of the first "<br>"
-            var brPosition = popOverContent.indexOf("<br>");
-            // Check if "<br>" is found
-            if (brPosition !== -1) {
-              // Extract the portion of the string before the first "<br>"
-              popOverContent = popOverContent.substring(0, brPosition);
-              var wordsArray = popOverContent.split(/\s+/);
-              var popOverContent = wordsArray[wordsArray.length - 1];
-
-
-              daysTd.innerHTML = popOverContent+timeSuffix;
-            }
-          }
-
-        }
-      }
+    const newScript = document.createElement('script');
+    newScript.src = chrome.runtime.getURL('scripts/order-header-injected.js'); // Path to the external script
+    document.documentElement.appendChild(newScript);
+    newScript.remove();
 
 
 
+  } // end of order view
 
-    }
+    addDetailsRunning = false;
+    const endTime = performance.now();
+    const duration = endTime - startTime;
+    console.log(`addDetails took ${duration} milliseconds`);
+    console.log("Total opportunity_items with available data: ", oppData.opportunity_items.length);
 
-    // create a Set Deal Price link for the grand total if we're not already in a deal
-    const grandTotal = document.querySelector('td.grand-total, td.opportunity-total');
-    if (grandTotal){
-      if (!grandTotal.querySelector('a')) {
-        const valueString = grandTotal.innerText;
-        grandTotal.innerHTML = `
-        <a data-remote="" href="/opportunities/${opportunityID}/set_deal_price_modal">
-        <span>${valueString}</span>
-      </a>`;
-      }
-    }
-
-
-  }
-
-  addDetailsRunning = false;
-  const endTime = performance.now();
-  const duration = endTime - startTime;
-  console.log(`addDetails took ${duration} milliseconds`);
-  console.log("API call count: "+apiCallCount);
-  console.log("Total opportunity_items retrieved: ", oppData.opportunity_items.length);
-  console.log("Meta reported an item count of: ", oppData.meta.total_row_count);
-
-  if (oppData.opportunity_items.length != oppData.meta.total_row_count){
-    makeToast("toast-error", "API data appear incomplete. This may be due to rate limiting... Recommend you refresh this page.", 5);
-
-  console.log(oppData);
-  }
   }
 }
 
@@ -1290,14 +1562,17 @@ async function addDetails(mode) {
 
 
 // New API Call for addDetails
-async function opportunityApiCall(opportunityID, page = 1, type) {
+async function opportunityApiCall(opportunityID, type) {
   if (apiKey && apiSubdomain) {
 
-    let apiUrl = `https://api.current-rms.com/api/v1/opportunities/${opportunityID}/opportunity_items?page=${page}&per_page=100`;
+    let apiUrl = `https://api.current-rms.com/api/v1/opportunities/${opportunityID}/opportunity_items`;
 
     if (type == "detail"){
       console.log("Calling detail API");
-      apiUrl = `https://api.current-rms.com/api/v1/opportunities/${opportunityID}/opportunity_items?page=${page}&q[description_present]=1&per_page=100`;
+      apiUrl = `https://api.current-rms.com/api/v1/opportunities/${opportunityID}/opportunity_items?q[description_present]=1`;
+    } else if (type == "update"){
+      console.log("Calling update detail API");
+      apiUrl = `https://api.current-rms.com/api/v1/opportunities/${opportunityID}/opportunity_items?&q[updated_at_or_item_assets_updated_at_or_item_assets_opportunity_cost_updated_at_gt]=${oppData.time}`;
     }
 
     // Options for the fetch request
@@ -1340,66 +1615,6 @@ async function opportunityApiCall(opportunityID, page = 1, type) {
 
 
 
-
-// API Call for addDetails
-function OLDopportunityApiCall(opp){
-
-  if (apiKey && apiSubdomain){
-    return new Promise(function (resolve, reject) {
-
-      //const apiUrl = 'https://api.current-rms.com/api/v1/opportunities/'+opp+'/opportunity_items?page='+pageNumber+'&q[description_present]=1&per_page=100';
-      const apiUrl = 'https://api.current-rms.com/api/v1/opportunities/'+opp+'/opportunity_items?page='+pageNumber+'&per_page=100';
-      // Options for the fetch request
-      const fetchOptions = {
-        method: 'GET',
-        headers: {
-          'X-SUBDOMAIN': apiSubdomain,
-          'X-AUTH-TOKEN': apiKey,
-        },
-      };
-      // Make the API call
-      fetch(apiUrl, fetchOptions)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-          }
-          return response.json();
-        })
-        .then(data => {
-          // Handle the API response data here
-          oppData.opportunity_items = oppData.opportunity_items.concat(data.opportunity_items); // merge new page of data into stock_levels
-          oppData.meta = data.meta; // merge new page of data into meta
-          resolve("ok");
-        })
-        .catch(error => {
-          // Handle errors here
-          console.error('Error making API request:', error);
-          console.error('Failed URL was:', apiUrl);
-          console.error('Last oppData.meta was:');
-          console.error(oppData.meta);
-          console.error(JSON.stringify(oppData.meta, null, 2));
-
-          console.log('Error making API request:', error);
-          console.log('Failed URL was:', apiUrl);
-          console.log('Last oppData.meta was:');
-          Object.values(oppData.meta).forEach(value => {
-            console.log(value);
-          });
-
-          if (error.message.includes('Failed to fetch')) {
-            setTimeout(function () {
-              makeToast("toast-error", "Helper failed to fetch from API. Retrying.", 5);
-              addDetails();
-            }, 5000);
-          }
-
-        });
-    //console.log(oppData.opportunity_items);
-    });
-  }
-}
-
-
 function recallApiDetails(){
   return new Promise(function (resolve, reject) {
     chrome.storage.local.get(["api-details"]).then((result) => {
@@ -1417,6 +1632,10 @@ function recallApiDetails(){
     });
   });
 }
+
+
+
+
 
 // API Call for quarantines
 function quarantineApiCall(){
@@ -2870,7 +3089,7 @@ const observer = new MutationObserver((mutations) => {
     var detailsRefreshed = false;
     toastMessages.forEach((toastMessage) => {
 
-      if (orderView && !detailsRefreshed){
+      if (orderView && !detailsRefreshed && !toastMessage.textContent.includes('Warning: the number of rows in the table')){
         detailsRefreshed = true;
         addDetails();
       }
@@ -2960,10 +3179,19 @@ const observer = new MutationObserver((mutations) => {
           } else {
             // asset isn't on the job at all.
             theAsset = extractAssetToSay(messageText);
-            setTimeout(function() {
-              sayWord(theAsset +" is not on the job.");
-              console.log(messageText);
-            }, 900);
+
+            if (theAsset == wrongItem){
+              setTimeout(function() {
+                sayWord(theAsset +" is not on the job.");
+                console.log(messageText);
+              }, 900);
+            } else {
+              setTimeout(function() {
+                sayWord("Not on the job.");
+                console.log(messageText);
+                wrongItem = theAsset;
+              }, 900);
+            }
           }
           destroyAfterTime(toastMessage, errorTimeout);
 
@@ -3425,7 +3653,7 @@ function newCalculateContainerWeights() {
 
       // Create a new <li> element
       var subLi = document.createElement('li');
-      subLi.innerHTML = `<span>&#8627; Sub-hire Weight:</span>
+      subLi.innerHTML = `<span>&#8627; Sub-Rent Weight:</span>
                          <span id="subhire_weight";>
                          ${subhireWeight} ${weightUnit}
                          </span>`;
@@ -3678,7 +3906,7 @@ if (detailView){
     // Create a new row element
     let newElement = document.createElement('div');
     newElement.classList.add("row");
-    newElement.classList.add("sticky");
+    newElement.classList.add("helper-sticky");
     // Insert `newElement` after `referenceElement`
     titleRow.insertAdjacentElement('afterend', newElement);
 
@@ -3999,12 +4227,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
   }
 
+  // handle scrape returns for warehouse notes and also subhire members
   if (message.messageType == "warehouseNotesData"){
       console.log("Warehouse Notes Data was delivered");
       console.log(message.messageData);
       if (orderView){
 
-        let obj = message.messageData;
+        let obj = message.messageData.warehouseNotesLog;
         for (let key in obj) {
           if (obj.hasOwnProperty(key)) {  // Ensures the key belongs to the object, not its prototype
             let value = obj[key];
@@ -4026,7 +4255,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     itemName = tdElement.querySelector('div.item-name');
                   }
                   if (itemName){
-                    itemName.insertAdjacentHTML('afterend', `<span class="warehouse-tooltip">&nbsp;<i class="icn-cobra-paste3"></i><span class="warehouse-tooltiptext"><u>WAREHOUSE NOTE:</u><br>${value}</span></span>`);
+                    itemName.insertAdjacentHTML('afterend', `<span class="warehouse-tooltip">&nbsp;<i class="icn-cobra-paste3 warehouse-edit"></i><span class="warehouse-tooltiptext" data-warehouse="${value}"><u>WAREHOUSE NOTE:</u><br>${value}</span></span>`);
                   }
 
               }
@@ -4036,7 +4265,35 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             // Do something with the value
           }
         }
-        //addWarehouseNotes(message.messageData);
+        console.log(message.messageData.members);
+
+        var members = message.messageData.members;
+        // iterate through each key in members
+        for (const key in members) {
+          if (members.hasOwnProperty(key)) {
+            let memberName = members[key];
+            
+            // if the memberName is longer than 10 characters, reduce to the first 10 and add "..."
+            if (memberName.length > 16){
+              memberName = memberName.substring(0, 16);
+            }
+
+            //find a span element with class "subhire-member" and data-member-id that matches the key
+            var memberElement = document.querySelector('span.subhire-member[data-member-id="'+key+'"]');
+            if (memberElement){
+              if (apiSubdomain){
+                memberElement.innerHTML = `<a href="https://${apiSubdomain}.current-rms.com/members/${key}"  target="_blank">${memberName}</a>`;
+              } else {
+                memberElement.innerText = memberName;
+              }
+
+            }
+          }
+        }
+
+
+
+
       }
   }
 
@@ -5612,4 +5869,194 @@ function detectCircularContainment(data) {
             return checkItem(target, parentAsset, map, visited);
         }
     }
+}
+
+
+
+async function recallOppDetails(oppID) {
+  // Retrieve the stored data
+
+  /* removal block used for dev testing
+  try {
+    await chrome.storage.local.remove([`opp-${oppID}`]);
+    console.log(`opp-${oppID} removed`);
+  } catch (err) {
+    console.error('Error removing key:', err);
+  }
+  */
+
+  const result = await chrome.storage.local.get([`opp-${oppID}`]);
+  
+  // Ensure the result exists and the specific key is available.
+  if (result && result[`opp-${oppID}`]) {
+    const oppData = result[`opp-${oppID}`];
+    return {
+      opportunity_items: JSON.parse(oppData.opportunity_items),
+      meta: JSON.parse(oppData.meta),
+      time: oppData.time
+    };
+  }
+  return null;
+}
+
+// function to use when combining oppData with updateOppData
+function mergeById(arrayInitial, arrayUpdate) {
+  // 1) Take only the initial items whose id isn’t in the updates
+  const filtered = arrayInitial.filter(
+    init => !arrayUpdate.some(upd => upd.id === init.id)
+  );
+
+  // 2) Concatenate those “survivors” with all of the updates
+  return [...filtered, ...arrayUpdate];
+}
+
+
+// Remove any entries in chrome.storage.local whose value.time is older than one week.
+ 
+async function cleanUpOldEntries() {
+  try {
+    // Grab all stored items
+    const items = await chrome.storage.local.get(null);
+    
+    // Compute cutoff timestamp (one week ago)
+    const now = Date.now();
+    const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
+    const cutoff = now - oneWeekMs;
+    
+    // Collect keys to remove
+    const keysToRemove = Object.entries(items)
+      .filter(([key, value]) => {
+        // Check existence of a .time property, and that it's a valid date
+        if (value && typeof value.time === 'string') {
+          const t = Date.parse(value.time);
+          return !isNaN(t) && t < cutoff;
+        }
+        return false;
+      })
+      .map(([key]) => key);
+    
+    // Remove stale entries (if any)
+    if (keysToRemove.length) {
+      await chrome.storage.local.remove(keysToRemove);
+      console.log(`Removed ${keysToRemove.length} stale entr${keysToRemove.length > 1 ? 'ies' : 'y'}:`, keysToRemove);
+    } else {
+      console.log('No entries older than one week found.');
+    }
+    
+  } catch (err) {
+    console.error('Error cleaning up old entries:', err);
+  }
+}
+
+
+
+
+function orderViewWeights(){
+
+  //console.log("Calculating container weights");
+
+  let orderStockWeight = 0;
+  let orderSubhireWeight = 0;
+  let subHireWeights = {};
+
+  oppData.opportunity_items.forEach(item => {
+
+    const weight = Number(item.weight) || 0;
+    const totalWeight = Number(item.weight_total) || 0;
+    let itemQuantity = Number(item.quantity) || 0;
+    let subWeightThisItem = 0;
+
+    const isSubrent = (item.sub_rent === true) || (item.sub_rent === 'true');
+    const isProduct = (item.item_type == "Product");
+
+    if (isSubrent && isProduct) {
+      item.item_assets.forEach(asset => {
+        if (asset.sub_rent == true){
+          const thisSupplier = asset.supplier_id;
+          const thisQty = Number(asset.quantity);
+          
+          // take away the number of sub hired items from the line total
+          itemQuantity -= thisQty;
+
+          // work out the weight of the sub-hired item
+          const thisWeight = weight * thisQty;
+
+          // add this to the subHiredWeight object
+          subHireWeights[thisSupplier] = (subHireWeights[thisSupplier] || 0) + thisWeight;
+          orderSubhireWeight += thisWeight;
+          subWeightThisItem += thisWeight;
+
+        }
+      });
+
+      // work out the stock weight of remaning quantity
+
+      orderStockWeight += (totalWeight - subWeightThisItem);
+      
+    } else if (isProduct) {
+     
+      orderStockWeight += totalWeight;
+    }
+  });
+
+  // avoid floating‑point weirdness
+  orderSubhireWeight = Math.round(orderSubhireWeight * 100) / 100;
+  orderStockWeight   = Math.round(orderStockWeight   * 100) / 100;
+
+
+  if (orderSubhireWeight > 0){
+    console.log(subHireWeights);
+    var subhireWeightLi = document.getElementById("subhire_weight");
+    var stockWeightLi = document.getElementById("stock_weight");
+
+    if (subhireWeightLi){
+      subhireWeightLi.innerHTML = `${orderSubhireWeight} ${weightUnit}`;
+      stockWeightLi.innerHTML = `${orderStockWeight} ${weightUnit}`;
+    } else {
+      // Find the <li> element that contains the weight
+      var weightLi = document.querySelector('#weight_total').closest('li');
+
+      // Create a new <li> element
+      var subLi = document.createElement('li');
+      
+      let newHtmlString = `<span>&#8627; Sub-Rent Weight:</span>
+                         <span id="subhire_weight";>
+                         ${orderSubhireWeight} ${weightUnit}
+                         </span>`;
+      
+      // iterate through each key in subHireWeights
+      Object.keys(subHireWeights).forEach((key) => {
+        let supplierName = key;
+        if (supplierName == "null"){
+          supplierName = "No Supplier";
+        }
+        newHtmlString += `<br><span>${'&nbsp;'.repeat(3)}&#8627;</span><span class="subhire-member" data-member-id="${key}">${supplierName}</span><span>: ${subHireWeights[key]} ${weightUnit}</span>`;
+      });
+      
+
+      
+      
+      
+      
+      
+      
+      subLi.innerHTML = newHtmlString;
+
+      // Insert the new <li> after the existing one
+      weightLi.parentNode.insertBefore(subLi, weightLi.nextSibling);
+
+
+      // Create a new <li> element
+      var stockLi = document.createElement('li');
+      stockLi.innerHTML = `<span>&#8627; Stock Weight:</span>
+                         <span id="stock_weight";>
+                         ${orderStockWeight} ${weightUnit}
+                         </span>`;
+
+      // Insert the new <li> after the existing one
+      weightLi.parentNode.insertBefore(stockLi, weightLi.nextSibling);
+
+    }
+
+  }
 }

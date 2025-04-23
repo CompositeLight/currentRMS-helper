@@ -3,6 +3,7 @@ debugMode = false;
 
 console.log("Availability Scrape is active");
 
+
 availabilityData = {};
 currentUrl = window.location.href;
 

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "CurrentRMS Helper",
-  "version": "1.31.29",
+  "version": "2.0.0",
   "description": "Adding functionality to Current RMS, one reduced click at a time.",
   "icons": {
     "16": "images/icon-16.png",
@@ -101,7 +101,19 @@
   },
   "web_accessible_resources": [
     {
-      "resources": [ "sounds/error_sound.wav", "sounds/scan_sound.mp3", "sounds/correct.mp3", "sounds/alert.wav", "sounds/short_alert.mp3", "sounds/container_scan_sound.mp3"],
+      "resources": [
+        "sounds/error_sound.wav",
+        "sounds/scan_sound.mp3",
+        "sounds/correct.mp3",
+        "sounds/alert.wav",
+        "sounds/short_alert.mp3",
+        "sounds/container_scan_sound.mp3",
+        "scripts/injected.js",
+        "scripts/cost-injected.js",
+        "scripts/test-injected.js",
+        "scripts/detail-header-injected.js",
+        "scripts/order-header-injected.js"
+      ],
       "matches": [
         "*://*/*"
       ]

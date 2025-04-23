@@ -1,8 +1,8 @@
 console.log("Removeasset.js is active");
 
+
 debugMode = false;
 currentUrl = window.location.href;
-
 
 
 function shouldremove() {
