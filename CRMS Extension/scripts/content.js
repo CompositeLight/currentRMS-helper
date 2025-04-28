@@ -1150,13 +1150,14 @@ async function addDetails(mode) {
       oppData.opportunity_items = mergeById(oppData.opportunity_items, updateOppData.opportunity_items);
 
       // now check that the length of oppData.opportunity_items is the same as the number of rows (ie. none have been deleted)
-
-      const thisRowsCount = document.getElementById("opportunity_items_body").querySelectorAll("li.grid-body-row").length;
+      const thisRowsCount = Array.from(document.getElementById("opportunity_items_body").querySelectorAll("li.grid-body-row"))
+      .filter(row => row.hasAttribute("data-id"))
+      .length;
 
       let currentTimeString = new Date(Date.now() - 60 * 1000).toISOString();
 
       if (oppData.opportunity_items.length > thisRowsCount){
-        makeToast("toast-error", `Warning: the number of rows in the table (${thisRowsCount}) is less than the number of items in the oppData (${oppData.opportunity_items.length}). oppData will now be purged of deleted items`, 5);
+        makeToast("toast-error", `Warning: the number of product rows in the table (${thisRowsCount}) is less than the number of items in the oppData (${oppData.opportunity_items.length}). oppData will now be purged of deleted items`, 5);
         console.log(`Warning: the number of rows in the table (${thisRowsCount}) is less than the number of items in the oppData (${oppData.opportunity_items.length}). oppData will now be purged of deleted items`);
 
         // purge oppData of items that are not in the table
@@ -1270,7 +1271,10 @@ async function addDetails(mode) {
         }
         if (thisTotalCost > thisTotalCharge){
           spanElement.classList.add("loss-warning");
-          spanElement.closest("tr.item-price-below-cost").classList.remove("item-price-below-cost");
+          const spanToDeClass = spanElement.closest("tr.item-price-below-cost")
+          if (spanToDeClass){
+            spanToDeClass.classList.remove("item-price-below-cost");
+          }
         } else {
           spanElement.classList.remove("loss-warning");
         }

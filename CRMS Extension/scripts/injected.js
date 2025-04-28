@@ -111,8 +111,11 @@
                         }
                     },
                     success: function(response) {
-                        console.log('Value updated successfully:', response);
-                        $td.removeAttr('data-original-value').removeAttr('data-editing');
+                        $td.removeAttr('data-editing');
+                        // Update the original value attribute
+                        $td.attr('data-original-value', newValue);
+                        $td.html(newValue);
+                        console.log('Value updated successfully');
                     },
                     error: function(xhr, status, error) {
                         console.error('Error updating value:', {

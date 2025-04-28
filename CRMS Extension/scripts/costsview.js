@@ -523,6 +523,14 @@ async function costDetails(){
   //console.log(oppData.opportunity_items);
 
   theList = document.getElementById("nestable-grid");
+
+  // remove orange highlighting from any rows that are below cost
+  const rowsToFix = theList.querySelectorAll('tr.item-price-below-cost');
+  rowsToFix.forEach((row) => {
+    row.classList.remove("item-price-below-cost");
+  });
+
+
   var assetBodies = document.querySelectorAll('tbody');
   for (let n = 0; n < assetBodies.length; n++) {
     var thisProd = assetBodies[n].querySelector('tr');

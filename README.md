@@ -1,4 +1,4 @@
-# currentRMS-helper 2.0.0
+# currentRMS-helper 2.0.1
 This is a work-in-progress Chrome extension to add functionality to the CurrentRMS web interface. It was created out of our frustration waiting on "quality of life" modifications to make the user experience better - specifically, as part of warehouse operations. Our warehouse team has found it helpful, so we've decided to share it with others. As it was created with our own in-house work processes in mind, it may or may not work for other users. However, my hope is that others (who are better at coding that I) might take this forward, or even inspire the CurrentRMS team to implement some of the changes within the main product.
 
 **DISCLAIMER: This is a first attempt work-in-progress written by me, an utter rookie in JavaScript. Use at your own risk. This code is in no way affiliated with InspHire Ltd.**
@@ -27,6 +27,12 @@ Aside from the Chrome Desktop Browser, users have successfully used this extensi
 ## Features / Updates
 
 ** NEW MAJOR VERSION 2.0.0 - PLEASE TEST WITH CAUTION AND REPORT ISSUES **
+
+- FIXED: 2.0.1 - Fixed a bug causing updated service durations to spin forever. 
+
+- FIXED: 2.0.1 - Fixed a bug causing errant row count warnings.
+
+- FIXED: 2.0.1 - Fixed orange highlights still showing in cost view.
 
 - MAJOR CHANGE: 2.0.0 - In Order View, the way in which opportunity data is loaded has substantially changed. The opportunity_items object is now stored in chrome.local.storage, and the API call is only to retrieve updated items after the first load. On big jobs especially, this massively improves load time / performance as less API data is required. In order that local.storage doesn't become too massive, any opportunities not looked at for more than a week will be deleted, meaning that if you go back to them the first reload will require a full API run. In theory you won't really notice any difference (except it'll be faster), but please report any issues that appear... If for any reason your opportunity API data gets out of whack 1) Let me know by creating an issue, 2) Go to the edit opportunity page where you'll find a new yellow button to purge the locally held data for that opportunity.
 
