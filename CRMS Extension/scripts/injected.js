@@ -155,6 +155,42 @@
 
             });
 
+
+            // event listener for changes to input type text elements
+
+            $('#opportunity_items_body')
+            .on('change', 'input[type="text"]', function () {
+
+                const $theDescription = $(this);
+    
+                console.log("GRoup description channge triggered");
+
+                // find the closest parent div
+                const $theParent = $theDescription.closest('div');
+
+                // if the parent div doesnt have the class opportunity-item-description, return
+                if (!$theParent.hasClass('opportunity-item-description')) {
+                    return;
+                }
+
+                // if the description is empty, remove the description
+                if ($theDescription.val().trim() === '') {
+                    // log the parent of the textarea
+                    const $theParent = $theDescription.closest('li');
+                    // get the data-id of the parent
+                    const dataId = $theParent.attr('data-id');
+                    if (dataId) {
+                        // send a request to the server to delete the description
+                        ajaxRemoveDescription($theDescription);
+                    }
+                }
+
+            });
+
+
+
+
+
             // Function to tell the server to delete the description
             function ajaxRemoveDescription($theDescription) {
                 const dataId = $($theDescription).closest('[data-id]').attr('data-id');
@@ -175,6 +211,8 @@
 
                 $theDescription.prop('disabled', true);
                 overlay_spinner();
+
+                const $theParent = $theDescription.closest('li');
             
                 $.ajax({
                     url: `/opportunity_items/${dataId}`,
@@ -187,7 +225,7 @@
                         }
                     },
                     success: function(response) {
-                        console.log('Value updated successfully:', response);
+                        console.log('Value updated successfully');
 
                         // add the class delete-me to the description div
                         $theDescription.addClass('delete-me');
@@ -197,11 +235,24 @@
                         const removeDescription = () => {
                             clearTimeout(removeTimeout);
                             removeTimeout = setTimeout(() => {
-                                const $descriptionDiv = document.querySelector('div.opportunity-item-description');
-                                if ($descriptionDiv) {
+                                
+
+                                const $descriptionDiv = $theParent.find('div.opportunity-item-description');
+
+                                if ($descriptionDiv.length) {
                                     $descriptionDiv.remove();
                                     console.log('Description div removed after debounce.');
                                 }
+
+                                // find the closest parent div
+                                const $theContainerDiv = $theDescription.closest('div');
+
+                                 // if the parent div doesnt have the class opportunity-item-description, return
+                                if ($theContainerDiv.hasClass('opportunity-item-description')) {
+                                    $theContainerDiv.remove();
+                                }
+                            
+
                             }, 200);
                         };
 
@@ -234,19 +285,36 @@
             .on('click', 'a.add-description-button', function (event) {
                 event.preventDefault(); // Prevent the default anchor behavior
                 const $theButton = $(this);
+
+                // get the data-id of the button
+                const $itemType = $theButton.attr('data-type');
                 
                 const parentRow = $theButton.closest('li[data-id]');
                 console.log('parentRow', parentRow);
 
+                // find the first div.dd-content in the parent row
+                const $ddContentDiv = parentRow.find('div.dd-content').first();
+                if ($ddContentDiv.length) {
+                    // check if div editable opportunity-item-description exists
+                    const existingDescriptionDiv = $ddContentDiv.find('div.opportunity-item-description');
+                    if (existingDescriptionDiv.length) {
+                        // focus the existing description div
+                        existingDescriptionDiv.click();
+                        return;
+                    }
+                }
                 const theIdToAddTo = $theButton.attr('data-id');
                 console.log('theIdToAddTo', theIdToAddTo);
-                 // send a request to the server to create the description
-                ajaxNewDescription(theIdToAddTo, parentRow);
+                // send a request to the server to create the description
+                ajaxNewDescription(theIdToAddTo, parentRow, $itemType);
+                
 
             });
 
             // Function to tell the server to add the description
-            function ajaxNewDescription($theItem, $parentRow) {
+            function ajaxNewDescription($theItem, $parentRow, $itemType) {
+
+                console.log("item type is ", $itemType);
 
                 overlay_spinner();
       
@@ -270,7 +338,7 @@
                         }
                     },
                     success: function(response) {
-                        console.log('Value updated successfully:', response);
+                        console.log('Value updated successfully');
                         
                         // Add the description to the DOM
                         // Create a new div element
@@ -279,8 +347,19 @@
                         descriptionDiv.setAttribute('data-value', 'Click to edit');
                         descriptionDiv.innerHTML = `<em>Click to edit</em>`;
 
-                        // Find the div.dd-content in the parent row
-                        const ddContentDiv = $parentRow.find('div.dd-content');
+                        let ddContentDiv;
+
+
+                        if ($itemType == "group"){
+                            // find the first td with class dd-name
+                            ddContentDiv = $parentRow.find('td.dd-name').first();
+                            // add dd-content to the div to correct padding for group description
+                            $(descriptionDiv).addClass('dd-content');
+                        } else {
+                            // Find the div.dd-content in the parent row
+                            ddContentDiv = $parentRow.find('div.dd-content').first();
+                        }
+                        
                         if (ddContentDiv.length) {
                             // Check if a descriptionDiv already exists
                             const existingDescriptionDiv = ddContentDiv.find('.opportunity-item-description.temp-description');
@@ -402,8 +481,12 @@
                             }
                         },
                         success: function (response) {
-                            console.log('Value updated successfully:', response);
+                            console.log('Value updated successfully');
                             $theDescription.prop('disabled', false);
+                            if ($newValue == "") {
+                                // remove the description div
+                                $theDescription.remove();
+                            }
                             remove_overlay_spinner();
                             
                         },
@@ -442,6 +525,108 @@
                 const theIdToAddTo = $theButton.attr('data-id');
                 console.log('theIdToAddTo', theIdToAddTo);
 
+
+                // Create the modal input
+
+                // <div aria-hidden="false" aria-labelledby="globalModalLabel" class="modal fade in" id="global_modal" role="dialog" tabindex="-1" style="display: block;"><div class="modal-dialog set-description-modal">
+                    
+                const newModalElement = document.createElement('div');
+                newModalElement.className = 'modal fade in';
+                newModalElement.id = 'warehouse-note-modal';
+                // set aria-hidden to false
+                newModalElement.setAttribute('aria-hidden', 'false');
+                newModalElement.innerHTML = `
+                    
+                    <div class="modal-dialog set-description-modal">
+                    <div class="modal-content">
+                    <div class="modal-header clearfix">
+                    <button class="helper-close">×</button>
+                    <h4 class="modal-title">
+                    <i class="icn-cobra-paste3"></i>
+                    Warehouse Note
+                    </h4>
+                    </div>
+                    <div class="form-page form-modal">
+                    <form id="set_warehouse_note">
+                    <div class="modal-body">
+                    <div class="row form-block">
+                    <div class="col-md-2 col-sm-2"></div>
+                    <div class="col-md-8 col-sm-8 form-area">
+                    <div class="row">
+                    <div class="col-md-12 col-sm-12">
+                    <label for="warehouse_note">Warehouse Note</label>
+                    <textarea name="cost_description" id="warehouse-note-input" rows="5"></textarea>
+                    </div>
+                    </div>
+                    </div>
+                    </div>
+                    </div>
+                    <div class="modal-footer">
+                    <div class="button-row">
+                    <button class="btn btn-primary" id="save-warehouse-note">>
+                    Add note
+                    </button>
+                    <button class="btn btn-default" id="dismiss-warehouse-modal">Cancel</button>
+                    </div>
+                    </div>
+                    </form>
+
+                    </div>
+                    </div>
+                    </div>`;
+
+                const newModalBackdrop = document.createElement('div');
+                
+                newModalBackdrop.className = 'modal-backdrop fade in';
+
+                // Append the modal to the body
+                document.body.appendChild(newModalElement);
+
+                // Append the backdrop to the body
+                document.body.appendChild(newModalBackdrop);
+                
+                // Show the modal
+                newModalElement.style.display = 'block';
+
+                // focus on the text area
+                const $theTextArea = $('#warehouse-note-input');
+                $theTextArea.val(existingWarehouseNote);
+                $theTextArea.focus();
+                $theTextArea.select();
+
+                // Handle the save button click
+                $('#save-warehouse-note').on('click', function (event) {
+                    event.preventDefault(); // Prevent the default anchor behavior
+                    const $theTextArea = $('#warehouse-note-input');
+                    const warehouseNote = $theTextArea.val().trim();
+                    if (warehouseNote === existingWarehouseNote){
+                        // remove the modal
+                        newModalElement.remove();
+                        newModalBackdrop.remove();
+                        return;
+                    }
+                    // send a request to the server to create the description
+                    ajaxEditWarehouseNote(dataId, warehouseNote, $theTooltipText);
+                });
+                // Handle the dismiss button click
+                $('#dismiss-warehouse-modal').on('click', function (event) {
+                    event.preventDefault(); // Prevent the default anchor behavior
+                    newModalElement.remove();
+                    newModalBackdrop.remove();
+                }
+                );
+                // Handle the close button click
+                $('.helper-close').on('click', function (event) {
+                    event.preventDefault(); // Prevent the default anchor behavior
+                    newModalElement.remove();
+                    newModalBackdrop.remove();
+                }
+                );
+
+
+                /*
+
+
                 let warehouseNoteEdit = prompt("Warehouse note", existingWarehouseNote);
 
                 // if user clicks cancel, exit
@@ -456,7 +641,7 @@
                     ajaxEditWarehouseNote(dataId, warehouseNoteEdit, $theTooltipText);
                 }
                  
-
+                */
 
                 // Function to send the updated note to the server
                 function ajaxEditWarehouseNote(theId, theWarehouseNote, noteField) {
@@ -483,8 +668,12 @@
                             }
                         },
                         success: function (response) {
-                            console.log('Value updated successfully:', response);
+                            console.log('Value updated successfully');
                             remove_overlay_spinner();
+                            // remove the modal
+
+                            newModalElement.remove();
+                            newModalBackdrop.remove();
 
                             if (theWarehouseNote == ""){
                                 // find the closest span with the class warehouse-tooltip

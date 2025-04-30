@@ -9,6 +9,14 @@ script.src = chrome.runtime.getURL('scripts/injected.js'); // Path to the extern
 document.documentElement.appendChild(script);
 script.remove();
 
+// inject the CSS into the page
+const css = document.createElement('link');
+css.rel = 'stylesheet';
+css.type = 'text/css';
+css.href = chrome.runtime.getURL('style.css'); // Path to the external script
+document.documentElement.appendChild(css);
+css.remove();
+
 
 
 // MAKE THIS VARIABLE true IF YOU WANT TO MUTE THE SUCCESS / FAIL SOUNDS FROM THE EXTENSION //
@@ -1157,7 +1165,7 @@ async function addDetails(mode) {
       let currentTimeString = new Date(Date.now() - 60 * 1000).toISOString();
 
       if (oppData.opportunity_items.length > thisRowsCount){
-        makeToast("toast-error", `Warning: the number of product rows in the table (${thisRowsCount}) is less than the number of items in the oppData (${oppData.opportunity_items.length}). oppData will now be purged of deleted items`, 5);
+        //makeToast("toast-error", `Warning: the number of product rows in the table (${thisRowsCount}) is less than the number of items in the oppData (${oppData.opportunity_items.length}). oppData will now be purged of deleted items`, 5);
         console.log(`Warning: the number of rows in the table (${thisRowsCount}) is less than the number of items in the oppData (${oppData.opportunity_items.length}). oppData will now be purged of deleted items`);
 
         // purge oppData of items that are not in the table
@@ -1486,34 +1494,43 @@ async function addDetails(mode) {
       itemRows.forEach((itemRow) => {
 
         const itemId = itemRow.getAttribute('data-id');
+        const itemType = itemRow.getAttribute('data-type');
         const itemDropdown = itemRow.querySelector('ul.dropdown-menu');
 
 
-        const existingDescription = itemRow.querySelector('div.opportunity-item-description');
-        const existingButton = itemRow.querySelector('a.add-description-button');
+        const existingDescription = itemRow.querySelector('a.add-description-button');
+        
 
-        if (!existingButton){
+      
           if (!existingDescription){
             
             if (itemDropdown) {
               const addDescriptionButton = document.createElement('li');
 
               addDescriptionButton.innerHTML = `
-                  <a data-rp="true" class="add-description-button" data-id="${itemId}" href="#">
+                  <a data-rp="true" class="add-description-button" data-type="${itemType}" data-id="${itemId}" href="#">
                   <i class="icn-cobra-edit"></i>
                   Add description
                   </a>`;
+
+              // find the item in the dropdown that has the class danger
+              const dangerItem = itemDropdown.querySelector('li.danger');
+              if (dangerItem) {
+                // Insert the new element before the danger item
+                itemDropdown.insertBefore(addDescriptionButton, dangerItem);
+              } else {
+                // If no danger item, insert before the last item
               const lastItem = itemDropdown.lastElementChild;
               itemDropdown.insertBefore(addDescriptionButton, lastItem);
+              }
             }
           }
-        }
+        
 
         // add warehouse note button
-        //const existingDescription = itemRow.querySelector('div.opportunity-item-description');
-        const existingWarehouseButton = itemRow.querySelector('a.add-warehouse-button');
 
-        //if (!existingButton){
+        const existingWarehouseButton = itemRow.querySelector('a.add-warehouse-button');
+        if (itemType != "group"){
           if (!existingWarehouseButton){
             if (itemDropdown) {
               const addWarehouseButton = document.createElement('li');
@@ -1523,19 +1540,22 @@ async function addDetails(mode) {
                   <i class="icn-cobra-paste3"></i>
                   Warehouse note
                   </a>`;
+
+              // find the item in the dropdown that has the class danger
+              const dangerItem = itemDropdown.querySelector('li.danger');
+              if (dangerItem) {
+                // Insert the new element before the danger item
+                itemDropdown.insertBefore(addWarehouseButton, dangerItem);
+              } else {
+                // If no danger item, insert before the last item
               const lastItem = itemDropdown.lastElementChild;
               itemDropdown.insertBefore(addWarehouseButton, lastItem);
+              }
             }
           }
-        //}
+        }
+
         
-        
-
-
-
-
-
-
       });
 
 
@@ -4264,9 +4284,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
               }
             }
-
-            console.log(`Key: ${key}, Value: ${value}`);
-            // Do something with the value
           }
         }
         console.log(message.messageData.members);
