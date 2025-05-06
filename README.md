@@ -1,32 +1,50 @@
-# currentRMS-helper 2.0.2
-This is a work-in-progress Chrome extension to add functionality to the CurrentRMS web interface. It was created out of our frustration waiting on "quality of life" modifications to make the user experience better - specifically, as part of warehouse operations. Our warehouse team has found it helpful, so we've decided to share it with others. As it was created with our own in-house work processes in mind, it may or may not work for other users. However, my hope is that others (who are better at coding that I) might take this forward, or even inspire the CurrentRMS team to implement some of the changes within the main product.
+# currentRMS-helper 2.0.3
+This is a Chrome extension to add functionality to the CurrentRMS web interface. It was created out of our frustration waiting on "quality of life" modifications to make the user experience better. Since making it available online, I've been blown away by how many users and businesses have started using it on a daily basis. I'm really grateful to the many users who have contributed ideas, or pointed out bugs with the extension.
 
-**DISCLAIMER: This is a first attempt work-in-progress written by me, an utter rookie in JavaScript. Use at your own risk. This code is in no way affiliated with InspHire Ltd.**
+The extension is free to all, but as a few people have asked, if you really want to [buy me a cup of coffee / tea / beer](https://paypal.me/garethrisdale) you can use this link.
 
-## Installation
-1. Copy the folder onto your desktop computer.
-2. Open Google Chrome.
-3. Go to Settings -> Extensions
-4. Click "Load Unpacked"
-5. Select the folder location.
-6. Turn on the extension.
-7. Ensure the default / built-in sound scheme is turned off to avoid duplicate sounds.
-8. To use API based features, go to the CurrentRMS System Setup page and navigate to Integrations > API.
-9. Enable the API and create a new API key.
-10. Paste the API key into the CurrentRMS Helper pop-up field (this key is stored locally on your system, so should only need to be entered once).
+**DISCLAIMER: This extension is a personal side project, written by me. I am not a professional programmer. Use entirely at your own risk. This code is in no way affiliated with InspHire Ltd, or any of my employers.**
 
-** IMPORTANT: As stated by CurrentRMS: "API Keys give read and write access to your Current RMS System. You should keep your keys safe just as you do your username and password - only use them with software and services that you trust. Give each key a unique name so you can clearly identify who you have issued the key to."
-
-THEREFORE: Do not enter your API key unless you have authority to do so. API key information is stored using chrome.storage.local. Though it isn't sent anywhere outside of your system (beyond making API calls), it is not encrypted, and is only as safe as your system.**
 
 ## Compatibility
 
-Aside from the Chrome Desktop Browser, users have successfully used this extension in Opera, and Android via Kiwi.
+Aside from the Chrome Desktop Browser, users have successfully used this extension in Opera, and Android via Kiwi. In theory, any Chromium based browser should work.
 
 
-## Features / Updates
+## Installation
+1. Copy the "CRMS Extension" folder onto your desktop computer.
+2. Open Google Chrome.
+3. Go to Settings -> Extensions
+4. Click "Load Unpacked"
+5. Select the "CRMS Extension" folder location.
+6. Turn on the extension.
+7. Ensure the default / built-in sound scheme is turned off to avoid duplicate sounds.
+8. To use API based features (recommended), go to the CurrentRMS System Setup page and navigate to Integrations > API.
+9. Enable the API and create a new API key.
+10. Paste the API key into the CurrentRMS Helper pop-up field (this key is stored locally on your system, so should only need to be entered once).
+
+> [!CAUTION]
+> As stated by CurrentRMS: "API Keys give read and write access to your Current RMS System. You should keep your keys safe just as you do your username and password - only use them with software and services that you trust. Give each key a unique name so you can clearly identify who you have issued the key to."
+>
+>THEREFORE: Do not enter your API key unless you have authority to do so. API key information is stored using chrome.storage.local. Though it isn't sent anywhere outside of your system (beyond making API calls), it is not encrypted, and is only as safe as your system.
+
+
+## Features and improvements
+
+For a full list of the extension's features, check out the [Features.md](/Features.md).
+
+
+## New Features / Updates
 
 ** NEW MAJOR VERSION 2.0.0 - PLEASE TEST WITH CAUTION AND REPORT ISSUES **
+
+- NEW: 2.0.3 - Show Collapsed Item Totals - In Order View, when an item has accessories but the item is in a collapsed state (accessories are hidden) the total now reflects the item charge plus any charges for accessories inside it. Mousing over this total reveals the item's individual charge. Clicking on it expands the acessories below. This feature can be disabled in the extension settings panel.
+
+- FIXED: 2.0.3 - The product images in the Detail View pop-ups were often broken since the security update. The links are now refreshed as soon as you click the magnifying glass. They take a split second to load, but will at least appear reliably.
+
+- IMPROVED: 2.0.3 - Scraping of availability and warehouse notes data is now slightly faster (still limited by how quickly the data arrives from CurrentRMS).
+
+- IMPROVED: 2.0.3 - The locally stored data for stock and products is now automatically updated in the background every hour.
 
 - FIXED: 2.0.2 - More bugs around editing descriptions in Detail View, including group description issues.
 

@@ -706,6 +706,38 @@
             }
 
 
+            // FUNCTION TO GET THE IMAGES FOR PRODUCT POPUPS
+            
+            $('#opportunity_item_assets_body')
+            .on('click', 'span.product-tip', function (event) {
+                // get the data-product-link of the span
+                const $theButton = $(this);
+                const productLink = $theButton.attr('data-product-link');
+                if (productLink && productLink !== 0){
+                    $.ajax({
+                        url: `/products/${productLink}`,
+                        type: 'GET',
+                        dataType: 'json',
+                        data: {                
+                            },
+                          
+                        beforeSend: function(xhr, settings) {
+                          // match the page’s headers so you get JSON
+                          xhr.setRequestHeader('Accept', 'application/json');
+                        },
+                        success: function(response) {
+                            document.getElementById('modal-image').src = response.product.icon.url;
+                        },
+                        error: function(xhr, status, error) {
+                          console.error('Error fetching opportunity:', status, error);
+                        }
+                      });
+                }
+            
+            
+            });
+
+
             // AJAX TEST FUNCTION
              // Function to tell the server to add the description
              function ajaxTest() {
@@ -717,7 +749,8 @@
                     //url: `/opportunities/${opportunityID}/opportunity_items?q[sub_rent_eq]=true`,
                     //url: `/opportunities/${opportunityID}`,
                     //opportunities/:opportunity_id/opportunity_items/:opportunity_item_id/opportunity_item_assets
-                    url: `/availability/opportunity/${opportunityID}`,
+                    //url: `/availability/opportunity/${opportunityID}`,
+                    url: `/products/13/stock_levels`,
                     type: 'GET',
                     dataType: 'json',
                     data: {
@@ -753,10 +786,10 @@
 
 
         } else {
-            console.warn('$.fn.editable is not available.');
+            console.log('$.fn.editable is not available.');
         }
     } else {
-        console.warn('jQuery is not available.');
+        console.log('jQuery is not available.');
     }
 }, 500); // Delay execution by 0.5 second
 }

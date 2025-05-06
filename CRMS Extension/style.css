@@ -670,3 +670,7 @@ button.helper-close {
   border: 0;
   -webkit-appearance: none
 }
+
+.nested-charge{
+  font-weight: bold !important;
+}

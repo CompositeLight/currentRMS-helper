@@ -37,8 +37,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       if (iAmScraping){
         console.log("Request denied as a scrape is already in progress");
       } else {
-        iAmScraping = true;
-        availabilityScrape(message.messageText, message.messageStartDate, message.messageEndDate);
+        //iAmScraping = true;
+        //availabilityScrape(message.messageText, message.messageStartDate, message.messageEndDate);
+        availabilityScrapeNonDom(message.messageText, message.messageStartDate, message.messageEndDate);
       }
 
   } else if (message.messageType == "qtyInUseScrape"){
@@ -159,6 +160,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             });
           }
         });
+  } else if (message == "nestedTotals") {
+    // Forward the message to Content Script
+    chrome.tabs.query({}, function(tabs) {
+      if (tabs.length > 0){
+        tabs.forEach(function(tab) {
+            chrome.tabs.sendMessage(tab.id, message);
+        });
+      }
+    });
 
   } else if (message.messageType === "autocheckinreport") {
         // response regarding auto-checkin of items
@@ -189,7 +199,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 
   } else {
-
+    console.log("Background js received a message");
+    console.log(message);
     (async () => {
       // Sends a message to the service worker and receives a response
       chrome.tabs.query({active: true, currentWindow: true}, function(tabs){
@@ -244,27 +255,8 @@ function checkQuarantineStatus(){
         }
       }
   });
-
-
-
 }
 
-
-
-
-async function retreiveCurrentStockList() {
-    var result = await getStock();
-    while (stockList.meta.row_count > 0){
-      pageNumber ++;
-      var result = await getStock();
-    }
-    console.log("API call complete");
-    pageNumber = 1;
-    console.log(stockList.stock_levels);
-    console.log(stockList.stock_levels[700]);
-    console.log(stockList.stock_levels[703]);
-    console.log(stockList.stock_levels[725]);
-}
 
 
 function recallApiDetails(){
@@ -288,9 +280,6 @@ function recallApiDetails(){
 }
 
 
-
-
-
 // API call to retrieve a list of assets on an opportunity
 
 function getOpportunityAssets(opp){
@@ -298,7 +287,7 @@ function getOpportunityAssets(opp){
   if (apiKey && apiSubdomain){
     return new Promise(function (resolve, reject) {
       const apiUrl = 'https://api.current-rms.com/api/v1/opportunities/'+opp+'/opportunity_items/?include[]=item&include[]=item_assets&page='+pageNumber+'&per_page=100';
-      //const apiUrl = 'https://api.current-rms.com/api/v1/opportunities/'+opp+'?include[opportunity_items]=1&page='+pageNumber+'&per_page=100';
+   
       console.log(apiUrl);
       // Options for the fetch request
       const fetchOptions = {
@@ -351,7 +340,6 @@ async function retreiveOpportunityAssets(opp) {
     pageNumber = 1;
     console.log(opportunityAssets);
 
-    /// this bit just for testing
     /// end of test block
 }
 
@@ -366,8 +354,8 @@ async function retreiveOpportunityAssets(opp) {
 
 function getProducts(opp){
   return new Promise(function (resolve, reject) {
-    const apiUrl = 'https://api.current-rms.com/api/v1/products/?page='+pageNumber+'&per_page=100&include[]=icon&include[]=stock_level&filtermode=active';
-    //const apiUrl = 'https://api.current-rms.com/api/v1/opportunities/'+opp+'?include[opportunity_items]=1&page='+pageNumber+'&per_page=100';
+    const apiUrl = 'https://api.current-rms.com/api/v1/products/?page='+pageNumber+'&per_page=100&include[]=icon&include[]=accessories&filtermode=active';
+    
     // Options for the fetch request
     const fetchOptions = {
       method: 'GET',
@@ -414,8 +402,7 @@ function getProducts(opp){
 function getStock(){
   return new Promise(function (resolve, reject) {
     const apiUrl = 'https://api.current-rms.com/api/v1/stock_levels/?page='+pageNumber+'&per_page=100&include[]=icon&include[]=item&q[s][]=item_id+asc';
-    //const apiUrl = 'https://api.current-rms.com/api/v1/opportunities/'+opp+'?include[opportunity_items]=1&page='+pageNumber+'&per_page=100';
-    // Options for the fetch request
+    
     const fetchOptions = {
       method: 'GET',
       headers: {
@@ -456,22 +443,39 @@ function getStock(){
 }
 
 
+
+
+
+
+
 async function retrieveApiData(opp) {
 
   await recallApiDetails();
   if (apiKey && apiSubdomain){
     // Refresh product list
+    allProducts = {products:[], meta:[]};
+    allStock = {stock_levels:[], meta:[]};
+
+
     var result = await getProducts(opp);
     while (allProducts.meta.row_count > 0){
       pageNumber ++;
       var result = await getProducts(opp);
-      chrome.runtime.sendMessage("awaitingproducts");
+      try {
+        await chrome.runtime.sendMessage("awaitingproducts");
+      } catch (err) {
+        if (err.message.includes('Receiving end does not exist')) {
+          // fallback or retry logic
+        }
+      }
+      
+      
     }
     console.log("API call for Products complete");
     pageNumber = 1;
     var numberOfProducts = allProducts.products.length;
     console.log("Number of active products: " + numberOfProducts);
-    // const objectWithId837 = allProducts.products.find(products => products.id === 148);
+    
     const allProductsString = JSON.stringify(allProducts);
     console.log("Products list was updated")
 
@@ -480,7 +484,15 @@ async function retrieveApiData(opp) {
      while (allStock.meta.row_count > 0){
        pageNumber ++;
        var result = await getStock();
-       chrome.runtime.sendMessage("awaitingstock");
+       try {
+        await cchrome.runtime.sendMessage("awaitingstock");
+      } catch (err) {
+        if (err.message.includes('Receiving end does not exist')) {
+          // fallback or retry logic
+        }
+      }
+      
+       
      }
      console.log("API call for Stock complete");
      pageNumber = 1;
@@ -504,7 +516,20 @@ async function retrieveApiData(opp) {
       chrome.storage.local.set({ "apiUpdateTime": formattedTime }, function() {
           console.log('Current time stored in local storage:', formattedTime);
       });
-      chrome.runtime.sendMessage("apidatawasrefreshed");
+
+      // update the api timestamp
+      const timecheck = new Date().getTime();
+      chrome.storage.local.set({ [`apidata-timestamp-${apiSubdomain}`]: timecheck });
+
+      try {
+        await chrome.runtime.sendMessage("apidatawasrefreshed");
+      } catch (err) {
+        if (err.message.includes('Receiving end does not exist')) {
+          // fallback or retry logic
+        }
+      }
+      
+      
     }
 }
 
@@ -545,12 +570,27 @@ async function apiTest(urlAFterv1Slash){
 }
 
 
-function sendAlert(message){
-  chrome.runtime.sendMessage({messageType: "alert", messageText: message});
+async function sendAlert(message){
+  try {
+    await chrome.runtime.sendMessage({messageType: "alert", messageText: message});
+  } catch (err) {
+    if (err.message.includes('Receiving end does not exist')) {
+      // fallback or retry logic
+    }
+  }
+  
 }
 
-function sendProgress(percent){
-  chrome.runtime.sendMessage({messageType: "progress", messageProgress: percent});
+async function sendProgress(percent){
+  try {
+    await chrome.runtime.sendMessage({messageType: "progress", messageProgress: percent});
+  } catch (err) {
+    if (err.message.includes('Receiving end does not exist')) {
+      // fallback or retry logic
+    }
+  }
+  
+  
 }
 
 
@@ -591,7 +631,14 @@ async function retreiveQuarantines() {
       chrome.storage.local.set({ 'quarantineData': quarantineDataString }).then(() => {
          console.log("Quarantine data in local storage was updated");
       });
-      chrome.runtime.sendMessage("quarantinedatarefreshed");
+      try {
+        await chrome.runtime.sendMessage("quarantinedatarefreshed");
+      } catch (err) {
+        if (err.message.includes('Receiving end does not exist')) {
+          // fallback or retry logic
+        }
+      }
+      
     }
 }
 
@@ -603,7 +650,6 @@ function quarantineApiCall(){
   if (apiKey && apiSubdomain){
     return new Promise(function (resolve, reject) {
 
-      //const apiUrl = 'https://api.current-rms.com/api/v1/opportunities/'+opp+'/opportunity_items?page='+pageNumber+'&q[description_present]=1&per_page=100';
       const apiUrl = 'https://api.current-rms.com/api/v1/quarantines?page='+quarantinePageNumber+'&per_page=100&q[quarantine_type_not_eq]=3';
       // Options for the fetch request
       const fetchOptions = {
@@ -625,7 +671,7 @@ function quarantineApiCall(){
         .then(data => {
           // Handle the API response data here
           //console.log(data);
-          quarantineData.quarantines = quarantineData.quarantines.concat(data.quarantines); // merge new page of data into stock_levels
+          quarantineData.quarantines = quarantineData.quarantines.concat(data.quarantines); // merge new page of data
           quarantineData.meta = data.meta; // merge new page of data into meta
           resolve("ok");
         })
@@ -642,9 +688,9 @@ function quarantineApiCall(){
 
 async function availabilityScrape(opp, start, end){
   await recallApiDetails();
+
   if (apiSubdomain){
-    //console.log(start);
-    //console.log(end);
+
     const timeStart = start.split(' ')[1].replace(':', '');
     const timeEnd = end.split(' ')[1].replace(':', '');
 
@@ -654,7 +700,7 @@ async function availabilityScrape(opp, start, end){
         url: scrapeURL,
         active: false
       }, function(tab) {
-      // You can perform actions here after the tab is created
+      // tab actions built into the scrape script
     });
   }
 }
@@ -669,7 +715,7 @@ async function warehouseNotesScrape(opp){
         url: scrapeURL,
         active: false
       }, function(tab) {
-      // You can perform actions here after the tab is created
+      // tab actions built into the scrape script
     });
   }
 }
@@ -685,7 +731,7 @@ async function qtyInUseScrape(prod, opp){
         url: scrapeURL,
         active: false
       }, function(tab) {
-      // You can perform actions here after the tab is created
+      // tab actions built into the scrape script
     });
   }
 }
@@ -752,3 +798,453 @@ function reformatString(input) {
 }
 
 
+
+
+
+var updatedProducts = {products:[], meta:[]};
+var updatedStock = {stock_levels:[], meta:[]};
+
+
+
+// line to remove stored key for testing purposes
+//chrome.storage.local.remove([`apidata-timestamp-${apiKey}`]);
+
+
+checkApiDataStatus(); // check API data status and refresh if necessary
+
+async function checkApiDataStatus(){
+  await recallApiDetails();
+  if (apiKey && apiSubdomain){
+    // get the timestamp for the last apiData update
+    chrome.storage.local.get([`apidata-timestamp-${apiSubdomain}`]).then((result) => {
+        console.log(result); 
+        if (result[`apidata-timestamp-${apiSubdomain}`] == undefined){
+          console.log("No apiData time stamp set");
+          updateApiData(600000);
+        } else {
+          const timeNow = new Date().getTime();
+
+          const timeStamped = parseInt(result[`apidata-timestamp-${apiSubdomain}`]);
+          const timeElapsed = timeNow - timeStamped;
+          console.log("Time since last apiData update (ms): "+timeElapsed);
+          if (timeElapsed > 3600000){ // check every 60 minutes
+            updateApiData(timeStamped);
+          } else {
+            var timeRemaining = (3600000 - timeElapsed + 10); // reschedule a check when the time expires.
+            setTimeout(() => {
+              checkApiDataStatus();
+            }, timeRemaining);
+
+          }
+        }
+    });
+  }
+}
+
+
+
+
+// new function to update api data rather than download the whole thing
+async function updateApiData(timeStamped) {
+
+  console.log("Update API data requested");
+
+  await recallApiDetails();
+
+  if (apiKey && apiSubdomain){
+
+
+  // reset data
+  updatedProducts = {products:[], meta:[]};
+  updatedStock = {stock_levels:[], meta:[]};
+
+  var updatePageNumber = 1;
+
+  const time = timeStamped - 600000; // subtract 1 hour from the timestamp JIC
+
+  console.log("Time to check for updates: "+time);
+
+  // Refresh product list
+  var result = await updateProducts(updatePageNumber, time);
+  while (updatedProducts.meta.row_count > 0){
+    updatePageNumber ++;
+    var result = await updateProducts(updatePageNumber, time);
+    try {
+      await chrome.runtime.sendMessage("awaitingproducts");
+    } catch (err) {
+      if (err.message.includes('Receiving end does not exist')) {
+        // fallback or retry logic
+      }
+    }
+    
+    
+  }
+  console.log("API call for Products complete");
+  updatePageNumber = 1;
+  var numberOfProducts = updatedProducts.products.length;
+  console.log("Number of updated products: " + numberOfProducts);
+
+  
+  
+  console.log("Products list was updated")
+
+  console.log(updatedProducts);
+
+
+
+  // Refresh stock list
+  var result = await updateStock(updatePageNumber, time);
+  while (updatedStock.meta.row_count > 0){
+    updatePageNumber ++;
+    var result = await updateStock(updatePageNumber, time);
+    try {
+      await chrome.runtime.sendMessage("awaitingstock");
+    } catch (err) {
+      if (err.message.includes('Receiving end does not exist')) {
+        // fallback or retry logic
+      }
+    }
+    
+    
+  }
+  console.log("API call for Stock complete");
+  updatePageNumber = 1;
+  var numberOfProducts = updatedStock.stock_levels.length;
+  console.log("Number of updated stock items: " + numberOfProducts);
+
+  console.log("Stock list was updated")
+
+  console.log(updatedStock);
+
+  let existingAllStock = {stock_levels:[], meta:[]};
+  let existingAllProducts = {products:[], meta:[]};
+
+  if (time > 0){
+    var productsResult = await chrome.storage.local.get(["allProducts"]);
+    console.log(productsResult);
+    if (productsResult.allProducts != undefined){
+      var allProductsString = productsResult.allProducts;
+      existingAllProducts = JSON.parse(allProductsString);
+    }
+
+    var stockResult = await chrome.storage.local.get(["allStock"]);
+    console.log(stockResult);
+    
+    if (stockResult.allStock != undefined){
+      var allStockString = stockResult.allStock;
+      existingAllStock = JSON.parse(allStockString);
+    }
+  
+    
+  }
+
+
+  console.log("Existing all stock: ");
+  console.log(existingAllStock);
+  console.log("Existing all products: ");
+  console.log(existingAllProducts);
+  console.log("Updated stock: ");
+  console.log(updatedStock);
+  console.log("Updated products: ");
+  console.log(updatedProducts);
+  console.log("Merging data...");
+
+
+  allProducts.products = mergeById(existingAllProducts.products, updatedProducts.products);
+  allStock.stock_levels = mergeById(existingAllStock.stock_levels, updatedStock.stock_levels);
+
+  const newAllStockString = JSON.stringify(allStock);
+  const newAllProductsString = JSON.stringify(allProducts);
+
+  console.log("New after merge:")
+  console.log(allStock);
+  console.log(allProducts);
+
+  await chrome.storage.local.set({ 'allProducts': newAllProductsString, 'allStock': newAllStockString });
+    console.log("apiData for products and stock was updated");
+    
+    // Get the current date and time
+    const currentDate = new Date();
+
+    // Format the date and time as (hh:mm:ss dd:mm:yy)
+    const formattedTime = `${currentDate.getHours()}:${currentDate.getMinutes()}:${currentDate.getSeconds()} ${currentDate.getDate()}/${currentDate.getMonth() + 1}/${currentDate.getFullYear()}`;
+
+    // Store the formatted time in Chrome local storage
+    chrome.storage.local.set({ "apiUpdateTime": formattedTime }, function() {
+        console.log('Current time stored in local storage:', formattedTime);
+    });
+
+    // update the api timestamp
+    const timecheck = new Date().getTime();
+    chrome.storage.local.set({ [`apidata-timestamp-${apiSubdomain}`]: timecheck });
+    try {
+        await chrome.runtime.sendMessage("apidatawasrefreshed");
+    } catch (err) {
+      if (err.message.includes('Receiving end does not exist')) {
+        // fallback or retry logic
+      }
+    }
+    
+    // run the check again in 60 minutes
+    checkApiDataStatus();
+
+ 
+
+
+  }
+}
+
+
+
+function updateProducts(thisPage, time){
+
+  const timeString = new Date(time).toISOString();
+  return new Promise(function (resolve, reject) {
+    const apiUrl = `https://api.current-rms.com/api/v1/products/?page=${thisPage}&per_page=100&include[]=icon&include[]=accessories&filtermode=active&q[updated_at_or_product_group_updated_at_or_icon_updated_at_gt]=${timeString}`;
+  
+    
+
+    const fetchOptions = {
+      method: 'GET',
+      headers: {
+        'X-SUBDOMAIN': apiSubdomain,
+        'X-AUTH-TOKEN': apiKey,
+      },
+    };
+
+    // Make the API call
+    fetch(apiUrl, fetchOptions)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        // Handle the API response data here
+        updatedProducts.products = updatedProducts.products.concat(data.products); // merge new page of data into stock_levels
+        updatedProducts.meta = data.meta; // merge new page of data into meta
+        resolve("ok");
+
+        //console.log("Loading product list page " + pageNumber);
+        var totalRows = (data.meta.total_row_count);
+        var currentRow = (data.meta.page * data.meta.per_page);
+        var progressPercent = Math.floor((currentRow / totalRows) * 100);
+        progressPercent = Math.min(progressPercent, 100);
+        console.log ("Product List download "+progressPercent +"% complete");
+        sendProgress(progressPercent);
+
+
+      })
+      .catch(error => {
+        // Handle errors here
+        console.error('Error making API request:', error);
+        sendAlert('Error making product API request: '+ error);
+      });
+  });
+}
+
+
+// API call to update a list of stock items?
+
+function updateStock(thisPage, time){
+
+  const timeString = new Date(time).toISOString();
+
+  return new Promise(function (resolve, reject) {
+    const apiUrl = `https://api.current-rms.com/api/v1/stock_levels/?page=${thisPage}&per_page=100&include[]=icon&include[]=item&q[s][]=item_id+asc&q[updated_at_or_icon_updated_at_or_item_updated_at_gt]=${timeString}`;
+
+    // Options for the fetch request
+    const fetchOptions = {
+      method: 'GET',
+      headers: {
+        'X-SUBDOMAIN': apiSubdomain,
+        'X-AUTH-TOKEN': apiKey,
+      },
+    };
+
+    // Make the API call
+    fetch(apiUrl, fetchOptions)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        // Handle the API response data here
+        updatedStock.stock_levels = updatedStock.stock_levels.concat(data.stock_levels); // merge new page of data into stock_levels
+        updatedStock.meta = data.meta; // merge new page of data into meta
+        resolve("ok");
+
+        //console.log("Loading stock list page " + pageNumber);
+        var totalRows = (data.meta.total_row_count);
+        var currentRow = (data.meta.page * data.meta.per_page);
+        var progressPercent = Math.floor((currentRow / totalRows) * 100);
+        progressPercent = Math.min(progressPercent, 100);
+        console.log ("Stock Level download "+progressPercent +"% complete");
+        sendProgress(progressPercent);
+
+      })
+      .catch(error => {
+        // Handle errors here
+        console.error('Error making API request:', error);
+        sendAlert('Error making stock_level API request: '+ error);
+      });
+  });
+}
+
+
+
+// function to use when combining oppData with updateOppData
+function mergeById(arrayInitial, arrayUpdate) {
+  console.log(arrayInitial);
+  console.log(arrayUpdate);
+  // 1) Take only the initial items whose id isn’t in the updates
+  const filtered = arrayInitial.filter(
+    init => !arrayUpdate.some(upd => upd.id === init.id)
+  );
+
+  // 2) Concatenate those “survivors” with all of the updates
+  return [...filtered, ...arrayUpdate];
+}
+
+
+async function availabilityScrapeNonDom(opp, start, end){
+  const thisStarted = Date.now();
+
+  function textFromHtml(raw) {
+    return raw
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<[^>]*>/g, '')
+      .trim();
+  }
+
+
+  var availabilityData = {};
+
+  function convertToDateTime(timeStr) {
+    var hours = parseInt(timeStr.substring(0, 2));
+    var minutes = parseInt(timeStr.substring(2, 4));
+    return hours * 60 + minutes;
+  }
+
+  await recallApiDetails();
+  const timeStart = start.split(' ')[1].replace(':', '');
+  const timeEnd = end.split(' ')[1].replace(':', '');
+  
+  const response = await fetch(`https://${apiSubdomain}.current-rms.com/availability/opportunity/${opp}?${timeStart}&${timeEnd}&scrape`, { credentials: 'include' });
+  if (!response.ok) throw new Error(`Failed to fetch detail page: ${response.status}`);
+
+  const html = await response.text();
+
+
+  //console.log(html);
+
+
+  /* ─────────────────── <h1> ─────────────────── */
+  const h1Match = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+  const scraped = h1Match ? textFromHtml(h1Match[1]) : '';
+  console.log('Heading:', scraped);
+
+  /* ───────────── <table id="availability-grid"> (order‑agnostic) ───────────── */
+  const tableTagMatch = html.match(
+    /<table\b[^>]*\bid\s*=\s*(["'])availability-grid\1[^>]*>([\s\S]*?)<\/table>/i
+  );
+
+  if (!tableTagMatch) {
+    console.warn('No #availability-grid table found');
+    return {};
+  }
+
+  const tableOpenTag = tableTagMatch[0].match(/<table\b[^>]*>/i)[0]; // just the <table …> start tag
+  const tableHtml    = tableTagMatch[2];                             // inner HTML between <table>…</table>
+
+  /* extract the class attribute, whatever its position */
+  const classAttrMatch = tableOpenTag.match(/\bclass\s*=\s*(["'])(.*?)\1/i);
+  const tableClasses   = classAttrMatch ? classAttrMatch[2].split(/\s+/) : [];
+
+
+  /* ─────── replicate your period-split logic ─────── */
+  let timeDivide = 1;
+  if (tableClasses.includes('period2')) timeDivide = 2;
+  else if (tableClasses.includes('period4')) timeDivide = 4;
+
+  let ignoreStart = 0;
+  let ignoreEnd   = 0;
+
+  if (timeDivide > 1) {
+    const startTime = convertToDateTime(timeStart); // ← your helpers
+    const endTime   = convertToDateTime(timeEnd);
+
+    if (timeDivide === 2) {
+      if (startTime > convertToDateTime('1200')) ignoreStart = 1;
+      if (endTime   <= convertToDateTime('1200')) ignoreEnd   = 1;
+    } else if (timeDivide === 4) {
+      if      (startTime > convertToDateTime('1800')) ignoreStart = 3;
+      else if (startTime > convertToDateTime('1200')) ignoreStart = 2;
+      else if (startTime > convertToDateTime('0600')) ignoreStart = 1;
+
+      if      (endTime <= convertToDateTime('0600')) ignoreEnd = 3;
+      else if (endTime <= convertToDateTime('1200')) ignoreEnd = 2;
+      else if (endTime <= convertToDateTime('1800')) ignoreEnd = 1;
+    }
+  }
+
+  /* ───────────────── rows & cells ───────────────── */
+
+  // iterate every <tr> inside the table
+  for (const [, rowHtml] of tableHtml.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)) {
+    // cell with class="product_booking"
+    const bookingMatch = rowHtml.match(
+      /<td[^>]*class=(?:"[^"]*\bproduct_booking\b[^"]*"|'[^']*\bproduct_booking\b[^']*')[^>]*>([\s\S]*?)<\/td>/i
+    );
+    if (!bookingMatch) continue;
+
+    const productName = textFromHtml(bookingMatch[1]);
+    //console.log('Product Booking:', productName);
+
+    // all the period-of-day cells in the same row
+    const periods = [...rowHtml.matchAll(
+      /<td[^>]*class=(?:"[^"]*\bperiod-of-day\b[^"]*"|'[^']*\bperiod-of-day\b[^']*')[^>]*>([\s\S]*?)<\/td>/gi
+    )].map((m) => textFromHtml(m[1]));
+
+    let lowestValue = null;
+
+    for (let i = ignoreStart; i < periods.length - ignoreEnd; i++) {
+      const firstLine = periods[i].split('\n')[0];
+      const number = parseInt(firstLine, 10);
+
+      if (!Number.isNaN(number) && (lowestValue === null || number < lowestValue)) {
+        lowestValue = number;
+      }
+    }
+
+    if (lowestValue !== null) {
+      //console.log('Lowest Period of Day:', lowestValue);
+      availabilityData[productName] = lowestValue;
+    }
+  }
+
+  console.log(availabilityData);
+  console.log(Object.keys(availabilityData).length);
+
+  if (Object.keys(availabilityData).length > 0){
+    console.log({messageType: "availabilityData", messageData: availabilityData, messageOpp: opp});
+    
+    chrome.tabs.query({}, function(tabs) {
+      if (tabs.length > 0){
+        tabs.forEach(function(tab) {
+          chrome.runtime.sendMessage({messageType: "availabilityData", messageData: availabilityData, messageOpp: opp});
+       
+        });
+      }
+    });
+
+
+
+  }
+  const thisEnded = Date.now();
+  console.log("Availability nonDom took " + (thisEnded - thisStarted) + "ms");
+      
+}

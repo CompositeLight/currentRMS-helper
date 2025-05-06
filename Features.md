@@ -1,4 +1,4 @@
-# currentRMS-helper 1.31.27
+# currentRMS-helper 2.0.3
 
 Below is a list of current features. It's the same information as the Readme change log, but listed "per area" to make it easier for new users to see what the extension adds.
 
@@ -17,6 +17,7 @@ Below is a list of current features. It's the same information as the Readme cha
 - In the Opportunities, Products, Services and Purchase Order pages you can now change view settings without losing the current search term entered. This works when recalling saved views, or the Default, or when changing the Per Page setting. This doesn't work for Filter Selection - sadly that's a bit more complicated.
 
 - Added a Recent tab to the top menu bar. This offers quick links to the last 10 opportunities you looked at, in the order than you looked at them.
+
 
 ## Detail view
 
@@ -111,6 +112,18 @@ Once a container exists on the opportunity it can be accessed without further us
 
 - You can now click on the opportunity grand total at the bottom of the page to jump to the Deal Price screen more intuitively.
 
+- Show Collapsed Item Totals - In Order View, when an item has accessories but the item is in a collapsed state (accessories are hidden) the total now reflects the item charge plus any charges for accessories inside it. Mousing over this total reveals the item's individual charge. Clicking on it expands the acessories below. This feature can be disabled in the extension settings panel.
+
+- Description Magic - In Order View you can now add a description to an item or group by using the drop down (blue arrow to the right) menu. You can also remove a description by deleting the contents and clicking away (issue 54).
+
+- Warehouse Notes Magic - In Order View you can also now add or edit a Warehouse Note by using the drop down (blue arrow to the right) menu. To quickly edit a Warehouse Note you can also just click on the clipboard T icon next to an item (you can still mouse over that icon to see a quick popup of the note).
+
+- In Order View, you can now edit chargable days / miles / hours by clicking on them as you would a rental product (so no need to edit the item to adjust it). NOTE: Changing the chargable days in this way has no effect on the days costed, so you'll still need to go and adjust this if it effects your profit calculations etc (issue 100). This however, will be a bit easier than it used to be because...
+
+- Sub-Rent weight is now also shown in Order View under the Attributes panel of the side bar (issue 75). As well as giving an overally break-down of stock weight vs sub-rent weight, the weight associated with each supplier is given beneath. Clicking the supplier name takes you to their member page.
+
+- In Order View, items that include sub-rents are highlighted in blue if any of the sub-rented allocations don't yet have a supplier set. This is to make it harder to miss a sub-hire you haven't sorted out (issue 96 AKA The Extra Chain Motors Incident).
+
 
 ## Costs View
 
@@ -121,6 +134,8 @@ Once a container exists on the opportunity it can be accessed without further us
 - Service items now show their cost duration in the days column. A tool-tip over this value reveals days charged and days costed. If there is a mismatch between the 'days' costed and 'days' charged the entry is shown as [daysCosted/daysCharged], and the text turns red to draw attention to the issue. If the charge type doesn't match the cost type (eg. charging per day, but costed by hour) the value is highlighted in amber.
 
 - Add To Existing Purchase Order - The modal box that appears now offers a list of active POs from the supplier of the selected item. Previously you had to guess / look up the correct PO.
+
+- In Cost View, you can also now edit chargable days / miles / hours by clicking on them as you would a rental product. You can also change whether a service item is costed by Days/Hours/Distance/Flat-Rate directly from the Costs page, so you don't need to navigate to the opportunity item edit page so much.
 
 
 ## Create and Edit Opportunity

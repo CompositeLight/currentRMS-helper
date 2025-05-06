@@ -44,9 +44,11 @@ inspectionAlerts = "";
 multiGlobal = true;
 bookOutContainers = false;
 detailDelete = true;
+nestedTotals = true;
 containerScan = false;
 scanningContainer = "";
 freeScanReset = false;
+var currencyPrefix; 
 
 wrongItem = "";
 
@@ -195,62 +197,15 @@ function createBlockOutOverlay() {
 
 
 
-// check if we're in Order View
-var orderView = document.querySelectorAll('div[class="row sticky quick-add-section"]');
-if (orderView.length != 0){
-  orderView = true;
-} else {
-  orderView = false;
-}
+const exists = sel => document.querySelector(sel) !== null;
 
-// check if we're in Detail View
-var detailView = document.querySelectorAll('div[class="tab-pane"][id="quick_prepare"]');
-if (detailView.length != 0){
-  detailView = true;
-} else {
-  detailView = false;
-}
-
-// check if we're in Opp Edit view
-var editOppView;
-
-const editForms = document.querySelectorAll('form[class="simple_form edit_opportunity"]');
-const newForms = document.querySelectorAll('form[class="simple_form new_opportunity"]');
-
-if (editForms.length != 0 || newForms.length != 0){
-  editOppView = true;
-} else {
-  editOppView = false;
-}
-
-
-// check if we're in edit container view
-
-var editContainerView = document.getElementById('container_mode_div');
-if (editContainerView){
-  editContainerView = true;
-} else {
-  editContainerView = false;
-}
-
-
-
-// check if we're in Global Check-in view
-var globalCheckinView = document.querySelectorAll('div[class="col-sm-12 global_check_ins main-content"]');
-if (globalCheckinView.length != 0){
-  globalCheckinView = true;
-} else {
-  globalCheckinView = false;
-}
-
-
-//check if we're in Global Search View
-var globalSearchRows = document.querySelectorAll("div.global-search-summary");
-if (globalSearchRows.length > 0){
-  globalSearchView = true;
-} else {
-  globalSearchView = false;
-}
+// Detect views
+orderView          = exists('div.row.sticky.quick-add-section');
+detailView         = exists('#quick_prepare.tab-pane');
+editOppView        = exists('form.simple_form.edit_opportunity, form.simple_form.new_opportunity');
+editContainerView  = document.getElementById('container_mode_div') !== null; // ID lookup is fastest
+globalCheckinView  = exists('div.col-sm-12.global_check_ins.main-content');
+globalSearchView   = exists('div.global-search-summary');
 
 
 
@@ -375,6 +330,26 @@ chrome.storage.local.get(["detailDelete"]).then((result) => {
       hideDeleteButtons();
     }
 });
+
+// get the nestedTotals setting from local storage
+chrome.storage.local.get(["nestedTotals"]).then((result) => {
+  if (result.nestedTotals == undefined){
+    nestedTotals = true;
+
+  } else if (result.nestedTotals == "false"){
+    nestedTotals = false;
+  } else if (result.nestedTotals == "true"){
+    nestedTotals = true;
+  } else {
+    nestedTotals = result.nestedTotals;
+  }
+  console.log("Show Collapsed Item Totals setting: "+nestedTotals);
+
+
+});
+
+
+
 
 
 
@@ -883,6 +858,7 @@ async function addDetails(mode) {
       }
 
       var prodName = nameElement.innerText;
+      
         if (!assetColumns[i].innerHTML.includes("Sub-Rent Booking") && !assetColumns[i].innerHTML.includes("Non-Stock Booking")){
 
           if (prodName.startsWith("Collapse")) {
@@ -893,20 +869,35 @@ async function addDetails(mode) {
             prodName = prodName.slice("Expand\n".length);
           }
 
+          // find the closest <a>
+          const closestLink = nameElement.querySelector('a').href;
+          let linkId = 0;
+          const lastSlash = closestLink.lastIndexOf('/');
+          const firstQuestion = closestLink.indexOf('?', lastSlash + 1); // search *after* the last “/”
+
+          // Guard against edge‑cases
+          if (lastSlash !== -1 && firstQuestion !== -1 && firstQuestion >= lastSlash) {
+            linkId = closestLink.slice(lastSlash + 1, firstQuestion);
+          }
+
           const newSpan = document.createElement('span');
           newSpan.className = 'product-tip';
           newSpan.innerHTML = '&#128270; &nbsp;';
           const newSpanId = 'product-tip-'+i;
           newSpan.id = newSpanId;
+          newSpan.setAttribute("data-product-link", linkId);
 
           nameDiv.appendChild(newSpan);
 
+          // Attach the event listener to the element
+         
           (function (theId, name){
             // Attach the event listener to the element
             document.getElementById(theId).addEventListener('click', function() {
                 openProductImageModal(name);
             });
           })(newSpanId, prodName);
+          
 
         } // end of if not sub rent or non stock
 
@@ -1070,8 +1061,17 @@ async function addDetails(mode) {
     });
 
 
-    chrome.runtime.sendMessage({messageType: "availabilityscape", messageText: opportunityID, messageStartDate:startDateValue, messageEndDate:endDateValue});
-    var currencyPrefix = getCurrencySymbol();
+    // Original scrape version
+    //chrome.runtime.sendMessage({messageType: "availabilityscape", messageText: opportunityID, messageStartDate:startDateValue, messageEndDate:endDateValue});
+
+    // Local parse text version
+    availabilityScrapeNonDom(opportunityID, startDateValue, endDateValue);
+
+    // Scrape warehouse notes
+    warehouseNotesScrapeNonDom(opportunityID);
+
+    
+    currencyPrefix = getCurrencySymbol();
 
 
     oppData = await recallOppDetails(opportunityID);
@@ -1237,9 +1237,59 @@ async function addDetails(mode) {
           thisProfitLossString = "Profit: "+currencyPrefix + thisProfitLoss;
         }
 
+        // Now work out the combined charge_excluding_tax_total of this item and it's accessories
+        var accessoriesCharge = 0.0;
+
+        // get the accessories for this item
+        var thisAccessories = getAllAccessories(oppData.opportunity_items, thisID);
+        // loop through the accessories, and add the charge_excluding_tax_total of each accessory
+        for (let i = 0; i < thisAccessories.length; i++) {
+          // check if the id is present in thisAccessories
+          var accessoryID = thisAccessories[i];
+          var accessory = oppData.opportunity_items.find(item => item.id == accessoryID);
+          if (accessory){
+            // add the charge_excluding_tax_total of the accessory
+            if (accessory.charge_excluding_tax_total){
+              accessoriesCharge = accessoriesCharge + parseFloat(accessory.charge_excluding_tax_total);
+            }
+          }
+        }
+        // add the accessoriesCharge to the thisTotalCharge
+        var thisNestedTotalCharge = thisTotalCharge + accessoriesCharge;
+
+        function getAllAccessories(oppData, thisID) {
+          const accessories = [];
+      
+          // Helper function for recursion
+          function findAccessories(parentID) {
+              // Find all items where parent_opportunity_item_id matches the current parentID
+              const childAccessories = oppData.filter(item => item.parent_opportunity_item_id === parentID);
+      
+              // Add the IDs of the child accessories to the list
+              childAccessories.forEach(child => {
+                  accessories.push(child.id); // Assuming each item has an 'id' property
+                  // Recursively find accessories for the current child
+                  findAccessories(child.id);
+              });
+          }
+      
+          // Start the recursion with the given thisID
+          findAccessories(thisID);
+      
+          return accessories;
+        }
+
+
         var liElement = document.querySelector('li.grid-body-row[data-id="'+thisID+'"]');
 
         if (liElement){
+
+          if (accessoriesCharge > 0){
+            liElement.dataset.nestedcharge = thisNestedTotalCharge;
+            liElement.dataset.accessoriescharge = accessoriesCharge;
+            liElement.dataset.originalcharge = thisTotalCharge
+          }
+
           var tdElement = liElement.querySelector('td.total-column.align-right.item-total');
           if (!tdElement){
             console.log("issue finding td element for "+thisName);
@@ -1417,7 +1467,7 @@ async function addDetails(mode) {
       }// end of if a group with deal set
 
     }
-
+    applyNestedCharges();
 
       // Sort out listing charged days for serviced items
       var daysHeader = document.querySelector('td.days-column.align-right');
@@ -1563,6 +1613,52 @@ async function addDetails(mode) {
     newScript.src = chrome.runtime.getURL('scripts/order-header-injected.js'); // Path to the external script
     document.documentElement.appendChild(newScript);
     newScript.remove();
+
+    document.addEventListener("click", function(event) {
+      // Check if the clicked element is an <button> with data-action "expand" or "collapse"
+      if (event.target.matches('button') && (event.target.getAttribute('data-action') === 'expand' || event.target.getAttribute('data-action') === 'collapse')) {
+        applyNestedCharges();
+      }
+      
+    });
+
+    // add event listener for mouse hovering over an element with class nested-charge
+
+    // select all li elements with data-nestedcharge
+    const nestedChargeElements = document.querySelectorAll('li.grid-body-row[data-nestedcharge]');
+
+   
+
+    nestedChargeElements.forEach((row) => {
+      const element = row.querySelector('.popover_help');
+      element.addEventListener('mouseover', function() {
+        if (nestedTotals){
+          element.innerText = `${currencyPrefix}${parseFloat(row.dataset.originalcharge).toFixed(2)}`
+        }
+      });
+      element.addEventListener('mouseout', function() {
+        if (nestedTotals){
+
+          //closestRow = element.closest('li.grid-body-row');
+          if (row.classList.contains("dd-collapsed")){
+
+            element.innerText = `${currencyPrefix}${parseFloat(row.dataset.nestedcharge).toFixed(2)}`;
+          }
+        }
+      });
+
+      element.addEventListener('click', function() {
+        if (nestedTotals){
+          const theRow = element.closest('tbody');
+          const theExpandButton = theRow.querySelector('button[data-action="expand"]');
+          if (theExpandButton){
+            theExpandButton.click();
+            applyNestedCharges();
+          }
+        }
+      });
+    });
+
 
 
 
@@ -1720,9 +1816,8 @@ function getProdWeight(prod){
 }
 
 function getProdLocation(prod){
-  var productLocation = "";
-  try {
 
+  try {
 
     const prodObject = allStock.stock_levels.filter(stock_levels => stock_levels.item_name === prod && stock_levels.store_name == storeLocation && stock_levels.location !== "");
     //console.log(prodObject)
@@ -1731,6 +1826,8 @@ function getProdLocation(prod){
 
     // remove duplicate inventories
     const uniqueLocations = [...new Set(locations)];
+
+    console.log(uniqueLocations);
 
     // Create a string with locations separated by commas
     const locationsString = uniqueLocations.join(', ');
@@ -1744,29 +1841,15 @@ function getProdLocation(prod){
 }
 
 
-function getProdImageUrl(prod){
-  var urlOfIcon = "";
-  try {
-    const prodObject = allProducts.products.find(products => products.name === prod);
-    urlOfIcon = prodObject ? prodObject.icon.url : null;
-  }
-    catch(err) {
-  }
-  if (urlOfIcon){
-    return urlOfIcon
-  } else {
-    return "/assets/ui/product-f16087aa267a8d2b0f689433609f05faba1561eacccf4be8bf9a8052ea4a2fc2.png";
-  }
-}
 
-function openProductImageModal(prodName){
-  console.log(prodName);
+
+async function openProductImageModal(prodName){
   var theModal = document.getElementById('product-image-modal');
   var theModalImage = document.getElementById('modal-image');
   var theModalCaption = document.getElementById('product-modal-caption');
   var theModalWeightCaption = document.getElementById('product-modal-weight');
   var theModalLocationCaption = document.getElementById('product-modal-location');
-  const theImageUrl = getProdImageUrl(prodName);
+  const theImageUrl = "/assets/ui/product-f16087aa267a8d2b0f689433609f05faba1561eacccf4be8bf9a8052ea4a2fc2.png"
   const itemWeight = getProdWeight(prodName);
   const itemLocation = getProdLocation(prodName)
   theModalImage.src = theImageUrl;
@@ -1774,6 +1857,7 @@ function openProductImageModal(prodName){
   theModalWeightCaption.innerHTML = itemWeight+" "+weightUnit;
   theModalLocationCaption.innerHTML = itemLocation + " (" +storeLocation+")";
   theModal.style.display = 'block';
+
 }
 
 
@@ -2765,7 +2849,7 @@ function hideNonShorts() {
 
     }
   } else if (orderView){
-    //document.querySelector("button.expand-all").click();
+    
 
 
     var opportunityList = document.getElementById("opportunity_items_scrollable");
@@ -4366,10 +4450,26 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         console.log(detailDelete);
         hideDeleteButtons();
       });
+  
+  } else if (message == "nestedTotals"){
+    chrome.storage.local.get(["nestedTotals"]).then((result) => {
+      console.log(result);
+      if (result.nestedTotals == "true"){
+        nestedTotals = true;
+      } else {
+        nestedTotals = false;
+      }
+      console.log(nestedTotals);
+      applyNestedCharges();
+    });
+
+
 
   }
 
 
+
+  
   if (message.messageType == "oppScrapeData" && globalSearchView){
     // hand global search return
 
@@ -5345,33 +5445,47 @@ function clickAndRevert(asset){
 }
 
 function addAvailability(data) {
-    console.log("Adding availability information");
-    // Get all div elements with class 'dd-content'
+  console.log("Adding availability information");
+  // Get all div elements with class 'dd-content'
 
-    var divs = document.querySelectorAll('div.dd-content');
+  var divs = document.querySelectorAll('div.dd-content');
 
-    // Iterate through each div
-    divs.forEach(function(div) {
-        var theProd = div.querySelector('a');
-        if (theProd){
-
-
-          // Check if the div's innerText is a key in the data object
-          if (data.hasOwnProperty(theProd.innerText.trim())) {
-              // Find the parent row of the div
-              var parentRow = div.closest('tr');
-              if (parentRow) {
-                  // Find the 'status-column' cell within the parent row
-                  var statusCell = parentRow.querySelector('.quantity-column');
-                  if (statusCell) {
-                      // Find the 'availability-count' span within the 'status-column' cell
-                      var availabilityCell = parentRow.querySelector('.availability-column');
+  // Iterate through each div
+  divs.forEach(function(div) {
+      var theProd = div.querySelector('a');
+      if (theProd){
 
 
-                      // If the 'availability-count' span exists, update its innerText
-                      if (availabilityCell) {
-                        var availabilitySpan = availabilityCell.querySelector('.availability-count');
+        // Check if the div's innerText is a key in the data object
+        if (data.hasOwnProperty(theProd.innerText.trim())) {
+            // Find the parent row of the div
+            var parentRow = div.closest('tr');
+            if (parentRow) {
+                // Find the 'status-column' cell within the parent row
+                var statusCell = parentRow.querySelector('.quantity-column');
+                if (statusCell) {
+                    // Find the 'availability-count' span within the 'status-column' cell
+                    var availabilityCell = parentRow.querySelector('.availability-column');
+
+
+                    // If the 'availability-count' span exists, update its innerText
+                    if (availabilityCell) {
+                      var availabilitySpan = availabilityCell.querySelector('.availability-count');
+                      var avail = data[theProd.innerText.trim()];
+                      if (avail < 0){
+                        availabilitySpan.classList.add("avail-short");
+                        availabilitySpan.classList.remove("avail-good");
+                      } else {
+                        availabilitySpan.classList.remove("avail-short");
+                        availabilitySpan.classList.add("avail-good");
+                      }
+                      availabilitySpan.innerText = avail;
+                    } else {
+                        // If the 'availability-count' span does not exist, create it, append it to the status cell, and set its value
+                        availabilitySpan = document.createElement('span');
+                        availabilitySpan.className = 'availability-count';
                         var avail = data[theProd.innerText.trim()];
+
                         if (avail < 0){
                           availabilitySpan.classList.add("avail-short");
                           availabilitySpan.classList.remove("avail-good");
@@ -5379,112 +5493,94 @@ function addAvailability(data) {
                           availabilitySpan.classList.remove("avail-short");
                           availabilitySpan.classList.add("avail-good");
                         }
+
+
+                        // Create a new <td> element
+                        const newTd = document.createElement('td');
+                        newTd.classList.add("align-right", "availability-column");
+                        // Insert the new <td> immediately after the existing <td>
+                        // However, since <td> must be a child of <tr>, ensure to adjust accordingly
+                        if (statusCell && statusCell.parentNode) {
+                            statusCell.insertAdjacentElement('afterend', newTd);
+                        }
+
                         availabilitySpan.innerText = avail;
-                      } else {
-                          // If the 'availability-count' span does not exist, create it, append it to the status cell, and set its value
-                          availabilitySpan = document.createElement('span');
-                          availabilitySpan.className = 'availability-count';
-                          var avail = data[theProd.innerText.trim()];
-
-                          if (avail < 0){
-                            availabilitySpan.classList.add("avail-short");
-                            availabilitySpan.classList.remove("avail-good");
-                          } else {
-                            availabilitySpan.classList.remove("avail-short");
-                            availabilitySpan.classList.add("avail-good");
-                          }
-
-
-                          // Create a new <td> element
-                          const newTd = document.createElement('td');
-                          newTd.classList.add("align-right", "availability-column");
-                          // Insert the new <td> immediately after the existing <td>
-                          // However, since <td> must be a child of <tr>, ensure to adjust accordingly
-                          if (statusCell && statusCell.parentNode) {
-                              statusCell.insertAdjacentElement('afterend', newTd);
-                          }
-
-                          availabilitySpan.innerText = avail;
-                          newTd.appendChild(availabilitySpan);
-                      }
-                  }
-              }
-          } else { // it's not a product with availability, so we need to add an empty availablity cell.
-            // Find the parent row of the div
-            var parentRow = div.closest('tr');
-            if (parentRow) {
-                // Find the 'status-column' cell within the parent row
-                var statusCell = parentRow.querySelector('.quantity-column');
-                var availabilityCell = parentRow.querySelector('.availability-column');
-                if (!availabilityCell) {
-
-                  // Create a new <td> element
-                  const newTd = document.createElement('td');
-                  newTd.classList.add("align-right", "availability-column");
-                  // Insert the new <td> immediately after the existing <td>
-                  // However, since <td> must be a child of <tr>, ensure to adjust accordingly
-                  if (statusCell && statusCell.parentNode) {
-                      statusCell.insertAdjacentElement('afterend', newTd);
-                  }
-
-
+                        newTd.appendChild(availabilitySpan);
+                    }
                 }
             }
-          }
-        } else {
-          var theProd = div.querySelector('div.editable.item-name');
-          if (theProd){
-            // it's a text item, so we need to add an empty availablity cell.
-            // Find the parent row of the div
-            var parentRow = div.closest('tr');
-            if (parentRow) {
+        } else { // it's not a product with availability, so we need to add an empty availablity cell.
+          // Find the parent row of the div
+          var parentRow = div.closest('tr');
+          if (parentRow) {
               // Find the 'status-column' cell within the parent row
               var statusCell = parentRow.querySelector('.quantity-column');
               var availabilityCell = parentRow.querySelector('.availability-column');
               if (!availabilityCell) {
+
                 // Create a new <td> element
                 const newTd = document.createElement('td');
                 newTd.classList.add("align-right", "availability-column");
                 // Insert the new <td> immediately after the existing <td>
                 // However, since <td> must be a child of <tr>, ensure to adjust accordingly
                 if (statusCell && statusCell.parentNode) {
-                  statusCell.insertAdjacentElement('afterend', newTd);
+                    statusCell.insertAdjacentElement('afterend', newTd);
                 }
-              }
-            }
 
+
+              }
           }
         }
-    });
+      } else {
+        var theProd = div.querySelector('div.editable.item-name');
+        if (theProd){
+          // it's a text item, so we need to add an empty availablity cell.
+          // Find the parent row of the div
+          var parentRow = div.closest('tr');
+          if (parentRow) {
+            // Find the 'status-column' cell within the parent row
+            var statusCell = parentRow.querySelector('.quantity-column');
+            var availabilityCell = parentRow.querySelector('.availability-column');
+            if (!availabilityCell) {
+              // Create a new <td> element
+              const newTd = document.createElement('td');
+              newTd.classList.add("align-right", "availability-column");
+              // Insert the new <td> immediately after the existing <td>
+              // However, since <td> must be a child of <tr>, ensure to adjust accordingly
+              if (statusCell && statusCell.parentNode) {
+                statusCell.insertAdjacentElement('afterend', newTd);
+              }
+            }
+          }
 
-
-
-    // Find the first 'td' cell with the class 'status-column'
-    var quantityHeaderCell = document.querySelector('td.quantity-column');
-
-    var availabilityHeaderCell = document.getElementById("availability-header-cell");
-
-    if (!availabilityHeaderCell){
-      const newTd = document.createElement('td');
-      newTd.id = "availability-header-cell";
-      newTd.innerText = "Avail";
-      newTd.classList.add("align-right", "availability-column");
-      if (quantityHeaderCell && quantityHeaderCell.parentNode) {
-          quantityHeaderCell.insertAdjacentElement('afterend', newTd);
+        }
       }
-      quantityHeaderCell.innerText = "Qty";
+  });
+
+
+
+  // Find the first 'td' cell with the class 'status-column'
+  var quantityHeaderCell = document.querySelector('td.quantity-column');
+
+  var availabilityHeaderCell = document.getElementById("availability-header-cell");
+
+  if (!availabilityHeaderCell){
+    const newTd = document.createElement('td');
+    newTd.id = "availability-header-cell";
+    newTd.innerText = "Avail";
+    newTd.classList.add("align-right", "availability-column");
+    if (quantityHeaderCell && quantityHeaderCell.parentNode) {
+        quantityHeaderCell.insertAdjacentElement('afterend', newTd);
     }
+    quantityHeaderCell.innerText = "Qty";
+  }
 
-    document.querySelectorAll('td.quantity-column.align-right').forEach(function(element) {
-      element.classList.remove("align-right");
-      element.classList.add("align-center");
-    });
-
-
-
+  document.querySelectorAll('td.quantity-column.align-right').forEach(function(element) {
+    element.classList.remove("align-right");
+    element.classList.add("align-center");
+  });
 
 }
-
 
 
 function removeAsset(assetToRemove){
@@ -6080,4 +6176,465 @@ function orderViewWeights(){
     }
 
   }
+}
+
+
+
+async function availabilityScrape(opp, start, end){
+
+  var availabilityData = {};
+
+  function convertToDateTime(timeStr) {
+    var hours = parseInt(timeStr.substring(0, 2));
+    var minutes = parseInt(timeStr.substring(2, 4));
+    return hours * 60 + minutes;
+  }
+
+  await recallApiDetails();
+  const timeStart = start.split(' ')[1].replace(':', '');
+  const timeEnd = end.split(' ')[1].replace(':', '');
+  
+  const response = await fetch(`https://${apiSubdomain}.current-rms.com/availability/opportunity/${opportunityID}?${timeStart}&${timeEnd}&scrape`, { credentials: 'include' });
+  if (!response.ok) throw new Error(`Failed to fetch detail page: ${response.status}`);
+  const html = await response.text();
+
+  const doc  = new DOMParser().parseFromString(html, 'text/html');
+  const scraped = doc.querySelector('h1').innerText;
+  //console.log(scraped);
+  // Find the table with the ID 'availability-grid'
+  var table = doc.getElementById('availability-grid');
+
+  // check if we're working to a period less than a full day
+  var timeDivide = 1;
+  if (table.classList.contains("period2")){
+    timeDivide = 2;
+  } else if (table.classList.contains("period4")){
+    timeDivide = 4;
+  }
+
+  if (timeDivide > 1){
+    // get start and end time from the url
+    var startString = timeStart;
+    var endString = timeEnd;
+    var startTime = convertToDateTime(startString);
+    var endTime = convertToDateTime(endString);
+
+    console.log("Start string: " + startString);
+    console.log("End string: " + endString);
+
+    console.log("Start Time: " + startTime);
+    console.log("End Time: " + endTime);
+
+
+
+    console.log("timeDivide: " + timeDivide);
+
+
+    if (timeDivide == 2){
+      if (startTime > convertToDateTime("1200")){
+        ignoreStart = 1;
+      }
+      if (endTime <= convertToDateTime("1200")){
+        ignoreEnd = 1;
+      }
+
+
+    } else if (timeDivide == 4){
+      if (startTime > convertToDateTime("1800")){
+        ignoreStart = 3;
+      } else if (startTime > convertToDateTime("1200")){
+        ignoreStart = 2;
+      } else if  (startTime > convertToDateTime("0600")){
+        ignoreStart = 1;
+      }
+
+      if (endTime <= convertToDateTime("0600")){
+        ignoreEnd = 3;
+      } else if (endTime <= convertToDateTime("1200")){
+        ignoreEnd = 2;
+      } else if  (endTime <= convertToDateTime("1800")){
+        ignoreEnd = 1;
+      }
+
+    }
+    console.log("ignoreStart: " + ignoreStart);
+    console.log("ignoreEnd: " + ignoreEnd);
+  } // end if time divide > 1
+
+
+  // Check if the table exists
+  if (table) {
+      // Find all <td> elements within the table
+      var cells = table.getElementsByTagName('td');
+
+      // Iterate through each cell
+      for (var i = 0; i < cells.length; i++) {
+          var cell = cells[i];
+
+          // Check if the cell has the class 'product_booking'
+          if (cell.classList.contains('product_booking')) {
+              // Log the trimmed innerText of the 'product_booking' cell
+              var productName = cell.innerText.trim()
+              //console.log('Product Booking:', productName);
+
+              // Get the parent row of the current cell
+              var row = cell.parentElement;
+
+              // Find all 'period-of-day' cells in the same row
+              var periodCells = row.getElementsByClassName('period-of-day');
+              var lowestValue = null;
+
+              // Iterate through each 'period-of-day' cell to find the lowest value
+              for (var j = ignoreStart; j < (periodCells.length - ignoreEnd); j++) {
+                  var periodText = periodCells[j].innerText.trim();
+                  var firstNumber = periodText.split('\n')[0]; // Get the first line (the number before any brackets)
+
+                  // Convert the extracted number to an integer
+                  var number = parseInt(firstNumber, 10);
+
+                  // Update the lowest value if necessary
+                  if (lowestValue === null || number < lowestValue) {
+                      lowestValue = number;
+                  }
+              }
+
+              // Log the lowest value if found
+              if (lowestValue !== null) {
+                  //console.log('Lowest Period of Day:', lowestValue);
+                  availabilityData[productName] = lowestValue;
+              }
+          }
+      }
+      console.log(availabilityData);
+      console.log(Object.keys(availabilityData).length);
+
+      // grab the opp number to pass back for warehouse notes
+      var thisOpp = doc.getElementById("opportunity_id").value;
+
+
+      if (Object.keys(availabilityData).length > 0){
+        console.log({messageType: "availabilityData", messageData: availabilityData, messageOpp: thisOpp});
+        addAvailability(availabilityData);
+      }
+      
+  } else {
+      console.log('Table with ID "availability-grid" not found.');
+  }
+
+}
+
+async function availabilityScrapeNonDom(opp, start, end){
+  const thisStarted = Date.now();
+
+  function textFromHtml(raw) {
+    return raw
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<[^>]*>/g, '')
+      .trim();
+  }
+
+
+  var availabilityData = {};
+
+  function convertToDateTime(timeStr) {
+    var hours = parseInt(timeStr.substring(0, 2));
+    var minutes = parseInt(timeStr.substring(2, 4));
+    return hours * 60 + minutes;
+  }
+
+  await recallApiDetails();
+  const timeStart = start.split(' ')[1].replace(':', '');
+  const timeEnd = end.split(' ')[1].replace(':', '');
+  
+  const response = await fetch(`https://${apiSubdomain}.current-rms.com/availability/opportunity/${opportunityID}?${timeStart}&${timeEnd}&scrape`, { credentials: 'include' });
+  if (!response.ok) throw new Error(`Failed to fetch detail page: ${response.status}`);
+
+  const html = await response.text();
+
+
+  //console.log(html);
+
+
+  /* ─────────────────── <h1> ─────────────────── */
+  const h1Match = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+  const scraped = h1Match ? textFromHtml(h1Match[1]) : '';
+  console.log('Heading:', scraped);
+
+  /* ───────────── <table id="availability-grid"> (order‑agnostic) ───────────── */
+  const tableTagMatch = html.match(
+    /<table\b[^>]*\bid\s*=\s*(["'])availability-grid\1[^>]*>([\s\S]*?)<\/table>/i
+  );
+
+  if (!tableTagMatch) {
+    console.warn('No #availability-grid table found');
+    return {};
+  }
+
+  const tableOpenTag = tableTagMatch[0].match(/<table\b[^>]*>/i)[0]; // just the <table …> start tag
+  const tableHtml    = tableTagMatch[2];                             // inner HTML between <table>…</table>
+
+  /* extract the class attribute, whatever its position */
+  const classAttrMatch = tableOpenTag.match(/\bclass\s*=\s*(["'])(.*?)\1/i);
+  const tableClasses   = classAttrMatch ? classAttrMatch[2].split(/\s+/) : [];
+
+
+  /* ─────── replicate your period-split logic ─────── */
+  let timeDivide = 1;
+  if (tableClasses.includes('period2')) timeDivide = 2;
+  else if (tableClasses.includes('period4')) timeDivide = 4;
+
+  let ignoreStart = 0;
+  let ignoreEnd   = 0;
+
+  if (timeDivide > 1) {
+    const startTime = convertToDateTime(timeStart); // ← your helpers
+    const endTime   = convertToDateTime(timeEnd);
+
+    if (timeDivide === 2) {
+      if (startTime > convertToDateTime('1200')) ignoreStart = 1;
+      if (endTime   <= convertToDateTime('1200')) ignoreEnd   = 1;
+    } else if (timeDivide === 4) {
+      if      (startTime > convertToDateTime('1800')) ignoreStart = 3;
+      else if (startTime > convertToDateTime('1200')) ignoreStart = 2;
+      else if (startTime > convertToDateTime('0600')) ignoreStart = 1;
+
+      if      (endTime <= convertToDateTime('0600')) ignoreEnd = 3;
+      else if (endTime <= convertToDateTime('1200')) ignoreEnd = 2;
+      else if (endTime <= convertToDateTime('1800')) ignoreEnd = 1;
+    }
+  }
+
+  /* ───────────────── rows & cells ───────────────── */
+
+  // iterate every <tr> inside the table
+  for (const [, rowHtml] of tableHtml.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)) {
+    // cell with class="product_booking"
+    const bookingMatch = rowHtml.match(
+      /<td[^>]*class=(?:"[^"]*\bproduct_booking\b[^"]*"|'[^']*\bproduct_booking\b[^']*')[^>]*>([\s\S]*?)<\/td>/i
+    );
+    if (!bookingMatch) continue;
+
+    const productName = textFromHtml(bookingMatch[1]);
+    //console.log('Product Booking:', productName);
+
+    // all the period-of-day cells in the same row
+    const periods = [...rowHtml.matchAll(
+      /<td[^>]*class=(?:"[^"]*\bperiod-of-day\b[^"]*"|'[^']*\bperiod-of-day\b[^']*')[^>]*>([\s\S]*?)<\/td>/gi
+    )].map((m) => textFromHtml(m[1]));
+
+    let lowestValue = null;
+
+    for (let i = ignoreStart; i < periods.length - ignoreEnd; i++) {
+      const firstLine = periods[i].split('\n')[0];
+      const number = parseInt(firstLine, 10);
+
+      if (!Number.isNaN(number) && (lowestValue === null || number < lowestValue)) {
+        lowestValue = number;
+      }
+    }
+
+    if (lowestValue !== null) {
+      //console.log('Lowest Period of Day:', lowestValue);
+      availabilityData[productName] = lowestValue;
+    }
+  }
+
+  console.log(availabilityData);
+  console.log(Object.keys(availabilityData).length);
+
+
+  if (Object.keys(availabilityData).length > 0){
+    console.log({messageType: "availabilityData", messageData: availabilityData, messageOpp: opp});
+    addAvailability(availabilityData);
+  }
+  const thisEnded = Date.now();
+  console.log("Availability nonDom took " + (thisEnded - thisStarted) + "ms");
+      
+}
+
+
+
+
+async function warehouseNotesScrapeNonDom(opp){
+  const thisStarted = Date.now();
+
+  function textFromHtml(raw) {
+    return raw
+      .replace(/<br\s*\/?>/gi, '\n')   // keep line‑breaks
+      .replace(/<[^>]*>/g, '')         // strip all tags
+      .trim();
+  }
+  function escapeRE(s) {               // escape for RegExp literals
+    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+  
+
+
+
+  await recallApiDetails();          // ← your helper (sets apiSubdomain, …)
+
+  const res = await fetch(
+    `https://${apiSubdomain}.current-rms.com/opportunities/${opportunityID}?view=d`,
+    { credentials: 'include' }
+  );
+  if (!res.ok) throw new Error(`detail page fetch failed (${res.status})`);
+  const html = await res.text();
+
+  // warehouse notes
+  const warehouseNotesLog = {};
+
+  /*   <div class="opportunity-item-warehouse-notes
+                  opportunity-item-warehouse-notes_67449"> … </div>   */
+  const noteDivRE =
+    /<div\b[^>]*class\s*=\s*["'][^"']*\bopportunity-item-warehouse-notes\b[^"']*["'][^>]*>([\s\S]*?)<\/div>/gi;
+
+  for (const match of html.matchAll(noteDivRE)) {
+    const fullDiv   = match[0];      // opening tag + innerHTML + </div>
+    const noteInner = match[1];      // just the innerHTML
+
+    // pick up the “group” id (67449) from the class token …_#####  
+    const gidMatch = fullDiv.match(/opportunity-item-warehouse-notes_(\d+)/);
+    if (!gidMatch) continue;         // should never happen
+    const groupId = gidMatch[1];
+
+    // first try: find the <tr … id="groupId" … data-oi-id="###" …>
+    let itemRef = null;
+    const trRE = new RegExp(
+      `<tr\\b[^>]*\\bid\\s*=\\s*["']${escapeRE(groupId)}["'][^>]*\\bdata-oi-id\\s*=\\s*["']([^"']+)["']`,
+      'i'
+    );
+    const trMatch = html.match(trRE);
+    if (trMatch) {
+      itemRef = trMatch[1];
+    } else {
+      /* fallback: <li data-id="groupId" data-item-id="###" …> */
+      const liRE = new RegExp(
+        `<li\\b[^>]*\\bdata-id\\s*=\\s*["']${escapeRE(groupId)}["'][^>]*\\bdata-item-id\\s*=\\s*["']([^"']+)["']`,
+        'i'
+      );
+      const liMatch = html.match(liRE);
+      if (liMatch) itemRef = liMatch[1];
+    }
+
+    if (itemRef) {
+      warehouseNotesLog[itemRef] = textFromHtml(noteInner);
+    }
+  }
+
+  // sub‑rent members
+  var members = {};
+  /* any <td class="optional-01 asset asset-column"> that starts “Sub‑Rent Booking” */
+  const tdRE =
+    /<td\b[^>]*class\s*=\s*["'][^"']*\boptional-01\b[^"']*\basset\b[^"']*\basset-column\b[^"']*["'][^>]*>([\s\S]*?)<\/td>/gi;
+
+  for (const match of html.matchAll(tdRE)) {
+    const tdInner = match[1];
+    if (!textFromHtml(tdInner).startsWith('Sub-Rent Booking')) continue;
+
+    const aMatch = tdInner.match(
+      /<a\b[^>]*href\s*=\s*["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/i
+    );
+    if (!aMatch) continue;           // no link, nothing to do
+
+    const href = aMatch[1];
+    const name = textFromHtml(aMatch[2]);
+
+    const idMatch = href.match(/\/members\/(\d+)(?=\?)/);
+    if (idMatch) members[idMatch[1]] = name;
+  }
+
+  // log + return
+  const thisEnded = Date.now();
+  console.log("warehouseNotesScrapeNonDom took " + (thisEnded - thisStarted) + "ms");
+
+  if (Object.keys(warehouseNotesLog).length || Object.keys(members).length) {
+    console.log({
+      messageType: 'warehouseNotesData',
+      messageData: { warehouseNotesLog, members }
+    });
+  }
+
+  // Do something with the scraped data
+  for (let key in warehouseNotesLog) {
+    if (warehouseNotesLog.hasOwnProperty(key)) {  // Ensures the key belongs to the object, not its prototype
+      let value = warehouseNotesLog[key];
+
+      var liElement = document.querySelector('li.grid-body-row[data-id="'+key+'"]');
+
+      if (liElement){
+        var tdElement = liElement.querySelector('td.dd-name');
+        if (!tdElement){
+          console.log("issue finding dd-name td element for "+value);
+        } else {
+          let existingIcon = tdElement.querySelector("span.warehouse-tooltip");
+
+          if (existingIcon){
+            existingIcon.remove();
+          }
+            var itemName = tdElement.querySelector('a');
+            if (!itemName){
+              itemName = tdElement.querySelector('div.item-name');
+            }
+            if (itemName){
+              itemName.insertAdjacentHTML('afterend', `<span class="warehouse-tooltip">&nbsp;<i class="icn-cobra-paste3 warehouse-edit"></i><span class="warehouse-tooltiptext" data-warehouse="${value}"><u>WAREHOUSE NOTE:</u><br>${value}</span></span>`);
+            }
+
+        }
+      }
+    }
+  }
+
+
+  // iterate through each key in members
+  for (const key in members) {
+    if (members.hasOwnProperty(key)) {
+      let memberName = members[key];
+      
+      // if the memberName is longer than 10 characters, reduce to the first 10 and add "..."
+      if (memberName.length > 16){
+        memberName = memberName.substring(0, 16);
+      }
+
+      //find a span element with class "subhire-member" and data-member-id that matches the key
+      var memberElement = document.querySelector('span.subhire-member[data-member-id="'+key+'"]');
+      if (memberElement){
+        if (apiSubdomain){
+          memberElement.innerHTML = `<a href="https://${apiSubdomain}.current-rms.com/members/${key}"  target="_blank">${memberName}</a>`;
+        } else {
+          memberElement.innerText = memberName;
+        }
+
+      }
+    }
+  }
+}
+
+
+
+function applyNestedCharges(){
+
+  // get all li elements with the data-nestedcharge attribute
+  var nestedLi = document.querySelectorAll('li[data-nestedcharge]');
+  // iterate through each li element
+  nestedLi.forEach((item, i) => {
+    // check if the li has the class "dd-collapsed"
+    if (item.classList.contains("dd-collapsed") && nestedTotals){
+      // if it does, find the child element td.item-total
+      var totalElement = item.querySelector('span.popover_help');
+      //set the inner text
+      if (totalElement){
+        totalElement.innerText = `${currencyPrefix}${parseFloat(item.dataset.nestedcharge).toFixed(2)}`;
+        totalElement.classList.add("nested-charge");
+      }
+    } else {
+      // if it does, find the child element td.item-total
+      var totalElement = item.querySelector('span.popover_help');
+      //set the inner text
+      if (totalElement){
+        totalElement.innerText = `${currencyPrefix}${parseFloat(item.dataset.originalcharge).toFixed(2)}`;
+        totalElement.classList.remove("nested-charge");
+      }
+    }
+
+  });
 }

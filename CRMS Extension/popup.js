@@ -310,6 +310,29 @@ timeOutBox.addEventListener('change', function() {
 
 
 
+// Code for the Show Collapsed Item Totals setting:
+chrome.storage.local.get(["nestedTotals"]).then((result) => {
+  console.log(result.nestedTotals);
+  if (result.nestedTotals){
+  var selectedOption = "input[name='nestedtotals'][value='" + result.nestedTotals + "']";
+    document.querySelector(selectedOption).checked = true;
+  }
+});
+
+document.querySelectorAll('input[name="nestedtotals"]').forEach(function(radio) {
+  radio.addEventListener('change', function() {
+    console.log(this.value);
+
+    chrome.storage.local.set({ "nestedTotals": this.value }).then(() => {
+       console.log("Show Collapsed Item Totals setting changed");
+       console.log(this.value);
+       chrome.runtime.sendMessage("nestedTotals");
+     });
+
+  });
+});
+
+
 
 
 
