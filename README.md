@@ -1,4 +1,4 @@
-# currentRMS-helper 2.0.3
+# currentRMS-helper 2.0.4
 This is a Chrome extension to add functionality to the CurrentRMS web interface. It was created out of our frustration waiting on "quality of life" modifications to make the user experience better. Since making it available online, I've been blown away by how many users and businesses have started using it on a daily basis. I'm really grateful to the many users who have contributed ideas, or pointed out bugs with the extension.
 
 The extension is free to all, but as a few people have asked, if you really want to [buy me a cup of coffee / tea / beer](https://paypal.me/garethrisdale) you can use this link.
@@ -37,6 +37,8 @@ For a full list of the extension's features, check out the [Features.md](/Featur
 ## New Features / Updates
 
 ** NEW MAJOR VERSION 2.0.0 - PLEASE TEST WITH CAUTION AND REPORT ISSUES **
+
+- FIXED: 2.0.4 - Sub-rent weights were showing crazy floating point decimals.
 
 - NEW: 2.0.3 - Show Collapsed Item Totals - In Order View, when an item has accessories but the item is in a collapsed state (accessories are hidden) the total now reflects the item charge plus any charges for accessories inside it. Mousing over this total reveals the item's individual charge. Clicking on it expands the acessories below. This feature can be disabled in the extension settings panel.
 

@@ -6144,10 +6144,11 @@ function orderViewWeights(){
       // iterate through each key in subHireWeights
       Object.keys(subHireWeights).forEach((key) => {
         let supplierName = key;
+        let thisSupplierWeight = Math.round(subHireWeights[key]   * 100) / 100;
         if (supplierName == "null"){
           supplierName = "No Supplier";
         }
-        newHtmlString += `<br><span>${'&nbsp;'.repeat(3)}&#8627;</span><span class="subhire-member" data-member-id="${key}">${supplierName}</span><span>: ${subHireWeights[key]} ${weightUnit}</span>`;
+        newHtmlString += `<br><span>${'&nbsp;'.repeat(3)}&#8627;</span><span class="subhire-member" data-member-id="${key}">${supplierName}</span><span>: ${thisSupplierWeight} ${weightUnit}</span>`;
       });
       
 
