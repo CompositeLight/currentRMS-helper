@@ -1,4 +1,4 @@
-# currentRMS-helper 2.0.3
+# currentRMS-helper 2.0.5
 
 Below is a list of current features. It's the same information as the Readme change log, but listed "per area" to make it easier for new users to see what the extension adds.
 

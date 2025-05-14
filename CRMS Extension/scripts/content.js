@@ -6084,7 +6084,10 @@ function orderViewWeights(){
     let subWeightThisItem = 0;
 
     const isSubrent = (item.sub_rent === true) || (item.sub_rent === 'true');
-    const isProduct = (item.item_type == "Product");
+    //const isProduct = (item.item_type == "Product");
+    const isProduct = (item.transaction_type_name == "Rental" || item.transaction_type_name == "Sale");
+
+    
 
     if (isSubrent && isProduct) {
       item.item_assets.forEach(asset => {
