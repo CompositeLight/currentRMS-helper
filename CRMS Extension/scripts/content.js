@@ -6337,6 +6337,12 @@ async function availabilityScrapeNonDom(opp, start, end){
       .trim();
   }
 
+  function decodeHtmlEntities(str) {
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = str;
+    return textarea.value;
+  }
+
 
   var availabilityData = {};
 
@@ -6418,8 +6424,8 @@ async function availabilityScrapeNonDom(opp, start, end){
     );
     if (!bookingMatch) continue;
 
-    const productName = textFromHtml(bookingMatch[1]);
-    //console.log('Product Booking:', productName);
+    let productName = textFromHtml(bookingMatch[1]);
+    productName = decodeHtmlEntities(productName); // Decode HTML entities
 
     // all the period-of-day cells in the same row
     const periods = [...rowHtml.matchAll(
