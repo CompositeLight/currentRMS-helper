@@ -32,6 +32,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     console.log("Quarantines refresh requested.");
     retreiveQuarantines();
 
+  } else if (message.messageType == "forceAllStockUpdate"){
+    console.log("All stock update requested");
+    forceAllStockUpdate();
+
   } else if (message.messageType == "availabilityscape"){
       console.log("Availability scrape was requested for "+message.messageText);
       if (iAmScraping){
@@ -76,7 +80,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         chrome.tabs.query({}, function(tabs) {
           if (tabs.length > 0){
             tabs.forEach(function(tab) {
-                chrome.tabs.sendMessage(tab.id, message);
+                chrome.tabs.sendMessage(tab.id, messag, () => {/* swallow error */});
             });
           }
         });
@@ -95,7 +99,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         chrome.tabs.query({}, function(tabs) {
           if (tabs.length > 0){
             tabs.forEach(function(tab) {
-                chrome.tabs.sendMessage(tab.id, message);
+                chrome.tabs.sendMessage(tab.id, message, () => {/* swallow error */});
             });
           }
         });
@@ -106,7 +110,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         chrome.tabs.query({}, function(tabs) {
           if (tabs.length > 0){
             tabs.forEach(function(tab) {
-                chrome.tabs.sendMessage(tab.id, message);
+                chrome.tabs.sendMessage(tab.id, message, () => {/* swallow error */});
             });
           }
         });
@@ -117,7 +121,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       chrome.tabs.query({}, function(tabs) {
         if (tabs.length > 0){
           tabs.forEach(function(tab) {
-              chrome.tabs.sendMessage(tab.id, message);
+              chrome.tabs.sendMessage(tab.id, message, () => {/* swallow error */});
           });
         }
       });
@@ -128,7 +132,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         chrome.tabs.query({}, function(tabs) {
           if (tabs.length > 0){
             tabs.forEach(function(tab) {
-                chrome.tabs.sendMessage(tab.id, message);
+                chrome.tabs.sendMessage(tab.id, message, () => {/* swallow error */});
             });
           }
         });
@@ -137,7 +141,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         chrome.tabs.query({}, function(tabs) {
           if (tabs.length > 0){
             tabs.forEach(function(tab) {
-                chrome.tabs.sendMessage(tab.id, message);
+                chrome.tabs.sendMessage(tab.id, message, () => {/* swallow error */});
             });
           }
         });
@@ -147,7 +151,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         chrome.tabs.query({}, function(tabs) {
           if (tabs.length > 0){
             tabs.forEach(function(tab) {
-                chrome.tabs.sendMessage(tab.id, message);
+                chrome.tabs.sendMessage(tab.id, message, () => {/* swallow error */});
             });
           }
         });
@@ -156,7 +160,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         chrome.tabs.query({}, function(tabs) {
           if (tabs.length > 0){
             tabs.forEach(function(tab) {
-                chrome.tabs.sendMessage(tab.id, message);
+                chrome.tabs.sendMessage(tab.id, message, () => {/* swallow error */});
             });
           }
         });
@@ -165,7 +169,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     chrome.tabs.query({}, function(tabs) {
       if (tabs.length > 0){
         tabs.forEach(function(tab) {
-            chrome.tabs.sendMessage(tab.id, message);
+            chrome.tabs.sendMessage(tab.id, message, () => {/* swallow error */});
         });
       }
     });
@@ -177,7 +181,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         chrome.tabs.query({}, function(tabs) {
           if (tabs.length > 0){
             tabs.forEach(function(tab) {
-                chrome.tabs.sendMessage(tab.id, message);
+                chrome.tabs.sendMessage(tab.id, message, () => {/* swallow error */});
             });
           }
         });
@@ -192,7 +196,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     chrome.tabs.query({}, function(tabs) {
       if (tabs.length > 0){
         tabs.forEach(function(tab) {
-            chrome.tabs.sendMessage(tab.id, message);
+            chrome.tabs.sendMessage(tab.id, message, () => {/* swallow error */});
         });
       }
     });
@@ -842,6 +846,45 @@ async function checkApiDataStatus(){
 }
 
 
+async function forceAllStockUpdate() {
+  await recallApiDetails();
+
+  if (apiKey && apiSubdomain) {
+    // get the timestamp for the last apiData update
+    const result = await chrome.storage.local.get([`apidata-timestamp-${apiSubdomain}`]);
+    console.log(result);
+    if (result[`apidata-timestamp-${apiSubdomain}`] == undefined) {
+      console.log("No apiData time stamp set");
+      await updateApiData(600000);
+    } else {
+      const timeNow = new Date().getTime();
+      const timeStamped = parseInt(result[`apidata-timestamp-${apiSubdomain}`]);
+      await updateApiData(timeStamped);
+      chrome.tabs.query({}, function(tabs) {
+        if (tabs.length > 0) {
+          tabs.forEach(function(tab) {
+
+            try {
+              // Send a message to the content script in each tab
+              chrome.tabs.sendMessage(tab.id, "forceAllStockUpdateComplete", function(response) {});
+            }
+            catch (error) {
+              if (error.message.includes('Receiving end does not exist')) {
+                // fallback or retry logic
+              } else {
+                console.error(`Error sending message to tab ${tab.id}: ${error}`);
+              }
+            }
+
+          });
+        }
+      });
+  
+    }
+  }
+}
+
+
 
 
 // new function to update api data rather than download the whole thing
@@ -1235,8 +1278,7 @@ async function availabilityScrapeNonDom(opp, start, end){
     chrome.tabs.query({}, function(tabs) {
       if (tabs.length > 0){
         tabs.forEach(function(tab) {
-          chrome.runtime.sendMessage({messageType: "availabilityData", messageData: availabilityData, messageOpp: opp});
-       
+          chrome.tabs.sendMessage(tab.id, {messageType: "availabilityData", messageData: availabilityData, messageOpp: opp}, () => {/* swallow error */});
         });
       }
     });

@@ -21,6 +21,7 @@ document.querySelectorAll('td.optional-04.align-right.days-column').forEach(func
   thisCostTypeCell.classList.add("force-left", "cost-type-select-column");
   element.insertAdjacentElement('afterend', thisCostTypeCell);
 
+  element.style.display = "table-cell"; // Ensure the days column is displayed as a table cell
   
 });
 

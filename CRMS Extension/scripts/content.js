@@ -4038,6 +4038,35 @@ if (detailView){
 
     document.getElementById("nonshorts-button").addEventListener("click", nonShortsButton);
 
+    // New Reset Accessories button
+
+    // Find all <a> elements and filter by text content
+    var recalcA = Array.from(document.querySelectorAll('a')).find(a => a.textContent.trim() === "Recalculate");
+
+    if (recalcA) {
+
+        var recalcLi = recalcA.closest('li');
+    
+        // create a new li element
+        var newLi = document.createElement('li');
+        newLi.innerHTML = `
+        <i class="icn-cobra-shuffle"></i>
+        <a data-toggle="" id="check-accessories" href="#">Check Accessories</a>`;
+
+        // insert the new li after the recalcLi
+        recalcLi.parentNode.insertBefore(newLi, recalcLi.nextSibling);
+
+        // add event listener to the new li
+        newLi.addEventListener("click", function() {
+          console.log("Check Accessories clicked");
+          // send a message to the background script
+          chrome.runtime.sendMessage({messageType: "forceAllStockUpdate"});
+        });
+
+  }
+
+
+
   } catch (err){
     console.log(err);
   }
@@ -4395,15 +4424,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             }
           }
         }
-
-
-
-
       }
   }
-
-
-
 
 
   if (message.messageType == "productQtyData"){
@@ -4591,6 +4613,25 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     }
   }
+
+
+
+
+
+  if (message === "forceAllStockUpdateComplete") {
+
+    // reload allStock from local storage
+    chrome.storage.local.get(["allStock"]).then((result) => {
+      allStock = result.allStock;
+      console.log("All stock updated");
+      window.postMessage(
+        { source: 'extension', payload: {allStock: allStock, oppData: oppData, allProducts: allProducts, messageType: "updateAccessories"}},
+        '*'              // or the exact origin string if you can
+      );
+    }
+    );
+  }
+
 
 
 

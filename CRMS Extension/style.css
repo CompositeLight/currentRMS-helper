@@ -634,7 +634,7 @@ td.cost-type-select-column{
   min-width: 62px;
 }
 
-i.icn-cobra-coin{
+li.grid-body-row i.icn-cobra-coin{
   display: none !important;
 }
 

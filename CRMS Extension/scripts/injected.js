@@ -738,6 +738,34 @@
             });
 
 
+            // FUNCTION TO CHECK ACCESSORIES
+            window.addEventListener('message', (event) => {
+                if (event.source !== window) return;
+                if (!event.data || event.data.source !== 'extension') return;
+              
+                //console.log('injected.js got →', event.data.payload);
+
+       
+                
+                var oppData = event.data.payload.oppData;
+                oppData.opportunity_items.sort((a, b) => a.path.localeCompare(b.path));
+            
+                const allStock = JSON.parse(event.data.payload.allStock);
+                const allProducts = event.data.payload.allProducts;
+
+                console.log(allStock);
+                console.log(oppData);
+                console.log(allProducts);
+
+                accessoryCheck(allStock, allProducts, oppData);
+
+
+
+            });
+
+
+            
+
             // AJAX TEST FUNCTION
              // Function to tell the server to add the description
              function ajaxTest() {
@@ -816,3 +844,293 @@ function remove_overlay_spinner() {
 }
 
 
+
+
+async function accessoryCheck(allStock, allProducts, oppData) {
+
+    let itemsWithAccessoryIssues = [];
+    var hasIssue;
+
+    const itemsWithAccessories = new Set();
+
+    for (const item of oppData.opportunity_items) {
+        if (item.accessory_mode !== null){
+            itemsWithAccessories.add(item.parent_opportunity_item_id);
+        }
+    }
+
+    console.log('itemsWithAccessories', itemsWithAccessories);
+
+    for (const item of oppData.opportunity_items) {
+        hasIssue = false;
+        if (itemsWithAccessories.has(item.id)) {
+            console.log('item', item.name);
+            const product = allProducts.products.find(p => p.id === item.item_id);
+            if (product && product.accessories.length > 0) {
+
+                let accessoriesItshouldHave = [];
+                for (const accessory of product.accessories) {
+                    accessoriesItshouldHave.push({
+                        accessory_inclusion_type: accessory.inclusion_type,
+                        name: accessory.related_name,
+                        quantity: parseInt(accessory.quantity * item.quantity),
+                        weight: parseFloat(accessory.item.weight),
+                        price: parseFloat(accessory.item.rental_rate.price),
+                        item_id: accessory.item.id,
+                        sort_order: accessory.sort_order,
+                        zero_priced: accessory.zero_priced
+                    });
+                }
+
+
+                let accessoriesOfThisItem = [];
+                let accessoriesItHas = [];
+
+                // find all the accessories of this item (that have a parent_opportunity_item_id matching this item)
+                for (const thisItem of oppData.opportunity_items) {
+                    if (thisItem.parent_opportunity_item_id == item.id && thisItem.accessory_mode !== null){
+                        accessoriesOfThisItem.push(thisItem);
+                    }
+                }
+                
+
+                let n = 0;
+                for (const accessory of accessoriesOfThisItem) {
+            
+                    let thisZeroPrice = false;
+                    if (parseFloat(accessory.price) == 0){
+                        thisZeroPrice = true;
+                    }
+
+                    accessoriesItHas.push({
+                        accessory_inclusion_type: accessory.accessory_inclusion_type,
+                        name: accessory.name,
+                        quantity: parseFloat(accessory.quantity),
+                        weight: parseFloat(accessory.weight),
+                        price: parseFloat(accessory.price),
+                        item_id: accessory.item_id,
+                        sort_order: n,
+                        zero_priced: thisZeroPrice
+                    });
+
+                    n++;
+                }
+
+                console.log('accessoriesItshouldHave', accessoriesItshouldHave);
+                console.log('accessoriesItHas', accessoriesItHas);
+
+                // compare the two arrays and find the differences
+                var missingAccessories = [];
+                var extraAccessories = [];
+                var extraManualAccessories = [];
+                var differentQuantityAccessories = [];
+                var differentPriceAccessories = [];
+                var differentWeightAccessories = [];
+                var differentSortOrderAccessories = [];
+                var differentInclusionTypeAccessories = [];
+                var differentZeroPriceAccessories = [];
+                var differentNameAccessories = [];
+
+                
+               
+                for (const accessory of accessoriesItshouldHave) {
+                    const foundAccessory = accessoriesItHas.find(a => a.item_id === accessory.item_id);
+                    if (!foundAccessory) {
+                        if (accessory.accessory_inclusion_type !== 2){
+                            missingAccessories.push(accessory);
+                            hasIssue = true;
+                        }
+                    } else {
+                        if (foundAccessory.quantity !== accessory.quantity) {
+                            if (accessory.accessory_inclusion_type !== 2){
+                                differentQuantityAccessories.push({
+                                    name: accessory.name,
+                                    expected: accessory.quantity,
+                                    actual: foundAccessory.quantity,
+                                    item_id: accessory.item_id
+                                });
+                                hasIssue = true;
+                            }
+                        }
+                        if (foundAccessory.price !== accessory.price) {
+                            differentPriceAccessories.push({
+                                name: accessory.name,
+                                expected: accessory.price,
+                                actual: foundAccessory.price,
+                                item_id: accessory.item_id
+                            });
+                            if (foundAccessory.price > 0 && accessory.zero_priced == false){
+                                hasIssue = true;
+                            }
+                        }
+                        if (foundAccessory.weight !== accessory.weight) {
+                            differentWeightAccessories.push({
+                                name: accessory.name,
+                                expected: accessory.weight,
+                                actual: foundAccessory.weight,
+                                item_id: accessory.item_id
+                            });
+                            hasIssue = true;
+                        }
+                        if (foundAccessory.sort_order !== accessory.sort_order) {
+                            differentSortOrderAccessories.push({
+                                name: accessory.name,
+                                expected: accessory.sort_order,
+                                actual: foundAccessory.sort_order,
+                                item_id: accessory.item_id
+                            });
+                            hasIssue = true;
+                        }
+                        if (foundAccessory.accessory_inclusion_type !== accessory.accessory_inclusion_type) {
+                            differentInclusionTypeAccessories.push({
+                                name: accessory.name,
+                                expected: accessory.accessory_inclusion_type,
+                                actual: foundAccessory.accessory_inclusion_type,
+                                item_id: accessory.item_id
+                            });
+                            hasIssue = true;
+                        }
+                        if (foundAccessory.zero_priced !== accessory.zero_priced) {
+
+                            if (foundAccessory.price > 0 && accessory.zero_priced == true){
+                                differentZeroPriceAccessories.push({
+                                    name: accessory.name,
+                                    expected: accessory.zero_priced,
+                                    actual: foundAccessory.zero_priced,
+                                    item_id: accessory.item_id
+                                });
+                                
+                                hasIssue = true;
+                            }
+                        }
+                        if (foundAccessory.name !== accessory.name) {
+                            differentNameAccessories.push({
+                                name: accessory.name,
+                                expected: accessory.name,
+                                actual: foundAccessory.name,
+                                item_id: accessory.item_id
+                            });
+                            hasIssue = true;
+                        }
+
+                    }
+                }
+                for (const accessory of accessoriesItHas) {
+                    const foundAccessory = accessoriesItshouldHave.find(a => a.item_id === accessory.item_id);
+                    if (!foundAccessory && accessory.accessory_inclusion_type == 99) {
+                        extraManualAccessories.push(accessory);
+                    } else if (!foundAccessory) {
+                        extraAccessories.push(accessory);
+                        hasIssue = true;
+                    }
+                }
+                if (missingAccessories.length > 0) {
+                    console.log('missingAccessories', missingAccessories);
+                }
+                if (extraAccessories.length > 0) {
+                    console.log('extraAccessories', extraAccessories);
+                }
+                if (extraManualAccessories.length > 0) {
+                    console.log('extraManualAccessories', extraManualAccessories);
+                }
+                if (differentQuantityAccessories.length > 0) {
+                    console.log('differentQuantityAccessories', differentQuantityAccessories);
+                }
+                if (differentPriceAccessories.length > 0) {
+                    console.log('differentPriceAccessories', differentPriceAccessories);
+                }
+                if (differentWeightAccessories.length > 0) {
+                    console.log('differentWeightAccessories', differentWeightAccessories);
+                }
+                if (differentSortOrderAccessories.length > 0) {
+                    console.log('differentSortOrderAccessories', differentSortOrderAccessories);
+                }
+                if (differentInclusionTypeAccessories.length > 0) {
+                    console.log('differentInclusionTypeAccessories', differentInclusionTypeAccessories);
+                }
+                if (differentZeroPriceAccessories.length > 0) {
+                    console.log('differentZeroPriceAccessories', differentZeroPriceAccessories);
+                }
+                if (differentNameAccessories.length > 0) {
+                    console.log('differentNameAccessories', differentNameAccessories);
+                }
+
+            }
+        }
+
+        if (hasIssue) {
+            console.log(`Item ${item.id} (${item.name}) has accessory issues`);
+            itemsWithAccessoryIssues.push({
+                item_id: item.id,
+                name: item.name,
+                missingAccessories: missingAccessories,
+                extraAccessories: extraAccessories,
+                extraManualAccessories: extraManualAccessories,
+                differentQuantityAccessories: differentQuantityAccessories,
+                differentPriceAccessories: differentPriceAccessories,
+                differentWeightAccessories: differentWeightAccessories,
+                differentSortOrderAccessories: differentSortOrderAccessories,
+                differentInclusionTypeAccessories: differentInclusionTypeAccessories,
+                differentZeroPriceAccessories: differentZeroPriceAccessories,
+                differentNameAccessories: differentNameAccessories,
+                item: item
+            });
+        }
+
+
+    }
+    console.log('itemsWithAccessoryIssues', itemsWithAccessoryIssues);
+    if (itemsWithAccessoryIssues.length > 0) {
+
+        let alertText = `There are ${itemsWithAccessoryIssues.length} item(s) with accessory issues:\n`;
+
+        itemsWithAccessoryIssues.forEach(item => {
+            alertText += `\n• ${item.name}\n`;
+            item.differentInclusionTypeAccessories.forEach(accessory => {
+                alertText += `  - ${accessory.name} (Inclusion Type: ${accessory.expected} -> ${accessory.actual})\n`;
+            }
+            );
+            item.missingAccessories.forEach(accessory => {
+                alertText += `  - Missing: ${accessory.name}\n(Expected: ${accessory.quantity})\n`;
+            }
+            );
+            item.extraAccessories.forEach(accessory => {
+                alertText += `  - Extra: ${accessory.name}\n(Actual: ${accessory.actual})\n`;
+            }
+            );
+            item.extraManualAccessories.forEach(accessory => {
+                alertText += `  - Extra Manual: ${accessory.name}\n(Actual: ${accessory.actual})\n`;
+            }
+            );
+            item.differentQuantityAccessories.forEach(accessory => {
+                alertText += `  - Different Quantity: ${accessory.name}\n(Expected: ${accessory.expected}, Actual: ${accessory.actual})\n`;
+            }
+            );
+            item.differentPriceAccessories.forEach(accessory => {
+                alertText += `  - Different Price: ${accessory.name}\n(Expected: ${accessory.expected}, Actual: ${accessory.actual})\n`;
+            }
+            );
+            item.differentWeightAccessories.forEach(accessory => {
+                alertText += `  - Different Weight: ${accessory.name}\n(Expected: ${accessory.expected}, Actual: ${accessory.actual})\n`;
+            }
+            );
+            item.differentSortOrderAccessories.forEach(accessory => {
+                alertText += `  - Different Sort Order: ${accessory.name}\n(Expected: ${accessory.expected}, Actual: ${accessory.actual})\n`;
+            }
+            );
+            item.differentZeroPriceAccessories.forEach(accessory => {
+                alertText += `  - Different Zero Price: ${accessory.name}\n(Expected: ${accessory.expected}, Actual: ${accessory.actual})\n`;
+            }
+            );
+            item.differentNameAccessories.forEach(accessory => {
+                alertText += `  - Different Name: ${accessory.name}\n(Expected: ${accessory.expected}, Actual: ${accessory.actual})\n`;
+            }
+            );
+
+        });
+
+        alert(alertText);
+    } else {
+        alert (`No accessory issues detected`);
+    }
+}
