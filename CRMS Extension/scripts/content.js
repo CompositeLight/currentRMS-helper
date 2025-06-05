@@ -237,6 +237,13 @@ if (editContainerView){
 
 
 
+
+
+
+
+
+
+
 // If in a detail/order/check in view create the modal ready for reference image.
 if (detailView || orderView || globalCheckinView){
   // Create the modal element
@@ -3157,6 +3164,9 @@ const observer = new MutationObserver((mutations) => {
     mutation.addedNodes.forEach((node) => {
       if (node.classList?.contains("toast")){
 
+        // check if the sidebar element needs resetting
+        addHelperSidebar();
+
         // Overide the css display properties of the toast container so that it is readable if it overflows the height of the window.
         var theToastcontainer = document.getElementById("toast-container");
         theToastcontainer.style.overflowY = "scroll";
@@ -4912,137 +4922,139 @@ function activeIntercept(){
 
     // BOOK OUT //
     // Event listener for the scanbox in the Book Out panel
-    bookoutScanBox.addEventListener("keypress", function(event) {
-      if (event.key === "Enter") {
-        var myScan = bookoutScanBox.value;
-        console.log(myScan);
-        console.log(containerScan);
-        console.log(bookOutContainers);
+    if (bookoutScanBox){
+      bookoutScanBox.addEventListener("keypress", function(event) {
+        if (event.key === "Enter") {
+          var myScan = bookoutScanBox.value;
+          console.log(myScan);
+          console.log(containerScan);
+          console.log(bookOutContainers);
 
-        if (myScan.toLowerCase() != "revert" && revertScan){
-          // we have prompted the user for an item to revert
-          event.preventDefault();
-          resetScanBox();
-          listAssets();
-          if (assetsOnTheJob.includes(myScan)){
-            clickAndRevert(myScan);
-            revertScan = false;
-          } else {
-            errorSound();
-            revertScan = false;
-            makeToast("toast-error", "Failed to revert "+myScan+" because it is not currently allocated.");
-            sayWord("Failed to revert. Not on the job.")
-          }
-
-        } else if (myScan.toLowerCase() != "remove" && removeScan){
+          if (myScan.toLowerCase() != "revert" && revertScan){
             // we have prompted the user for an item to revert
             event.preventDefault();
             resetScanBox();
             listAssets();
             if (assetsOnTheJob.includes(myScan)){
-              removeAsset(myScan);
-              removeScan = false;
+              clickAndRevert(myScan);
+              revertScan = false;
             } else {
               errorSound();
-              removeScan = false;
-              makeToast("toast-error", "Failed to remove "+myScan+" because it is not currently allocated.");
-              sayWord("Failed to remove. Not on the job.");
+              revertScan = false;
+              makeToast("toast-error", "Failed to revert "+myScan+" because it is not currently allocated.");
+              sayWord("Failed to revert. Not on the job.")
             }
 
-        } else if (containerExists(myScan) && bookOutContainers && !containerScan){
-          if (myScan == boContainerBox.value && boContainerBox.value != "") {
-            // we scanned an asset that is already set as the current container, which means "clear the container field"
-            containerScan = false;
-            shortAlertSound();
-            sayWord("Container cleared.")
-            containerBox.value = '';
-            boContainerBox.value = '';
-            event.preventDefault();
-            makeToast("toast-info", "Container cleared.", 5);
-            resetScanBox();
-          } else {
-            bookOutNested(myScan);
-          }
-        // In the case that we have scanned a *container* barcode
-        } else if (myScan.toLowerCase() == "container"){
-          if (containerScan){
-            // Means the user scanned *container* twice and we want to clear the container field
-            containerScan = false;
-            shortAlertSound();
-            sayWord("Container cleared.")
-            containerBox.value = '';
-            boContainerBox.value = '';
-            event.preventDefault();
-            makeToast("toast-info", "Container cleared.", 5);
-            resetScanBox();
-          } else {
-            // We need to prompt the user to scan a container
-            event.preventDefault();
-            sayWord("Scan container");
-            containerScan = true;
-            makeToast("toast-info", "Now scan the container.", 5);
-            resetScanBox();
-          }
-
-        }else if (containerScan){
-          // we are set to receive a value for the container field.
-          listAssets();
-          if (assetsOnTheJob.includes(myScan)){
-            // the container is already listed on the opportunity
-            event.preventDefault();
-            containerScan = false;
-            scanSound();
-            boContainerBox.value = myScan;
-            makeToast("toast-info", "Container set to "+containerBox.value, 5);
-            resetScanBox();
-            setTimeout(sayWord("Container set."), 500);
-
-          } else {
-            // the container is not yet allocated.
-            containerScan = false;
-            // this will go through and error because the asset isn't allocated
-          }
-
-        } else if (myScan.toLowerCase() === 'remove'){
-          // this is a special scan to invoke remove on an item
-            if (removeScan){ // Means double scan of *revert*
+          } else if (myScan.toLowerCase() != "remove" && removeScan){
+              // we have prompted the user for an item to revert
               event.preventDefault();
-              sayWord("Remove cancelled.");
-              removeScan = false;
-              makeToast("toast-info", "Remove scan cancelled.", 5);
+              resetScanBox();
+              listAssets();
+              if (assetsOnTheJob.includes(myScan)){
+                removeAsset(myScan);
+                removeScan = false;
+              } else {
+                errorSound();
+                removeScan = false;
+                makeToast("toast-error", "Failed to remove "+myScan+" because it is not currently allocated.");
+                sayWord("Failed to remove. Not on the job.");
+              }
+
+          } else if (containerExists(myScan) && bookOutContainers && !containerScan){
+            if (myScan == boContainerBox.value && boContainerBox.value != "") {
+              // we scanned an asset that is already set as the current container, which means "clear the container field"
+              containerScan = false;
+              shortAlertSound();
+              sayWord("Container cleared.")
+              containerBox.value = '';
+              boContainerBox.value = '';
+              event.preventDefault();
+              makeToast("toast-info", "Container cleared.", 5);
+              resetScanBox();
+            } else {
+              bookOutNested(myScan);
+            }
+          // In the case that we have scanned a *container* barcode
+          } else if (myScan.toLowerCase() == "container"){
+            if (containerScan){
+              // Means the user scanned *container* twice and we want to clear the container field
+              containerScan = false;
+              shortAlertSound();
+              sayWord("Container cleared.")
+              containerBox.value = '';
+              boContainerBox.value = '';
+              event.preventDefault();
+              makeToast("toast-info", "Container cleared.", 5);
+              resetScanBox();
+            } else {
+              // We need to prompt the user to scan a container
+              event.preventDefault();
+              sayWord("Scan container");
+              containerScan = true;
+              makeToast("toast-info", "Now scan the container.", 5);
+              resetScanBox();
+            }
+
+          }else if (containerScan){
+            // we are set to receive a value for the container field.
+            listAssets();
+            if (assetsOnTheJob.includes(myScan)){
+              // the container is already listed on the opportunity
+              event.preventDefault();
+              containerScan = false;
+              scanSound();
+              boContainerBox.value = myScan;
+              makeToast("toast-info", "Container set to "+containerBox.value, 5);
+              resetScanBox();
+              setTimeout(sayWord("Container set."), 500);
+
+            } else {
+              // the container is not yet allocated.
+              containerScan = false;
+              // this will go through and error because the asset isn't allocated
+            }
+
+          } else if (myScan.toLowerCase() === 'remove'){
+            // this is a special scan to invoke remove on an item
+              if (removeScan){ // Means double scan of *revert*
+                event.preventDefault();
+                sayWord("Remove cancelled.");
+                removeScan = false;
+                makeToast("toast-info", "Remove scan cancelled.", 5);
+                // block to clear the allocate box after an intercept
+                resetScanBox();
+              } else {
+                // We need to prompt the user to scan the item to be reverted
+                event.preventDefault();
+                sayWord("Scan item to remove");
+                removeScan = true;
+                makeToast("toast-info", "Scan the item to be removed.", 5);
+                // block to clear the allocate box after an intercept
+                resetScanBox();
+              }
+          } else if (myScan.toLowerCase() === 'revert'){
+            // this is a special scan to invoke revert status on an item
+            if (revertScan){ // Means double scan of *revert*
+              event.preventDefault();
+              sayWord("Revert cancelled.");
+              revertScan = false;
+              makeToast("toast-info", "Revert scan cancelled.", 5);
               // block to clear the allocate box after an intercept
               resetScanBox();
             } else {
               // We need to prompt the user to scan the item to be reverted
               event.preventDefault();
-              sayWord("Scan item to remove");
-              removeScan = true;
-              makeToast("toast-info", "Scan the item to be removed.", 5);
+              sayWord("Scan item to revert");
+              revertScan = true;
+              makeToast("toast-info", "Scan the item to be reverted.", 5);
               // block to clear the allocate box after an intercept
               resetScanBox();
             }
-        } else if (myScan.toLowerCase() === 'revert'){
-          // this is a special scan to invoke revert status on an item
-          if (revertScan){ // Means double scan of *revert*
-            event.preventDefault();
-            sayWord("Revert cancelled.");
-            revertScan = false;
-            makeToast("toast-info", "Revert scan cancelled.", 5);
-            // block to clear the allocate box after an intercept
-            resetScanBox();
-          } else {
-            // We need to prompt the user to scan the item to be reverted
-            event.preventDefault();
-            sayWord("Scan item to revert");
-            revertScan = true;
-            makeToast("toast-info", "Scan the item to be reverted.", 5);
-            // block to clear the allocate box after an intercept
-            resetScanBox();
           }
-        }
 
-      } // end of "Enter" event on Book Out panel
-    });
+        } // end of "Enter" event on Book Out panel
+      });
+    };
   }
 }
 
@@ -6671,21 +6683,118 @@ function applyNestedCharges(){
     // check if the li has the class "dd-collapsed"
     if (item.classList.contains("dd-collapsed") && nestedTotals){
       // if it does, find the child element td.item-total
-      var totalElement = item.querySelector('span.popover_help');
-      //set the inner text
-      if (totalElement){
-        totalElement.innerText = `${currencyPrefix}${parseFloat(item.dataset.nestedcharge).toFixed(2)}`;
-        totalElement.classList.add("nested-charge");
+      var type = item.querySelector('.type-column').innerText.trim();
+      console.log(type);
+      if (type == "Sale"){
+        var totalElement = item.querySelector('span.popover-help-added');
+        //set the inner text
+        if (totalElement){
+          totalElement.firstChild.nodeValue = `${currencyPrefix}${parseFloat(item.dataset.nestedcharge).toFixed(2)}`;
+          totalElement.classList.add("nested-charge");
+        }
+
+
+
+
+      } else {
+        var totalElement = item.querySelector('span.popover_help');
+        //set the inner text
+        if (totalElement){
+          totalElement.innerText = `${currencyPrefix}${parseFloat(item.dataset.nestedcharge).toFixed(2)}`;
+          totalElement.classList.add("nested-charge");
+        }
       }
+      
     } else {
-      // if it does, find the child element td.item-total
-      var totalElement = item.querySelector('span.popover_help');
-      //set the inner text
-      if (totalElement){
-        totalElement.innerText = `${currencyPrefix}${parseFloat(item.dataset.originalcharge).toFixed(2)}`;
-        totalElement.classList.remove("nested-charge");
-      }
+      // if it does not... Group is expanded, so we need to show the original charge
+      var type = item.querySelector('.type-column').innerText.trim();
+      console.log(type);
+      if (type == "Sale"){
+        var totalElement = item.querySelector('span.popover-help-added');
+        if (totalElement){
+          totalElement.firstChild.nodeValue = `${currencyPrefix}${parseFloat(item.dataset.originalcharge).toFixed(2)}`;
+          totalElement.classList.remove("nested-charge");
+        }
+      } else {
+        var totalElement = item.querySelector('span.popover_help');
+        //set the inner text
+        if (totalElement){
+          totalElement.innerText = `${currencyPrefix}${parseFloat(item.dataset.originalcharge).toFixed(2)}`;
+          totalElement.classList.remove("nested-charge");
+        }
     }
+      }
+
+      
 
   });
 }
+
+
+addHelperSidebar();
+
+// function to add a CurrentRMS Helper section to the sidebar
+
+
+
+function addHelperSidebar(){
+  
+  const sidebar = document.getElementById("sidebar_content");
+  if (sidebar){
+    const existingSection = document.getElementById("helper_sidebar");
+    if (existingSection) {
+      // if there's already a section, quit
+      return;
+    }
+
+    var manifestData = chrome.runtime.getManifest();
+    let newDiv = document.createElement('div');
+    newDiv.id = "helper_sidebar";
+    newDiv.classList.add("group-side-content");
+    newDiv.innerHTML = `
+<h3>
+CurrentRMS Helper
+</h3>
+<a class="toggle-button expand-arrow icn-cobra-contract" href="#"></a>
+<ul class="" id="helper_sidebar_list">
+  <li>
+    <i class="icn-cobra-cog"></i><span>Version: ${manifestData.version}</span>
+  </li>
+
+  <li>
+    <i class="icn-cobra-file-4"></i><a href="https://github.com/CompositeLight/currentRMS-helper/blob/main/README.md" target="new">Release Notes</a>
+  </li>
+
+  
+
+  <li>
+    <i class="icn-cobra-email"></i><a href="https://github.com/CompositeLight/currentRMS-helper/issues" target="new">Report Issue / Make Suggestion</a>
+  </li>
+</ul>`;
+
+    // append to sidebar
+    sidebar.appendChild(newDiv);
+
+    const toggleButton = newDiv.querySelector('.toggle-button');
+    const helperList = newDiv.querySelector('#helper_sidebar_list');
+    // Adjust the display property for the initial state
+    helperList.style.display = 'block';
+    toggleButton.onclick = function (event) {
+      event.preventDefault();
+      if (helperList.style.display === 'none' || helperList.style.display === '') {
+        helperList.style.display = 'block';
+        toggleButton.classList.remove('icn-cobra-expand');
+        toggleButton.classList.add('icn-cobra-contract');
+      } else {
+        helperList.style.display = 'none';
+        toggleButton.classList.remove('icn-cobra-contract');
+        toggleButton.classList.add('icn-cobra-expand');
+      }
+    };
+    // Add inline style for the toggle-button size
+    toggleButton.style.fontSize = '14px'; // Adjust the size as needed
+
+  }
+}
+
+
