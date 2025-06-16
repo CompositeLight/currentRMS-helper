@@ -1892,10 +1892,15 @@ function findClosestLi(element) {
 
 function sayWord(speakWord){
   if (!muteExtensionSounds){
-    var msg = new SpeechSynthesisUtterance();
-    msg.rate = 0.8; // 0.1 to 10
-    msg.text = speakWord;
-    window.speechSynthesis.speak(msg);
+    console.log("Speaking: "+speakWord);
+
+    chrome.runtime.sendMessage({action: 'speak', text: speakWord}, response => {
+      if (response?.spoken) {
+        console.log('Speech complete');
+      }
+    });
+
+ 
   }
 }
 
@@ -3218,6 +3223,7 @@ const observer = new MutationObserver((mutations) => {
 
       // log the message
       console.log("Toast message: " + messageText);
+      console.log(muteExtensionSounds);
 
       // Now respond to  toastMessages depending on their contents
 
@@ -3281,19 +3287,29 @@ const observer = new MutationObserver((mutations) => {
         errorSound();
         destroyAfterTime(toastMessage, errorTimeout);
 
+
       // Handle errors related to items being already scanned, or just not on the job at all
     } else if (messageText.includes('No available asset could be found using') || messageText.includes("No allocated or reserved stock allocations could be found using")  || messageText.includes("has already been selected on this opportunity.") ) {
-
+     
           // check if it's already on the job.
           theAsset = extractAsset(messageText);
           listAssets();
           if (assetsOnTheJob.includes(theAsset)){
             // Means it's already allocated / scanned
-            theAsset = extractAssetToSay(messageText);
-            setTimeout(function() {
-              sayWord("Already scanned "+theAsset);
-              console.log(messageText);
-            }, 900);
+            if (theAsset == wrongItem){
+              // second scan of same item
+              theAsset = extractAssetToSay(messageText);
+              setTimeout(function() {
+                sayWord("Already scanned "+theAsset);
+                console.log(messageText);
+              }, 900);
+            } else {
+              wrongItem = theAsset;
+              setTimeout(function() {
+                sayWord("Already scanned");
+                console.log(messageText);
+              }, 900);
+            }
           } else {
             // asset isn't on the job at all.
             theAsset = extractAssetToSay(messageText);
@@ -3319,19 +3335,33 @@ const observer = new MutationObserver((mutations) => {
         listAssets();
         if (assetsBookedOut.includes(theAsset)){
           // Means it's already booked out
-          theAsset = extractAssetToSay(messageText);
-          setTimeout(function() {
-            sayWord("Already booked out "+theAsset);
-            console.log(messageText);
-          }, 900);
-
-
+          if (theAsset == wrongItem){
+            // second scan of same item
+            theAsset = extractAssetToSay(messageText);
+            setTimeout(function() {
+              sayWord("Already booked out "+theAsset);
+              console.log(messageText);
+            }, 900);
+          } else {
+            wrongItem = theAsset;
+            setTimeout(function() {
+              sayWord("Already booked out");
+              console.log(messageText);
+            }, 900);
+          }
         } else {
-        theAsset = extractAssetToSay(messageText);
-        setTimeout(function() {
-          sayWord(theAsset +" is not on the job.");
-          console.log(messageText);
-        }, 900);
+          if (theAsset == wrongItem){
+            setTimeout(function() {
+              sayWord("Not on the job.");
+              console.log(messageText);
+            }, 900);
+          } else {
+            theAsset = extractAssetToSay(messageText);
+            setTimeout(function() {
+              sayWord(theAsset +" is not on the job.");
+              console.log(messageText);
+            }, 900);
+          }
       }
       destroyAfterTime(toastMessage, errorTimeout);
 
@@ -3360,13 +3390,24 @@ const observer = new MutationObserver((mutations) => {
         // code block
       }
 
+    } else if (messageText.includes('Blocked from allocating a quarantined asset.')){
+      setTimeout(function() {
+        sayWord("Quarantined asset.");
+        console.log(messageText);
+      }, 900);
+      errorSound();
+      destroyAfterTime(toastMessage, errorTimeout);
+
+
+
 
       // Handle an error where an item cannot be added because it's a container that's already allocated
     } else if (messageText.slice(11) == 'A temporary container cannot be allocated while it has a live allocation on an opportunity'){
             setTimeout(function() {
               sayWord("Container already allocated");
               console.log(messageText);
-      }, 900);
+            }, 900);
+            destroyAfterTime(toastMessage, errorTimeout);
 
       // Handle a warning about stock shortage
     } else if (messageText.includes("A shortage exists for the Rental of Product")){
@@ -4715,6 +4756,11 @@ function activeIntercept(){
 
         var myScan = allocateScanBox.value;
 
+        // edit myScan to be only the first word of the string retreived
+        myScan = myScan.split(" ")[0].trim();
+
+        console.log("Intercepted scan: " + myScan);
+
         if (myScan.toLowerCase() != "revert" && revertScan){
           // we have prompted the user for an item to revert
           event.preventDefault();
@@ -4758,8 +4804,8 @@ function activeIntercept(){
                 console.log(quarantineId);
               }
 
-              makeToast("toast-error", "Failed to allocate asset(s)");
-              makeToast("toast-error", "Asset "+myScan+" is in quarantine.<br><br><a class='toast-link' href='https://"+apiSubdomain+".current-rms.com/quarantines/"+quarantineId+"' target='_blank'>View Record</a>");
+              makeToast("toast-error", "Blocked from allocating a quarantined asset.");
+              makeToast("toast-error", "Asset "+myScan+" is in quarantine.<p><a class='toast-link' href='https://"+apiSubdomain+".current-rms.com/quarantines/"+quarantineId+"' target='_blank'>View Record</a>");
               resetScanBox();
           } else if (quarantinedItemList.includes(myScan) && !blockQuarantines){
                 // this item is in quarantine but we're set to allow it through
@@ -6758,7 +6804,7 @@ CurrentRMS Helper
 <a class="toggle-button expand-arrow icn-cobra-contract" href="#"></a>
 <ul class="" id="helper_sidebar_list">
   <li>
-    <i class="icn-cobra-cog"></i><span>Version: ${manifestData.version}</span>
+    <i class="icn-cobra-cog" id="helper-test-cog"></i><span>Version: ${manifestData.version}</span>
   </li>
 
   <li>
@@ -6774,6 +6820,25 @@ CurrentRMS Helper
 
     // append to sidebar
     sidebar.appendChild(newDiv);
+
+    //add click hander to helper-test-cog
+    const helperTestCog = newDiv.querySelector('#helper-test-cog');
+    
+    
+    helperTestCog.onclick = function (event) {
+      chrome.runtime.sendMessage({action: 'speak', text: 'Hello world!'}, response => {
+        if (response?.spoken) {
+          console.log('Speech complete');
+        }
+      });
+    };
+
+
+
+
+
+
+
 
     const toggleButton = newDiv.querySelector('.toggle-button');
     const helperList = newDiv.querySelector('#helper_sidebar_list');

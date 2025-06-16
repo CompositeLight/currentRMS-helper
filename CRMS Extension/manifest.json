@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "CurrentRMS Helper",
-  "version": "2.0.8",
+  "version": "2.0.9",
   "description": "Adding functionality to Current RMS, one reduced click at a time.",
   "icons": {
     "16": "images/icon-16.png",
@@ -14,7 +14,7 @@
   },
 
 
-  "permissions": ["activeTab", "tabs", "scripting", "ttsEngine", "storage", "unlimitedStorage"],
+  "permissions": ["activeTab", "tabs", "scripting", "ttsEngine", "storage", "unlimitedStorage", "tts"],
 
   "host_permissions": [
       "https://api.current-rms.com/*"

@@ -1,4 +1,4 @@
-# currentRMS-helper 2.0.8
+# currentRMS-helper 2.0.9
 This is a Chrome extension to add functionality to the CurrentRMS web interface. It was created out of our frustration waiting on "quality of life" modifications to make the user experience better. Since making it available online, I've been blown away by how many users and businesses have started using it on a daily basis. I'm really grateful to the many users who have contributed ideas, or pointed out bugs with the extension.
 
 The extension is free to all, but as a few people have asked, if you really want to [buy me a cup of coffee / tea / beer](https://paypal.me/garethrisdale) you can use this link.
@@ -37,6 +37,12 @@ For a full list of the extension's features, check out the [Features.md](/Featur
 ## New Features / Updates
 
 ** NEW MAJOR VERSION 2.0.0 - PLEASE TEST WITH CAUTION AND REPORT ISSUES **
+
+- FIXED: 2.0.9 - Since a Chrome update, the voice prompts have been randomly breaking for some users. I've re-coded how the voice is generated, which should now be more reliable.
+
+- FIXED: 2.0.9 - A bug where quarantined assets could sometimes be allocated if the inbuilt auto-complete added text to the scan box.
+
+- NEW: 2.0.9 - Global Search Asset Shortcut will now only trigger if there is a single matching search result (the item). This is to prevent unexpected triggering when the opporunity ID happens to clash with an item ID.
 
 - NEW: 2.0.8 - Added a side bar section to show version info, with links to the github issues page.
 

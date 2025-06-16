@@ -1290,3 +1290,22 @@ async function availabilityScrapeNonDom(opp, start, end){
   console.log("Availability nonDom took " + (thisEnded - thisStarted) + "ms");
       
 }
+
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg.action === 'speak') {
+    chrome.tts.speak(msg.text, {
+      enqueue: false,         // whether to wait for any ongoing speech to finish
+      rate: 1.0,              // 0.1–10
+      pitch: 1.0,             // 0–2
+      volume: 1.0,            // 0–1
+      lang: 'en-GB',          // BCP-47 language tag
+      voiceName: ''           // get available voices via chrome.tts.getVoices()
+    }, () => {
+      if (chrome.runtime.lastError)
+        console.error(chrome.runtime.lastError.message);
+      else
+        sendResponse({spoken: true});
+    });
+    return true; // indicates we’ll call sendResponse asynchronously
+  }
+});
