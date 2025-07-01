@@ -358,6 +358,7 @@ span.loss-warning {
   text-align: right;
   color: grey;
   font-style: italic;
+  user-select: none;
 }
 
 .avail-short{

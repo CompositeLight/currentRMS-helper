@@ -92,6 +92,7 @@ let oppData = {opportunity_items:[], meta:[]}
 
 quarantineData = {quarantines:[], meta:[]};
 quarantinedItemList = [];
+quarantineCounts = [];
 
 
 console.log(`Content.js was triggered at ${performance.now()}ms`);
@@ -231,7 +232,67 @@ if (editContainerView){
 }
 
 
+// Code chunk to enable auto-scrolling to last position in Order or Detail View.
+if (detailView){
 
+  var currentView = "detail";
+  
+  chrome.storage.local.get(["last-scroll"]).then((result) => {
+      if (result){
+        console.log(result);
+        if (result["last-scroll"].opp == opportunityID && result["last-scroll"].view == currentView){
+          console.log("Reloading filters!");
+
+          if (result["last-scroll"].notesHidden == true){
+            document.getElementById("notes-button").click();
+          }
+
+          if (result["last-scroll"].preparedHidden == true){
+            document.getElementById("prepared-button").click();
+          }
+
+          if (result["last-scroll"].bookedOutHidden == true){
+            document.getElementById("booked-out-button").click();
+          }
+
+          if (result["last-scroll"].checkedInHidden == true){
+            document.getElementById("checked-in-button").click();
+          }
+
+          if (result["last-scroll"].bulkOnly == true){
+            document.getElementById("bulk-button").click();
+          }
+
+          if (result["last-scroll"].subhiresHidden == true){
+            document.getElementById("subhires-button").click();
+          }
+
+          if (result["last-scroll"].nonsubsHidden == true){
+            document.getElementById("nonsubs-button").click();
+          }
+
+          if (result["last-scroll"].nonShortsHidden == true){
+            document.getElementById("nonshorts-button").click();
+          }
+
+        } else {
+
+        }
+      }
+  });
+
+  // Save scroll position on click
+  document.addEventListener('click', () => {
+
+      var currentView = "detail";
+      
+
+      chrome.storage.local.set({ 'last-scroll': {opp: opportunityID, view: currentView, notesHidden: notesHidden, preparedHidden: preparedHidden, bookedOutHidden: bookedOutHidden, checkedInHidden:checkedInHidden, bulkOnly: bulkOnly, subhiresHidden: subhiresHidden, nonsubsHidden: nonsubsHidden, nonShortsHidden: nonShortsHidden} }).then(() => {
+         console.log("Saved filters updated");
+      });
+  });
+
+}
 
 
 
@@ -425,7 +486,8 @@ if (detailView || orderView || globalCheckinView){
       const quarantinesString = result.quarantineData;
       quarantineData = JSON.parse(quarantinesString);
       console.log("Retrieved quarantine data from storage");
-      //console.log(quarantineData);
+      console.log(quarantineData);
+      console.log(typeof quarantineData);  
 
       quarantinedItemList = [];
       for (let n = 0; n < quarantineData.quarantines.length; n++) {
@@ -434,6 +496,42 @@ if (detailView || orderView || globalCheckinView){
       }
       console.log("List of quarantined items was created.");
 
+      function tallyByNameAndStatus(data) {
+        return data.reduce((acc, { name, quantity, quarantine_type }) => {
+          // coerce quantity to a number
+          const qty = Number(quantity) || 0;
+          // coerce type to number too
+          const type = typeof quarantine_type === 'string'
+            ? parseInt(quarantine_type, 10)
+            : quarantine_type;
+      
+          // decide which bucket this entry goes into
+          let bucket;
+          if (type == 1) {
+            bucket = 'lost';
+          } else if (type == 2) {
+            bucket = 'damaged';
+          } else if (type == 3) {
+            bucket = 'service';
+          } else {
+            // ignore any other types
+            return acc;
+          }
+      
+          // initialize the name grouping if needed
+          if (!acc[name]) {
+            acc[name] = { lost: 0, damaged: 0, service: 0 };
+          }
+      
+          // add to the right bucket
+          acc[name][bucket] += qty;
+          return acc;
+        }, {});
+      }
+      
+
+      quarantineCounts = tallyByNameAndStatus(quarantineData.quarantines);
+      console.log(quarantineCounts);
     }
   });
 
@@ -788,6 +886,14 @@ if (editOppView){
 
 // Function to add inspector details and item descriptions to the Details page
 async function addDetails(mode) {
+  // send message to injected code
+  window.postMessage({
+    source: 'MY_EXTENSION',
+    type: 'add-details',
+    payload: { foo: 'bar' }
+  }, '*');
+
+
   if (!addDetailsRunning){
     
     
@@ -3110,6 +3216,15 @@ function listToastPosts() {
       // write in the editted list
       listTarget.innerHTML = newList;
 
+    } else if (toastPosts[0].includes("Quarantine book out successful")){
+      // tell the service worker to refresh quarantine data
+      console.log("Quarantine book out successful, refreshing quarantines");
+      chrome.runtime.sendMessage("refreshQuarantines");
+
+    } else if (toastPosts[0].includes("Quarantine was successfully created")){
+      console.log("Quarantine was successfully created, refreshing quarantines");
+      // tell the service worker to refresh quarantine data
+      chrome.runtime.sendMessage("refreshQuarantines");
 
     } else if (toastPosts.includes("Failed to revert the status of the allocation(s)")){
       error_sound.play();
@@ -5554,7 +5669,6 @@ function addAvailability(data) {
       var theProd = div.querySelector('a');
       if (theProd){
 
-
         // Check if the div's innerText is a key in the data object
         if (data.hasOwnProperty(theProd.innerText.trim())) {
             // Find the parent row of the div
@@ -5569,16 +5683,26 @@ function addAvailability(data) {
 
                     // If the 'availability-count' span exists, update its innerText
                     if (availabilityCell) {
+
+              
                       var availabilitySpan = availabilityCell.querySelector('.availability-count');
                       var avail = data[theProd.innerText.trim()];
                       if (avail < 0){
                         availabilitySpan.classList.add("avail-short");
                         availabilitySpan.classList.remove("avail-good");
+                        if (quarantineCounts.hasOwnProperty(theProd.innerText.trim())) {
+                        availabilitySpan.classList.add("popover-help-added", "days-tooltip");
+                        availabilitySpan.innerHTML = `${avail}<span class="days-tooltiptext"><u>Quarantines</u><br>Lost: ${quarantineCounts[theProd.innerText.trim()].lost}<br>Damaged: ${quarantineCounts[theProd.innerText.trim()].damaged}<br>Damaged: ${quarantineCounts[theProd.innerText.trim()].service}</span>`;
+                        } else {
+                          availabilitySpan.innerHTML = `${avail}`;
+                        }
                       } else {
                         availabilitySpan.classList.remove("avail-short");
                         availabilitySpan.classList.add("avail-good");
+                        availabilitySpan.classList.remove("popover-help-added", "days-tooltip");
+                        availabilitySpan.innerHTML = avail;
                       }
-                      availabilitySpan.innerText = avail;
+                      
                     } else {
                         // If the 'availability-count' span does not exist, create it, append it to the status cell, and set its value
                         availabilitySpan = document.createElement('span');
@@ -5587,10 +5711,15 @@ function addAvailability(data) {
 
                         if (avail < 0){
                           availabilitySpan.classList.add("avail-short");
-                          availabilitySpan.classList.remove("avail-good");
+                          if (quarantineCounts.hasOwnProperty(theProd.innerText.trim())) {
+                            availabilitySpan.classList.add("popover-help-added", "days-tooltip");
+                            availabilitySpan.innerHTML = `${avail}<span class="days-tooltiptext"><u>Quarantines</u><br>Lost: ${quarantineCounts[theProd.innerText.trim()].lost}<br>Damaged: ${quarantineCounts[theProd.innerText.trim()].damaged}<br>Service: ${quarantineCounts[theProd.innerText.trim()].service}</span>`;
+                            } else {
+                              availabilitySpan.innerHTML = `${avail}`;
+                            }
                         } else {
-                          availabilitySpan.classList.remove("avail-short");
                           availabilitySpan.classList.add("avail-good");
+                          availabilitySpan.innerHTML = avail;
                         }
 
 
@@ -5603,7 +5732,7 @@ function addAvailability(data) {
                             statusCell.insertAdjacentElement('afterend', newTd);
                         }
 
-                        availabilitySpan.innerText = avail;
+                        //availabilitySpan.innerText = avail;
                         newTd.appendChild(availabilitySpan);
                     }
                 }

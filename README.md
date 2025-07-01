@@ -36,7 +36,11 @@ For a full list of the extension's features, check out the [Features.md](/Featur
 
 ## New Features / Updates
 
-** NEW MAJOR VERSION 2.0.0 - PLEASE TEST WITH CAUTION AND REPORT ISSUES **
+-FIXED: 2.0.10 - In Detail View, when adding services via the picker editable days would not work until the page was refreshed (issue 100 redux).
+
+- NEW: 2.0.10 - In Detail View, where an availability number is showing a shortage and the product has assets in quarantine, you can mouse over the negative number to see a tool tip that lists the quarantine counts/types (issue 117).
+
+- IMPROVED: 2.0.10 - In Detail View, the yellow button filters will now remain on if the page reloads, or if you return to that opportunity's detail view without navigating to a different one (issue 118). 
 
 - FIXED: 2.0.9 - Since a Chrome update, the voice prompts have been randomly breaking for some users. I've re-coded how the voice is generated, which should now be more reliable.
 
