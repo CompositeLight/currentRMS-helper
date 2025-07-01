@@ -5692,7 +5692,7 @@ function addAvailability(data) {
                         availabilitySpan.classList.remove("avail-good");
                         if (quarantineCounts.hasOwnProperty(theProd.innerText.trim())) {
                         availabilitySpan.classList.add("popover-help-added", "days-tooltip");
-                        availabilitySpan.innerHTML = `${avail}<span class="days-tooltiptext"><u>Quarantines</u><br>Lost: ${quarantineCounts[theProd.innerText.trim()].lost}<br>Damaged: ${quarantineCounts[theProd.innerText.trim()].damaged}<br>Damaged: ${quarantineCounts[theProd.innerText.trim()].service}</span>`;
+                        availabilitySpan.innerHTML = `${avail}<span class="days-tooltiptext"><u>Quarantines</u><br>Lost: ${quarantineCounts[theProd.innerText.trim()].lost}<br>Damaged: ${quarantineCounts[theProd.innerText.trim()].damaged}<br>Service: ${quarantineCounts[theProd.innerText.trim()].service}</span>`;
                         } else {
                           availabilitySpan.innerHTML = `${avail}`;
                         }
