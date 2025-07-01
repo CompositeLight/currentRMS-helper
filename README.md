@@ -36,7 +36,7 @@ For a full list of the extension's features, check out the [Features.md](/Featur
 
 ## New Features / Updates
 
--FIXED: 2.0.10 - In Detail View, when adding services via the picker editable days would not work until the page was refreshed (issue 100 redux).
+- FIXED: 2.0.10 - In Detail View, when adding services via the picker editable days would not work until the page was refreshed (issue 100 redux).
 
 - NEW: 2.0.10 - In Detail View, where an availability number is showing a shortage and the product has assets in quarantine, you can mouse over the negative number to see a tool tip that lists the quarantine counts/types (issue 117).
 
