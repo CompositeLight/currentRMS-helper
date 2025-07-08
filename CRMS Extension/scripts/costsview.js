@@ -61,17 +61,19 @@ function getCurrencySymbol() {
 
 
 function recallApiDetails(){
-    return new Promise(function (resolve, reject) {
+  return new Promise(function (resolve, reject) {
     chrome.storage.local.get(["api-details"]).then((result) => {
-      if (result["api-details"].apiKey){
-        apiKey = result["api-details"].apiKey;
+      const details = result["api-details"];
+      if (details && details.apiKey){
+        apiKey = details.apiKey;
       } else {
         console.log("No API key saved in local storage.");
       }
-      if (result["api-details"].apiSubdomain){
-        apiSubdomain = result["api-details"].apiSubdomain;
+      if (details && details.apiSubdomain){
+        apiSubdomain = details.apiSubdomain;
       } else {
-        console.log("No API Subdomain saved in local storage.");
+        console.log("No API Subdomain saved in local storage. Scraping from webpage URL.");
+        apiSubdomain = getSubdomainFromUrl(window.location.href);
       }
       resolve();
     });
@@ -945,4 +947,18 @@ function mergeById(arrayInitial, arrayUpdate) {
 
   // 2) Concatenate those “survivors” with all of the updates
   return [...filtered, ...arrayUpdate];
+}
+
+function getSubdomainFromUrl(url) {
+  try {
+    const { hostname } = new URL(url);            // e.g. "serenitymedia.current-rms.com"
+    const parts = hostname.split('.');             // ["serenitymedia","current-rms","com"]
+    // only treat it as a subdomain if there are at least 3 labels:
+    if (parts.length >= 3) {
+      return parts[0];                             // "serenitymedia"
+    }
+  } catch (e) {
+    console.error("Invalid URL:", url, e);
+  }
+  return "";
 }

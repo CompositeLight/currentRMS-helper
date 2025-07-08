@@ -369,6 +369,10 @@ span.loss-warning {
   color: green !important;
 }
 
+.quarantine-tooltip{
+  text-decoration: underline;
+  text-decoration-color: red;
+}
 
 div.float-left{
   float: left;
@@ -674,4 +678,8 @@ button.helper-close {
 
 .nested-charge{
   font-weight: bold !important;
+}
+
+.quoted-total{
+  background-color: #ef7d00 !important;
 }

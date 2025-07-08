@@ -265,22 +265,21 @@ function checkQuarantineStatus(){
 
 function recallApiDetails(){
   return new Promise(function (resolve, reject) {
-  chrome.storage.local.get(["api-details"]).then((result) => {
-
-    if (result["api-details"].apiKey){
-      apiKey = result["api-details"].apiKey;
-    } else {
-      console.log("No API key saved in local storage.");
-    }
-    if (result["api-details"].apiSubdomain){
-      apiSubdomain = result["api-details"].apiSubdomain;
-    } else {
-      console.log("No API Subdomain saved in local storage.");
-    }
-    resolve();
+    chrome.storage.local.get(["api-details"]).then((result) => {
+      const details = result["api-details"];
+      if (details && details.apiKey){
+        apiKey = details.apiKey;
+      } else {
+        console.log("No API key saved in local storage.");
+      }
+      if (details && details.apiSubdomain){
+        apiSubdomain = details.apiSubdomain;
+      } else {
+        console.log("No API Subdomain saved in local storage.");
+      }
+      resolve();
+    });
   });
-});
-
 }
 
 

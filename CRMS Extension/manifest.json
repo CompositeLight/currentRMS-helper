@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "CurrentRMS Helper",
-  "version": "2.0.10",
+  "version": "2.0.11",
   "description": "Adding functionality to Current RMS, one reduced click at a time.",
   "icons": {
     "16": "images/icon-16.png",
@@ -34,7 +34,8 @@
       "https://*.current-rms.com/products?*",
       "https://*.current-rms.com/purchase_orders*",
       "https://*.current-rms.com/services*",
-      "https://*.current-rms.com/global_check_in?autocheckin&*"
+      "https://*.current-rms.com/global_check_in?autocheckin&*",
+      "https://*.current-rms.com/projects*"
     ],
     "js": ["scripts/content.js", "scripts/addtab.js"],
     "css": ["style.css"],
@@ -92,6 +93,11 @@
     {
       "matches": ["https://*.current-rms.com/global_check_in?autocheckin&*"],
       "js": ["scripts/autocheckin.js"]
+    },
+    {
+      "matches": ["https://*.current-rms.com/projects*"],
+      "js": ["scripts/projects.js", "scripts/addtab.js"],
+      "css": ["style.css"]
     }
 
   ],

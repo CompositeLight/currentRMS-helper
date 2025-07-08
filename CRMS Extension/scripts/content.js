@@ -286,20 +286,12 @@ if (detailView){
 
       var currentView = "detail";
       
-
       chrome.storage.local.set({ 'last-scroll': {opp: opportunityID, view: currentView, notesHidden: notesHidden, preparedHidden: preparedHidden, bookedOutHidden: bookedOutHidden, checkedInHidden:checkedInHidden, bulkOnly: bulkOnly, subhiresHidden: subhiresHidden, nonsubsHidden: nonsubsHidden, nonShortsHidden: nonShortsHidden} }).then(() => {
          console.log("Saved filters updated");
       });
   });
 
 }
-
-
-
-
-
-
-
 
 
 
@@ -457,7 +449,8 @@ if (detailView || orderView || globalCheckinView){
       if (result.allProducts == undefined){
         // If the variable is empty, it might not have been got yet (first use)
         chrome.storage.local.get(["api-details"]).then((result) => {
-          if (result["api-details"].apiKey && result["api-details"].apiSubdomain){
+          const details = result["api-details"];
+          if (details && details.apiKey && details.apiSubdomain){
             console.log("Products list was not found. Requesting refresh.");
             makeToast("toast-info", "Products list was not found. Requesting refresh.", 5);
             chrome.runtime.sendMessage("refreshProducts");
@@ -480,8 +473,10 @@ if (detailView || orderView || globalCheckinView){
   chrome.storage.local.get(["quarantineData"]).then((result) => {
       if (result.quarantineData == undefined){
       // If the variable is empty, it might not have been got yet (first use)
-      console.log("Quarantines list was not found.");
-      makeToast("toast-error", "Quarantines list was not found. Feature disabled.");
+      if (apiKey){
+        console.log("Quarantines list was not found.");
+        makeToast("toast-error", "Quarantines list was not found. Feature disabled!");
+      }
     } else {
       const quarantinesString = result.quarantineData;
       quarantineData = JSON.parse(quarantinesString);
@@ -507,11 +502,11 @@ if (detailView || orderView || globalCheckinView){
       
           // decide which bucket this entry goes into
           let bucket;
-          if (type == 1) {
+          if (type == 2 || type == 4) {
             bucket = 'lost';
-          } else if (type == 2) {
+          } else if (type == 1 || type == 3) {
             bucket = 'damaged';
-          } else if (type == 3) {
+          } else if (type == 5) {
             bucket = 'service';
           } else {
             // ignore any other types
@@ -1851,15 +1846,17 @@ async function opportunityApiCall(opportunityID, type) {
 function recallApiDetails(){
   return new Promise(function (resolve, reject) {
     chrome.storage.local.get(["api-details"]).then((result) => {
-      if (result["api-details"].apiKey){
-        apiKey = result["api-details"].apiKey;
+      const details = result["api-details"];
+      if (details && details.apiKey){
+        apiKey = details.apiKey;
       } else {
         console.log("No API key saved in local storage.");
       }
-      if (result["api-details"].apiSubdomain){
-        apiSubdomain = result["api-details"].apiSubdomain;
+      if (details && details.apiSubdomain){
+        apiSubdomain = details.apiSubdomain;
       } else {
-        console.log("No API Subdomain saved in local storage.");
+        console.log("No API Subdomain saved in local storage. Scraping from webpage URL.");
+        apiSubdomain = getSubdomainFromUrl(window.location.href);
       }
       resolve();
     });
@@ -3058,11 +3055,14 @@ function hideNonShorts() {
               // skip
             } else {
               liStatusCells[s].classList.add('hide-nonshort');
-              try {
-                liStatusCells[s].querySelector("input.item-select").checked = false;
-              }
-              catch(err){
-                console.log(err);
+              if (detaileView){
+                try {
+                  liStatusCells[s].querySelector("input.item-select").checked = false;
+                }
+              
+                catch(err){
+                  console.log(err);
+                }
               }
             }
           }
@@ -3186,7 +3186,7 @@ function listToastPosts() {
     listOfIssueItems = processHtmlToList(toastPostsHtml);
     //console.log(listOfIssueItems);
 
-    if (toastPosts[0] == "Successfully checked shortages" || toastPosts.length > 1){ // in this scenario we're potentially expecting overdue inspection flags.
+    if (toastPosts[0] == "Successfully checked shortages" && toastPosts.length > 1){ // in this scenario we're potentially expecting overdue inspection flags.
 
       // rebuild the list of shortages to add information
 
@@ -3221,7 +3221,7 @@ function listToastPosts() {
       console.log("Quarantine book out successful, refreshing quarantines");
       chrome.runtime.sendMessage("refreshQuarantines");
 
-    } else if (toastPosts[0].includes("Quarantine was successfully created")){
+    } else if (toastPosts[0] == "Quarantine was successfully created."){
       console.log("Quarantine was successfully created, refreshing quarantines");
       // tell the service worker to refresh quarantine data
       chrome.runtime.sendMessage("refreshQuarantines");
@@ -4389,7 +4389,7 @@ if (detailView){
 
     chrome.storage.local.get(["soundsOn"]).then((result) => {
       console.log("Sound = "+result.soundsOn);
-      if (result.soundsOn != "true"){
+      if (result.soundsOn == "false"){
         muteExtensionSounds = true;
       } else {
         muteExtensionSounds = false;
@@ -4502,8 +4502,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     chrome.storage.local.get(["quarantineData"]).then((result) => {
         if (result.quarantineData == undefined){
           // If the variable is empty, it might not have been got yet (first use)
-          console.log("Quarantines list was not found.");
-          makeToast("toast-error", "Quarantines list was not found. Feature disabled.");
+          if (apiKey){
+            console.log("Quarantines list was not found.");
+            makeToast("toast-error", "Quarantines list was not found. Feature disabled!");
+          }
         } else {
           const quarantinesString = result.quarantineData;
           quarantineData = JSON.parse(quarantinesString);
@@ -5691,8 +5693,8 @@ function addAvailability(data) {
                         availabilitySpan.classList.add("avail-short");
                         availabilitySpan.classList.remove("avail-good");
                         if (quarantineCounts.hasOwnProperty(theProd.innerText.trim())) {
-                        availabilitySpan.classList.add("popover-help-added", "days-tooltip");
-                        availabilitySpan.innerHTML = `${avail}<span class="days-tooltiptext"><u>Quarantines</u><br>Lost: ${quarantineCounts[theProd.innerText.trim()].lost}<br>Damaged: ${quarantineCounts[theProd.innerText.trim()].damaged}<br>Service: ${quarantineCounts[theProd.innerText.trim()].service}</span>`;
+                          availabilitySpan.classList.add("popover-help-added", "days-tooltip", "quarantine-tooltip");
+                          availabilitySpan.innerHTML = `${avail}<span class="days-tooltiptext"><u>Quarantines</u><br>Lost: ${quarantineCounts[theProd.innerText.trim()].lost}<br>Damaged: ${quarantineCounts[theProd.innerText.trim()].damaged}<br>Service: ${quarantineCounts[theProd.innerText.trim()].service}</span>`;
                         } else {
                           availabilitySpan.innerHTML = `${avail}`;
                         }
@@ -5712,7 +5714,7 @@ function addAvailability(data) {
                         if (avail < 0){
                           availabilitySpan.classList.add("avail-short");
                           if (quarantineCounts.hasOwnProperty(theProd.innerText.trim())) {
-                            availabilitySpan.classList.add("popover-help-added", "days-tooltip");
+                            availabilitySpan.classList.add("popover-help-added", "days-tooltip", "quarantine-tooltip");
                             availabilitySpan.innerHTML = `${avail}<span class="days-tooltiptext"><u>Quarantines</u><br>Lost: ${quarantineCounts[theProd.innerText.trim()].lost}<br>Damaged: ${quarantineCounts[theProd.innerText.trim()].damaged}<br>Service: ${quarantineCounts[theProd.innerText.trim()].service}</span>`;
                             } else {
                               availabilitySpan.innerHTML = `${avail}`;
@@ -6906,89 +6908,21 @@ function applyNestedCharges(){
 }
 
 
-addHelperSidebar();
-
-// function to add a CurrentRMS Helper section to the sidebar
 
 
 
-function addHelperSidebar(){
-  
-  const sidebar = document.getElementById("sidebar_content");
-  if (sidebar){
-    const existingSection = document.getElementById("helper_sidebar");
-    if (existingSection) {
-      // if there's already a section, quit
-      return;
+
+
+function getSubdomainFromUrl(url) {
+  try {
+    const { hostname } = new URL(url);            // e.g. "serenitymedia.current-rms.com"
+    const parts = hostname.split('.');             // ["serenitymedia","current-rms","com"]
+    // only treat it as a subdomain if there are at least 3 labels:
+    if (parts.length >= 3) {
+      return parts[0];                             // "serenitymedia"
     }
-
-    var manifestData = chrome.runtime.getManifest();
-    let newDiv = document.createElement('div');
-    newDiv.id = "helper_sidebar";
-    newDiv.classList.add("group-side-content");
-    newDiv.innerHTML = `
-<h3>
-CurrentRMS Helper
-</h3>
-<a class="toggle-button expand-arrow icn-cobra-contract" href="#"></a>
-<ul class="" id="helper_sidebar_list">
-  <li>
-    <i class="icn-cobra-cog" id="helper-test-cog"></i><span>Version: ${manifestData.version}</span>
-  </li>
-
-  <li>
-    <i class="icn-cobra-file-4"></i><a href="https://github.com/CompositeLight/currentRMS-helper/blob/main/README.md" target="new">Release Notes</a>
-  </li>
-
-  
-
-  <li>
-    <i class="icn-cobra-email"></i><a href="https://github.com/CompositeLight/currentRMS-helper/issues" target="new">Report Issue / Make Suggestion</a>
-  </li>
-</ul>`;
-
-    // append to sidebar
-    sidebar.appendChild(newDiv);
-
-    //add click hander to helper-test-cog
-    const helperTestCog = newDiv.querySelector('#helper-test-cog');
-    
-    
-    helperTestCog.onclick = function (event) {
-      chrome.runtime.sendMessage({action: 'speak', text: 'Hello world!'}, response => {
-        if (response?.spoken) {
-          console.log('Speech complete');
-        }
-      });
-    };
-
-
-
-
-
-
-
-
-    const toggleButton = newDiv.querySelector('.toggle-button');
-    const helperList = newDiv.querySelector('#helper_sidebar_list');
-    // Adjust the display property for the initial state
-    helperList.style.display = 'block';
-    toggleButton.onclick = function (event) {
-      event.preventDefault();
-      if (helperList.style.display === 'none' || helperList.style.display === '') {
-        helperList.style.display = 'block';
-        toggleButton.classList.remove('icn-cobra-expand');
-        toggleButton.classList.add('icn-cobra-contract');
-      } else {
-        helperList.style.display = 'none';
-        toggleButton.classList.remove('icn-cobra-contract');
-        toggleButton.classList.add('icn-cobra-expand');
-      }
-    };
-    // Add inline style for the toggle-button size
-    toggleButton.style.fontSize = '14px'; // Adjust the size as needed
-
+  } catch (e) {
+    console.error("Invalid URL:", url, e);
   }
+  return "";
 }
-
-

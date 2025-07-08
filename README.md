@@ -1,4 +1,4 @@
-# currentRMS-helper 2.0.9
+# currentRMS-helper 2.0.11
 This is a Chrome extension to add functionality to the CurrentRMS web interface. It was created out of our frustration waiting on "quality of life" modifications to make the user experience better. Since making it available online, I've been blown away by how many users and businesses have started using it on a daily basis. I'm really grateful to the many users who have contributed ideas, or pointed out bugs with the extension.
 
 The extension is free to all, but as a few people have asked, if you really want to [buy me a cup of coffee / tea / beer](https://paypal.me/garethrisdale) you can use this link.
@@ -35,6 +35,14 @@ For a full list of the extension's features, check out the [Features.md](/Featur
 
 
 ## New Features / Updates
+
+- NEW: 2.0.11 - The Project pages now have an added stat box for "Draft / Quote / Order Total", that show the grand total charge of all opportunities listed on the opportunity (issue 126). The box will only appear if there is an opportunity listed that isn't an Order.
+
+- IMPROVED: 2.0.11 - Better handling for users who aren't able to enter an API key.
+
+- IMPROVED: 2.0.11 - Availability numbers are now underlined if there's a quarantine tooltip available.
+
+- FIXED: 2.0.11 - Availability number quarantine tooltips were misreading quarantine types.
 
 - FIXED: 2.0.10 - In Detail View, when adding services via the picker editable days would not work until the page was refreshed (issue 100 redux).
 

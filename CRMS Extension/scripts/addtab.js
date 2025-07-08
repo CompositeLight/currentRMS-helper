@@ -129,9 +129,81 @@ function addMenuItemToNavbar() {
     var peopleButton = document.querySelector("li.menu01");
     peopleButton.querySelector("a").innerText = "People & Orgs";
 
+  }
+}
 
 
+addHelperSidebar();
 
+// function to add a CurrentRMS Helper section to the sidebar
+function addHelperSidebar(){
+  
+  const sidebar = document.getElementById("sidebar_content");
+  if (sidebar){
+    const existingSection = document.getElementById("helper_sidebar");
+    if (existingSection) {
+      // if there's already a section, quit
+      return;
+    }
+
+    var manifestData = chrome.runtime.getManifest();
+    let newDiv = document.createElement('div');
+    newDiv.id = "helper_sidebar";
+    newDiv.classList.add("group-side-content");
+    newDiv.innerHTML = `
+<h3>
+CurrentRMS Helper
+</h3>
+<a class="toggle-button expand-arrow icn-cobra-contract" href="#"></a>
+<ul class="" id="helper_sidebar_list">
+  <li>
+    <i class="icn-cobra-cog" id="helper-test-cog"></i><span>Version: ${manifestData.version}</span>
+  </li>
+
+  <li>
+    <i class="icn-cobra-file-4"></i><a href="https://github.com/CompositeLight/currentRMS-helper/blob/main/README.md" target="new">Release Notes</a>
+  </li>
+
+  
+
+  <li>
+    <i class="icn-cobra-email"></i><a href="https://github.com/CompositeLight/currentRMS-helper/issues" target="new">Report Issue / Make Suggestion</a>
+  </li>
+</ul>`;
+
+    // append to sidebar
+    sidebar.appendChild(newDiv);
+
+    //add click hander to helper-test-cog
+    const helperTestCog = newDiv.querySelector('#helper-test-cog');
+    
+    
+    helperTestCog.onclick = function (event) {
+      chrome.runtime.sendMessage({action: 'speak', text: 'Hello world!'}, response => {
+        if (response?.spoken) {
+          console.log('Speech complete');
+        }
+      });
+    };
+
+    const toggleButton = newDiv.querySelector('.toggle-button');
+    const helperList = newDiv.querySelector('#helper_sidebar_list');
+    // Adjust the display property for the initial state
+    helperList.style.display = 'block';
+    toggleButton.onclick = function (event) {
+      event.preventDefault();
+      if (helperList.style.display === 'none' || helperList.style.display === '') {
+        helperList.style.display = 'block';
+        toggleButton.classList.remove('icn-cobra-expand');
+        toggleButton.classList.add('icn-cobra-contract');
+      } else {
+        helperList.style.display = 'none';
+        toggleButton.classList.remove('icn-cobra-contract');
+        toggleButton.classList.add('icn-cobra-expand');
+      }
+    };
+    // Add inline style for the toggle-button size
+    toggleButton.style.fontSize = '14px'; // Adjust the size as needed
 
   }
 }
