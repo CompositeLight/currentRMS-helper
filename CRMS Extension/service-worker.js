@@ -524,6 +524,36 @@ async function retrieveApiData(opp) {
       const timecheck = new Date().getTime();
       chrome.storage.local.set({ [`apidata-timestamp-${apiSubdomain}`]: timecheck });
 
+      // Generate container data from new stock data
+      // create a new array that contains only stock items that have a container_mode that isn't null OR a container_stock_level_id that isn't null
+      const containerStock = allStock.stock_levels.filter(item => item.container_mode || item.container_stock_level_id);
+
+      let containerList = [];
+      let containerData = {};
+      // loop through the container stock items and create an object for each one
+      containerStock.forEach(item => {
+        if (item.container_mode) {
+          containerList.push(item.asset_number);
+        } else if (item.container_stock_level_id) {
+
+          // find the asset_number from the stock level id
+          const thisContainer = allStock.stock_levels.find(stock => stock.id === item.container_stock_level_id)?.asset_number;
+
+          if (!containerData[thisContainer]) {
+            containerData[thisContainer] = [item];
+          } else {
+            containerData[thisContainer].push(item);
+          }
+        }
+      });
+
+      // store the container list in local storage
+      chrome.storage.local.set({ 'containerList': containerList, 'containerData': containerData }).then(() => {
+        console.log("Container data was updated");
+      });
+
+
+
       try {
         await chrome.runtime.sendMessage("apidatawasrefreshed");
       } catch (err) {

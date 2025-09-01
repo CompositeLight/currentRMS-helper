@@ -179,11 +179,18 @@ CurrentRMS Helper
     
     
     helperTestCog.onclick = function (event) {
-      chrome.runtime.sendMessage({action: 'speak', text: 'Hello world!'}, response => {
+      chrome.runtime.sendMessage({action: 'speak', text: 'Testing 1 2 3!'}, response => {
         if (response?.spoken) {
           console.log('Speech complete');
         }
       });
+      //window.postMessage(
+			//	{ source: 'extension', payload: {messageType: "AjaxTest"}},
+			//);
+
+
+
+
     };
 
     const toggleButton = newDiv.querySelector('.toggle-button');

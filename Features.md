@@ -1,4 +1,4 @@
-# currentRMS-helper 2.0.7
+# currentRMS-helper 2.0.12
 
 Below is a list of current features. It's the same information as the Readme change log, but listed "per area" to make it easier for new users to see what the extension adds.
 
@@ -82,6 +82,7 @@ Once a container exists on the opportunity it can be accessed without further us
 
 - In Detail View, double clicking on a function tab (Function, Allocate, Prepate, Book out, Check-in) now scrolls the page to the top.
 
+- Added special barcodes of "allocate" and "bookout". These will change the current scanning mode.
 
 ## Serialised Containers
 
@@ -96,7 +97,7 @@ Once a container exists on the opportunity it can be accessed without further us
 
 ## Order View
 
-- Availability Data: To the right of the status block you will now see a number, which represents the remaining stock available. If it's a green, positive number that is how many you have left available for the dates of this opportunity. If a red negative it's the number you're short.
+- Availability Data: To the right of the status block you will now see a number, which represents the remaining stock available. If it's a green, positive number that is how many you have left available for the dates of this opportunity. If a red negative it's the number you're short. Where an availability number is showing a shortage and the product has assets in quarantine, you can mouse over the negative number to see a tool tip that lists the quarantine counts/types.
 
 - Profit Warning: In order view, the total price of a line will highlight in red if the total cost for that line is greater than the amount being charged (ie. It’s making a loss). The pop-up/tool tip that contains charge information for each line total now also features cost and profit/loss figures, and items that didn’t previously have pop-ups (like sales items) now have a tooltip for this purpose. The feature also works for group items where a group deal price has been set and the total combined cost of items inside the deal are greater than the group deal price. This feature involves an opportunity based API call, so you may notice they take a second or two to appear after a page refresh.
 
@@ -123,6 +124,10 @@ Once a container exists on the opportunity it can be accessed without further us
 - Sub-Rent weight is now also shown in Order View under the Attributes panel of the side bar (issue 75). As well as giving an overally break-down of stock weight vs sub-rent weight, the weight associated with each supplier is given beneath. Clicking the supplier name takes you to their member page.
 
 - In Order View, items that include sub-rents are highlighted in blue if any of the sub-rented allocations don't yet have a supplier set. This is to make it harder to miss a sub-hire you haven't sorted out (issue 96 AKA The Extra Chain Motors Incident).
+
+- In Order View there is a now a Check Accessories option under Actions in the sidebar. This brings up a list of potential accessory issues by comparing items and accessories on the opportunity against how they're arranged on the product itself. Potentially useful after cloning an old job (until I can finish the new clone tool).
+
+- Activities listed in Order View now have a tick button next to them to complete the activity straight from that page, rather than clicking through two further pages (!).
 
 
 ## Costs View
@@ -155,7 +160,7 @@ Once a container exists on the opportunity it can be accessed without further us
 ## Global Search
 - Global Search results now include an "Inactive Opportunities" section (whereas the standard global search will only find active ones).
 
-- If you global search for an asset number (for example, if you scan an asset into the top global search field) you now jump straight to the asset's page (rather than ending up in the global search results page and then having to click on the one asset found). Requires API.
+- If you global search for an asset number (for example, if you scan an asset into the top global search field) you now jump straight to the asset's page (rather than ending up in the global search results page and then having to click on the one asset found). Since V2.0.9 this will now only trigger if there is a single matching search result (the item). This is to prevent unexpected triggering when the opporunity ID happens to clash with an item ID.Requires API.
 
 
 ## Stock Check
@@ -167,3 +172,6 @@ Once a container exists on the opportunity it can be accessed without further us
 
 ## Opportunities List
 - Clicking the order Avatar (the circular icon to the left hand side) is now a shortcut to take you directly to Detail View for that opportunity.
+
+## Project Pages
+The Project pages now have an added stat box for "Draft / Quote / Order Total", that show the grand total charge of all opportunities listed on the opportunity. The box will only appear if there is an opportunity listed that isn't an Order.

@@ -40,6 +40,7 @@ if (shouldremove()) {
 
     createBlockOutOverlay();
 
+    try {
     var asset = extractAssetToRemove(currentUrl);
 
     var theEditForm = document.querySelector('form.simple_form.edit_opportunity_item');
@@ -58,4 +59,14 @@ if (shouldremove()) {
     chrome.runtime.sendMessage({messageType: "removal", removedAsset: asset});
     
     updateButton.click();
+
+    }
+
+    catch (error) {
+        console.error("Error during asset removal process:", error);
+        const cancelButton = [...document.querySelectorAll('a.btn.btn-default')]
+        .find(a => a.textContent.trim() === 'Cancel' &&
+        (/^\/opportunities\/\d+/.test(a.getAttribute('href') || '')));
+        cancelButton?.click();
+    }
 }

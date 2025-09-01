@@ -683,3 +683,55 @@ button.helper-close {
 .quoted-total{
   background-color: #ef7d00 !important;
 }
+
+
+.top-alert{
+  background-color: #f2a700;
+  color: white;
+  font-size: 16px;
+  display: flex;
+  padding: 6px 12px;
+  margin-top: 6px;
+  margin-right: 2px;
+}
+
+.alert-text{
+  padding-left: 6px;
+}
+
+
+.activity-complete-btn {
+  background-color: white;
+  color: #0088f0;
+  font-size: 17px;
+  padding: 3px 7px 2px 7px;
+  display: inline-block;
+  float: right;
+  margin-left: 3px;
+}
+
+.activity-complete-btn:hover {
+  background-color: #0088f0;
+  color: white;
+}
+
+ul.accessory-check{
+  display: block;
+  list-style-type: disc;
+  margin-top: 1em;
+  margin-bottom: 25px;
+  margin-left: 0;
+  margin-right: 0;
+  padding-left: 40px;
+  font-size: 14px;
+}
+
+ul.accessory-item{
+    display: block;
+    list-style-type: circle;
+    margin-top: 1em;
+    margin-bottom: 15px;
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 40px;
+}

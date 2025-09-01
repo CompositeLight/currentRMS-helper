@@ -22,12 +22,7 @@ function addEditableDays() {
           
     
     
-                // SECTION TO LOG AJAX REQUESTS
-                const originalAjax = $.ajax;
-                $.ajax = function(settings) {
-                    console.log('AJAX request:', settings);
-                    return originalAjax.apply(this, arguments);
-                };
+                
     
     
                 // SECTION TO ADD INLINE EDIT FUNCTIONALITY TO SERVICE TD ELEMENTS
@@ -636,24 +631,6 @@ function addEditableDays() {
                     );
     
     
-                    /*
-    
-    
-                    let warehouseNoteEdit = prompt("Warehouse note", existingWarehouseNote);
-    
-                    // if user clicks cancel, exit
-                    if (warehouseNoteEdit === null) {
-                        return;
-                    }
-    
-                    if (warehouseNoteEdit == existingWarehouseNote){
-                        return;
-                    } else {
-                        // send a request to the server to create the description
-                        ajaxEditWarehouseNote(dataId, warehouseNoteEdit, $theTooltipText);
-                    }
-                     
-                    */
     
                     // Function to send the updated note to the server
                     function ajaxEditWarehouseNote(theId, theWarehouseNote, noteField) {
@@ -750,39 +727,15 @@ function addEditableDays() {
                 });
     
     
-                // FUNCTION TO CHECK ACCESSORIES
-                window.addEventListener('message', (event) => {
-                    if (event.source !== window) return;
-                    if (!event.data || event.data.source !== 'extension') return;
-                  
-                    //console.log('injected.js got →', event.data.payload);
-    
-           
-                    
-                    var oppData = event.data.payload.oppData;
-                    oppData.opportunity_items.sort((a, b) => a.path.localeCompare(b.path));
-                
-                    const allStock = JSON.parse(event.data.payload.allStock);
-                    const allProducts = event.data.payload.allProducts;
-    
-                    console.log(allStock);
-                    console.log(oppData);
-                    console.log(allProducts);
-    
-                    accessoryCheck(allStock, allProducts, oppData);
-    
-    
-    
-                });
-    
-    
-                
-    
                 // AJAX TEST FUNCTION
                  // Function to tell the server to add the description
-                 function ajaxTest() {
-                    let opportunityID = 375;
+                function ajaxTest() {
+                    console.log("AJAX TEST FUNCTION TRIGGERED");
+                    let activityId = 128;
                     const testStartTime = performance.now();
+                    // Build an absolute URL at the site root:
+                    const url = new URL(`/activities/${activityId}`, window.location.origin).toString();
+
                     $.ajax({
                         //url: `/opportunities/${opportunityID}`,
                         //url: `/opportunities/${opportunityID}?include=[item_assets]`,
@@ -790,12 +743,16 @@ function addEditableDays() {
                         //url: `/opportunities/${opportunityID}`,
                         //opportunities/:opportunity_id/opportunity_items/:opportunity_item_id/opportunity_item_assets
                         //url: `/availability/opportunity/${opportunityID}`,
-                        url: `/products/13/stock_levels`,
-                        type: 'GET',
+
+                        url: url,
+                        type: 'PUT',
                         dataType: 'json',
                         data: {
-                                //'id': opportunityID,
-                            },
+                                "activity": {
+                                    "completed_at": "2025-09-01T14:35:00Z",
+                                    "completed": true
+                                }
+                        },
                           
                         
                         beforeSend: function(xhr, settings) {
@@ -814,7 +771,7 @@ function addEditableDays() {
                           
                         },
                         error: function(xhr, status, error) {
-                          console.error('Error fetching opportunity:', status, error);
+                          console.error('Error:', status, error);
                         }
                       });
                 }
@@ -842,6 +799,95 @@ function addEditableDays() {
 (function() {
     window.onload = function() {
         addEditableDays();
+
+        // SECTION TO LOG AJAX REQUESTS
+        const originalAjax = $.ajax;
+        $.ajax = function(settings) {
+            console.log('AJAX request:', settings);
+            return originalAjax.apply(this, arguments);
+        };
+
+
+
+        // FUNCTION TO CHECK ACCESSORIES
+        window.addEventListener('message', (event) => {
+            
+            if (event.source !== window) return;
+            if (!event.data || event.data.source !== 'extension') return;
+            
+            //console.log('injected.js got →', event.data.payload);
+
+    
+            if (event.data.payload.messageType == 'updateAccessories'){
+                console.log('Check Accessories called:', Date.now()); // Add before postMessage
+                var oppData = event.data.payload.oppData;
+                oppData.opportunity_items.sort((a, b) => a.path.localeCompare(b.path));
+            
+                const allStock = JSON.parse(event.data.payload.allStock);
+                const allProducts = event.data.payload.allProducts;
+
+                console.log(allStock);
+                console.log(oppData);
+                console.log(allProducts);
+
+                accessoryCheck(allStock, allProducts, oppData);
+            } if (event.data.payload.messageType == 'completeActivity'){
+                let activityId = event.data.payload.activityId;
+                completeActivity(activityId);
+            } else if (event.data.payload.messageType == 'AjaxTest'){
+                ajaxTest();
+            }
+
+        });
+
+
+        // FUNCTION TO MARK AN ACTIVITY AS COMPLETE
+        function completeActivity(activityId) {
+            console.log("AJAX COMPLETE ACTIVITY FUNCTION TRIGGERED");
+            
+            const testStartTime = performance.now();
+            // Build an absolute URL at the site root:
+            const url = new URL(`/activities/${activityId}`, window.location.origin).toString();
+
+            const isoUTC = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
+
+            $.ajax({
+
+                url: url,
+                type: 'PUT',
+                dataType: 'json',
+                data: {
+                        "activity": {
+                            "completed_at": isoUTC,
+                            "completed": true
+                        }
+                },
+                    
+                beforeSend: function(xhr, settings) {
+
+                    xhr.setRequestHeader('Accept', 'application/json');
+                },
+                success: function() {
+
+                    console.log("Activity marked as complete");
+                    const testEndTime = performance.now();
+                    console.log(`AJAX call completed in ${testEndTime - testStartTime}ms`);
+
+                    window.postMessage(
+                        { source: 'injected', payload: {activityId: activityId, messageType: "activityCompleted"} },
+                    );
+                    
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error:', status, error);
+                }
+                });
+        }
+
+
+
+
+
     }
 })();
 
@@ -1097,6 +1143,7 @@ async function accessoryCheck(allStock, allProducts, oppData) {
                 differentNameAccessories: differentNameAccessories,
                 item: item
             });
+
         }
 
 
@@ -1107,51 +1154,139 @@ async function accessoryCheck(allStock, allProducts, oppData) {
         let alertText = `There are ${itemsWithAccessoryIssues.length} item(s) with accessory issues:\n`;
 
         itemsWithAccessoryIssues.forEach(item => {
-            alertText += `\n• ${item.name}\n`;
+            alertText += `<ul class="accessory-check"><li>${item.name}</li><ul class="accessory-item">`;
             item.differentInclusionTypeAccessories.forEach(accessory => {
-                alertText += `  - ${accessory.name} (Inclusion Type: ${accessory.expected} -> ${accessory.actual})\n`;
+                alertText += `<li>${accessory.name} (Inclusion Type: ${accessory.expected} -> ${accessory.actual})</li>`;
             }
             );
             item.missingAccessories.forEach(accessory => {
-                alertText += `  - Missing: ${accessory.name}\n(Expected: ${accessory.quantity})\n`;
+                alertText += `<li>Missing: ${accessory.name}\n(Expected: ${accessory.quantity})</li>`;
             }
             );
             item.extraAccessories.forEach(accessory => {
-                alertText += `  - Extra: ${accessory.name}\n(Actual: ${accessory.actual})\n`;
+                alertText += `<li>Extra: ${accessory.name}\n(Actual: ${accessory.actual})</li>`;
             }
             );
             item.extraManualAccessories.forEach(accessory => {
-                alertText += `  - Extra Manual: ${accessory.name}\n(Actual: ${accessory.actual})\n`;
+                alertText += `<li>Extra Manual: ${accessory.name}\n(Actual: ${accessory.actual})</li>`;
             }
             );
             item.differentQuantityAccessories.forEach(accessory => {
-                alertText += `  - Different Quantity: ${accessory.name}\n(Expected: ${accessory.expected}, Actual: ${accessory.actual})\n`;
+                alertText += `<li>Different Quantity: ${accessory.name}\n(Expected: ${accessory.expected}, Actual: ${accessory.actual})</li>`;
             }
             );
             item.differentPriceAccessories.forEach(accessory => {
-                alertText += `  - Different Price: ${accessory.name}\n(Expected: ${accessory.expected}, Actual: ${accessory.actual})\n`;
+                alertText += `<li>Different Price: ${accessory.name}\n(Expected: ${accessory.expected}, Actual: ${accessory.actual})</li>`;
             }
             );
             item.differentWeightAccessories.forEach(accessory => {
-                alertText += `  - Different Weight: ${accessory.name}\n(Expected: ${accessory.expected}, Actual: ${accessory.actual})\n`;
+                alertText += `<li>Different Weight: ${accessory.name}\n(Expected: ${accessory.expected}, Actual: ${accessory.actual})</li>`;
             }
             );
             item.differentSortOrderAccessories.forEach(accessory => {
-                alertText += `  - Different Sort Order: ${accessory.name}\n(Expected: ${accessory.expected}, Actual: ${accessory.actual})\n`;
+                alertText += `<li>Different Sort Order: ${accessory.name}\n(Expected: ${accessory.expected}, Actual: ${accessory.actual})</li>`;
             }
             );
             item.differentZeroPriceAccessories.forEach(accessory => {
-                alertText += `  - Different Zero Price: ${accessory.name}\n(Expected: ${accessory.expected}, Actual: ${accessory.actual})\n`;
+                alertText += `<li>Different Zero Price: ${accessory.name}\n(Expected: ${accessory.expected}, Actual: ${accessory.actual})</li>`;
             }
             );
             item.differentNameAccessories.forEach(accessory => {
-                alertText += `  - Different Name: ${accessory.name}\n(Expected: ${accessory.expected}, Actual: ${accessory.actual})\n`;
+                alertText += `<li>Different Name: ${accessory.name}\n(Expected: ${accessory.expected}, Actual: ${accessory.actual})</li>`;
             }
             );
+            alertText += `</ul></ul>`;
 
         });
 
-        alert(alertText);
+        // Create the modal input
+        const newModalElement = document.createElement('div');
+        newModalElement.className = 'modal fade in';
+        newModalElement.id = 'accessory-check-modal';
+        // set aria-hidden to false
+        newModalElement.setAttribute('aria-hidden', 'false');
+        newModalElement.innerHTML = `
+            
+            <div class="modal-dialog set-description-modal">
+            <div class="modal-content">
+            <div class="modal-header clearfix">
+            <button class="helper-close" id="accessory-check-close">×</button>
+            <h4 class="modal-title">
+            <i class="icn-cobra-paste3"></i>
+            Accessory Check Results
+            </h4>
+            </div>
+            <div class="form-page form-modal">
+            <form id="set_warehouse_note">
+            <div class="modal-body">
+            <div class="row form-block">
+            <div class="col-md-2 col-sm-2"></div>
+            <div class="col-md-8 col-sm-8 form-area">
+            <div class="row">
+            <div class="col-md-12 col-sm-12">
+            ${alertText}
+            </div>
+            </div>
+            </div>
+            </div>
+            </div>
+            <div class="modal-footer">
+            <div class="button-row">
+            <button class="btn btn-default" id="dismiss-accessory-check-modal">Cancel</button>
+            </div>
+            </div>
+            </form>
+
+            </div>
+            </div>
+            </div>`;
+
+        const newModalBackdrop = document.createElement('div');
+        
+        newModalBackdrop.className = 'modal-backdrop fade in';
+
+        // Append the modal to the body
+        document.body.appendChild(newModalElement);
+
+        // Append the backdrop to the body
+        document.body.appendChild(newModalBackdrop);
+        
+        // Show the modal
+        newModalElement.style.display = 'block';
+
+        // focus on the text area
+
+        // Handle the dismiss button click
+        $('#dismiss-accessory-check-modal').on('click', function (event) {
+            event.preventDefault(); // Prevent the default anchor behavior
+            newModalElement.remove();
+            newModalBackdrop.remove();
+        }
+        );
+        // Handle the close button click
+        $('#accessory-check-close').on('click', function (event) {
+            event.preventDefault(); // Prevent the default anchor behavior
+            newModalElement.remove();
+            newModalBackdrop.remove();
+        }
+        );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     } else {
         alert (`No accessory issues detected`);
     }

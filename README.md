@@ -1,4 +1,4 @@
-# currentRMS-helper 2.0.11
+# currentRMS-helper 2.0.12
 This is a Chrome extension to add functionality to the CurrentRMS web interface. It was created out of our frustration waiting on "quality of life" modifications to make the user experience better. Since making it available online, I've been blown away by how many users and businesses have started using it on a daily basis. I'm really grateful to the many users who have contributed ideas, or pointed out bugs with the extension.
 
 The extension is free to all, but as a few people have asked, if you really want to [buy me a cup of coffee / tea / beer](https://paypal.me/garethrisdale) you can use this link.
@@ -35,6 +35,17 @@ For a full list of the extension's features, check out the [Features.md](/Featur
 
 
 ## New Features / Updates
+
+- FIXED: 2.0.12 - The Shorts Only button in Order View was broken (issue 132).
+
+- CHANGED: 2.0.12 - Some previous CSS overrides have been removed as the vanilla CSS has changed and it was making it look messy(toast messages).
+
+- NEW: 2.0.12 - Added special barcodes of "allocate" and "bookout". These will change the current scanning mode.
+
+- NEW: 2.0.12 - Activities listed in Order View now have a tick button next to them to complete the activity straight from that page, rather than clicking through two further pages (!).
+
+- NEW: 2.0.12 - In Order View there is a now a Check Accessories option under Actions in the sidebar. This brings up a list of potential accessory issues by comparing items and accessories on the opportunity against how they're arranged on the product itself. Potentially useful after cloning an old job (until I can finish the new clone tool).
+
 
 - NEW: 2.0.11 - The Project pages now have an added stat box for "Draft / Quote / Order Total", that show the grand total charge of all opportunities listed on the opportunity (issue 126). The box will only appear if there is an opportunity listed that isn't an Order.
 
