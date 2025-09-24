@@ -4330,7 +4330,7 @@ if (detailView){
 		// New Reset Accessories button
 
 		// Find all <a> elements and filter by text content
-		var recalcA = Array.from(document.querySelectorAll('a')).find(a => a.textContent.trim() === "Recalculate");
+		var recalcA = Array.from(document.querySelectorAll('a')).find(a => a.textContent.trim() === "Recent actions");
 
 		if (recalcA) {
 
@@ -4351,8 +4351,10 @@ if (detailView){
 					// send a message to the background script
 					chrome.runtime.sendMessage({messageType: "forceAllStockUpdate"});
 				});
+		
+		}
 
-
+		
 		// Add complete buttons for each activity
 		// find all a elements with the classes "favourite activity unpinned"
 		var activityAs = document.querySelectorAll('a.favourite.activity.unpinned');
@@ -4426,7 +4428,7 @@ if (detailView){
 				}
 			}
 		})
-	}
+	
 
 
 
