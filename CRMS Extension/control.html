@@ -17,13 +17,17 @@
     }
 
     body.dark-mode {
-      background-color: #121212;
+      background-color: #222222;
       color: white;
     }
 
     body.light-mode {
       background-color: white;
       color: black;
+    }
+
+    #open-settings {
+      margin-top: 10px;
     }
   
   </style>
@@ -32,6 +36,9 @@
   <form class="w3-container w3-card-4">
   <h2>CurrentRMS Helper</h2>
   <div class="version w3-center">Version: <span id="maifest-version"><span></div>
+  <div class="w3-center">
+    <button id="open-settings" class="w3-button w3-black">Full Settings</button>
+  </div>
 <hr>
 
 <label>CurrentRMS Helper Sounds On</label><br>
@@ -41,83 +48,17 @@
 <label>False</label>
 <hr>
 
-<label>Allocate View by Default</label><br>
-<input class="w3-radio" type="radio" name="allocatedefault" value="true" checked>
-<label>True</label>
-<input class="w3-radio" type="radio" name="allocatedefault" value="false">
-<label>False</label>
-<hr>
-
-<label>Mark As Prepared on Page Load</label>
-<input class="w3-radio" type="radio" name="markprepared" value="true" checked>
-<label>True</label>
-<input class="w3-radio" type="radio" name="markprepared" value="false">
-<label>False</label>
-<hr>
-
-<label>Inspection Alerts</label><br>
-<input class="w3-radio" type="radio" name="inspectionalert" value="full" checked>
-<label>Full</label>
-
-<input class="w3-radio" type="radio" name="inspectionalert" value="short">
-<label>Short</label>
-
-<input class="w3-radio" type="radio" name="inspectionalert" value="off">
-<label>Off</label>
-
-<hr>
-
-<label>Block Quarantined Allocations</label><br>
-<input class="w3-radio" type="radio" name="blockquarantines" value="true" checked>
-<label>True</label>
-
-<input class="w3-radio" type="radio" name="blockquarantines" value="false">
-<label>False</label>
-<hr>
 
 
-<label>Global Check-in Dialog Override</label>
-<input class="w3-radio" type="radio" name="multiglobal" value="true" checked>
-<label>True</label>
 
-<input class="w3-radio" type="radio" name="multiglobal" value="false">
-<label>False</label>
-<hr>
 
-<label>Error Message Timeout:</label>
-<input id="error-message-timeout" style="display: inline;" class="w3-border" type="number" min="0" max="60" step="1" value="0"><br>
-<label>(seconds)</label>
-<p>
-<hr>
 
-<label>Auto Book Out Nested Containers</label>
-<input class="w3-radio" type="radio" name="bookoutcontainers" value="true">
-<label>True</label>
-
-<input class="w3-radio" type="radio" name="bookoutcontainers" value="false" checked>
-<label>False</label>
-<hr>
-
-<label>Disable Detail View Delete</label><br>
-<input class="w3-radio" type="radio" name="detaildelete" value="true" checked>
-<label>True</label>
-
-<input class="w3-radio" type="radio" name="detaildelete" value="false">
-<label>False</label>
-<hr>
-
-<label>Show Collapsed Item Totals</label><br>
-<input class="w3-radio" type="radio" name="nestedtotals" value="true" checked>
-<label>True</label>
-
-<input class="w3-radio" type="radio" name="nestedtotals" value="false">
-<label>False</label>
-<hr>
 
 
 
 <label>API Product & Stock Snapshot</label>
 <input id="force-refresh-button" class="w3-button w3-block w3-black" type="button" name="refreshProducts" value="Force Refresh">
+
 <div class="w3-border">
   <div class="w3-white w3-center" id="api-progress-bar" style="height:24px;width:100%">Updated:</div>
 </div>
@@ -126,22 +67,10 @@
 
 <label>Quarantine Data</label>
 <input id="quarantines-refresh-button" class="w3-button w3-block w3-black" type="button" name="refreshQuarantines" value="Refresh Quarantines">
+
 <div class="w3-border">
   <div class="w3-white w3-center" id="quarantine-progress-bar" style="height:24px;width:100%">Updated:</div>
 </div>
-
-<hr>
-<hr>
-<label>Company Subdomain:</label><br>
-<input id="api-subdomain-input" class="w3-border api-subdomain" type="text"><span>.current-rms.com</span><p>
-<label>API Key:</label>
-<input id="api-key-input" class="w3-input w3-border api-key" type="password" minlength="20" maxlength="25" name="api-key-input">
-<input id="api-save" class="w3-button w3-block w3-black" value="Save API Details">
-
-
-
-
-
 
 
 

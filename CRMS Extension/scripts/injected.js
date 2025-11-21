@@ -63,7 +63,7 @@ function addEditableDays() {
         // SECTION TO LOG AJAX REQUESTS
         const originalAjax = $.ajax;
         $.ajax = function(settings) {
-            console.log('AJAX request:', settings);
+            //console.log('AJAX request:', settings);
             return originalAjax.apply(this, arguments);
         };
 

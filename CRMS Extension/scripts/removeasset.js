@@ -1,5 +1,10 @@
 console.log("Removeasset.js is active");
 
+// Inject an external script into the page context
+const script = document.createElement('script');
+script.src = chrome.runtime.getURL('scripts/test-injected.js'); // Path to the external script
+document.documentElement.appendChild(script);
+script.remove();
 
 debugMode = false;
 currentUrl = window.location.href;

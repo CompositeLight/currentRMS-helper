@@ -735,3 +735,54 @@ ul.accessory-item{
     margin-right: 0;
     padding-left: 40px;
 }
+
+.cross-scan-option{
+  color: white;
+  background-color: rgb(0, 136, 240);
+  width: 100%;
+  padding: 6px 12px;
+  font-size: 14px;
+  margin-bottom: 4px;
+  cursor: pointer;
+}
+
+.cross-scan-option:hover{
+  background-color: #0071c7;
+}
+
+.cross-scan-warning{
+  text-align: center;
+  font-size: 20px;
+}
+
+.cross-scan-target{
+  font-weight:bolder;
+}
+
+.smart-scan-candidate{
+  background-color: rgb(255, 235, 59) !important;
+  color: rgb(102, 102, 102) !important;
+}
+
+.cursor-hover{
+  cursor: pointer !important;
+}
+
+
+.ghost-accessory{
+  font-style: italic;
+  color:#757575 !important;
+}
+
+.ghost-note{
+  padding-top: 25px !important;
+}
+
+.ghost-components-toggle{
+  min-width: 140px;
+}
+
+.ghost-good{
+  color: green !important;
+  font-weight: bold !important;
+}

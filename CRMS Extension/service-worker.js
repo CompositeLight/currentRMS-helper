@@ -1,6 +1,13 @@
-const keepAlive = () => setInterval(chrome.runtime.getPlatformInfo, 20e3);
+let keepAliveIntervalId;
+
+const keepAlive = () => {
+  if (keepAliveIntervalId) return;
+  keepAliveIntervalId = setInterval(chrome.runtime.getPlatformInfo, 20e3);
+};
+
 chrome.runtime.onStartup.addListener(keepAlive);
 keepAlive();
+
 
 
 var removed = "";
@@ -77,7 +84,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   } else if (message.messageType === "availabilityData") {
         iAmScraping = false;
         // Forward the message to Content Script B
-        chrome.tabs.query({}, function(tabs) {
+        chrome.tabs.query({url: ["https://*.current-rms.com/*"]}, function(tabs) {
           if (tabs.length > 0){
             tabs.forEach(function(tab) {
                 chrome.tabs.sendMessage(tab.id, messag, () => {/* swallow error */});
@@ -96,7 +103,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         // response regarding inactive opps found for global search
         iAmScraping = false;
         // Forward the message to Content Script B
-        chrome.tabs.query({}, function(tabs) {
+        chrome.tabs.query({url: ["https://*.current-rms.com/*"]}, function(tabs) {
           if (tabs.length > 0){
             tabs.forEach(function(tab) {
                 chrome.tabs.sendMessage(tab.id, message, () => {/* swallow error */});
@@ -107,7 +114,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         // response regarding scraping of warehouse notes
         iAmScraping = false;
         // Forward the message to Content Script
-        chrome.tabs.query({}, function(tabs) {
+        chrome.tabs.query({url: ["https://*.current-rms.com/*"]}, function(tabs) {
           if (tabs.length > 0){
             tabs.forEach(function(tab) {
                 chrome.tabs.sendMessage(tab.id, message, () => {/* swallow error */});
@@ -118,7 +125,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   } else if (message.messageType === "productQtyData") {
       iAmScraping = false;
       // Forward the message to Content Script
-      chrome.tabs.query({}, function(tabs) {
+      chrome.tabs.query({url: ["https://*.current-rms.com/*"]}, function(tabs) {
         if (tabs.length > 0){
           tabs.forEach(function(tab) {
               chrome.tabs.sendMessage(tab.id, message, () => {/* swallow error */});
@@ -129,16 +136,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   } else if (message == "soundchanged") {
         // Forward the message to Content Script
         console.log("Sound change message received");
-        chrome.tabs.query({}, function(tabs) {
+        chrome.tabs.query({url: ["https://*.current-rms.com/*"]}, function(tabs) {
           if (tabs.length > 0){
             tabs.forEach(function(tab) {
-                chrome.tabs.sendMessage(tab.id, message, () => {/* swallow error */});
+                chrome.tabs.sendMessage(tab.id, message);
             });
           }
         });
   } else if (message == "errortimeoutchanged") {
         // Forward the message to Content Script
-        chrome.tabs.query({}, function(tabs) {
+        chrome.tabs.query({url: ["https://*.current-rms.com/*"]}, function(tabs) {
           if (tabs.length > 0){
             tabs.forEach(function(tab) {
                 chrome.tabs.sendMessage(tab.id, message, () => {/* swallow error */});
@@ -148,7 +155,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   } else if (message == "bookOutContainers") {
         // Forward the message to Content Script
-        chrome.tabs.query({}, function(tabs) {
+        console.log("bookOutContainers setting changed");
+        chrome.tabs.query({url: ["https://*.current-rms.com/*"]}, function(tabs) {
           if (tabs.length > 0){
             tabs.forEach(function(tab) {
                 chrome.tabs.sendMessage(tab.id, message, () => {/* swallow error */});
@@ -157,7 +165,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         });
   } else if (message == "detailDelete") {
         // Forward the message to Content Script
-        chrome.tabs.query({}, function(tabs) {
+        chrome.tabs.query({url: ["https://*.current-rms.com/*"]}, function(tabs) {
           if (tabs.length > 0){
             tabs.forEach(function(tab) {
                 chrome.tabs.sendMessage(tab.id, message, () => {/* swallow error */});
@@ -166,7 +174,26 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         });
   } else if (message == "nestedTotals") {
     // Forward the message to Content Script
-    chrome.tabs.query({}, function(tabs) {
+    chrome.tabs.query({url: ["https://*.current-rms.com/*"]}, function(tabs) {
+      if (tabs.length > 0){
+        tabs.forEach(function(tab) {
+            chrome.tabs.sendMessage(tab.id, message, () => {/* swallow error */});
+        });
+      }
+    });
+  } else if (message == "smartScan") {
+    // Forward the message to Content Script
+    chrome.tabs.query({url: ["https://*.current-rms.com/*"]}, function(tabs) {
+      if (tabs.length > 0){
+        tabs.forEach(function(tab) {
+            chrome.tabs.sendMessage(tab.id, message, () => {/* swallow error */});
+        });
+      }
+    });
+
+  } else if (message == "containerCheck") {
+    // Forward the message to Content Script
+    chrome.tabs.query({url: ["https://*.current-rms.com/*"]}, function(tabs) {
       if (tabs.length > 0){
         tabs.forEach(function(tab) {
             chrome.tabs.sendMessage(tab.id, message, () => {/* swallow error */});
@@ -178,7 +205,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         // response regarding auto-checkin of items
 
         // Forward the message to all tabs
-        chrome.tabs.query({}, function(tabs) {
+        chrome.tabs.query({url: ["https://*.current-rms.com/*"]}, function(tabs) {
           if (tabs.length > 0){
             tabs.forEach(function(tab) {
                 chrome.tabs.sendMessage(tab.id, message, () => {/* swallow error */});
@@ -193,14 +220,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     // response regarding scraping of POs
 
     // Forward the message to all tabs
-    chrome.tabs.query({}, function(tabs) {
+    chrome.tabs.query({url: ["https://*.current-rms.com/*"]}, function(tabs) {
       if (tabs.length > 0){
         tabs.forEach(function(tab) {
             chrome.tabs.sendMessage(tab.id, message, () => {/* swallow error */});
         });
       }
     });
-
+  } else if (message == "fullSettings") {
+    // Open settings.html in a new tab
+    chrome.tabs.create({ url: 'settings.html' });
 
   } else {
     console.log("Background js received a message");
@@ -236,30 +265,36 @@ let quarantinePageNumber = 1;
 var opportunityAssets = {opportunity_items:[], meta:[]};
 let quarantineData = {quarantines:[], meta:[]};
 
+let quarantineCheckTimeout;
+
 checkQuarantineStatus(); // imediately check quarantine info status and update if necessary.
 
-function checkQuarantineStatus(){
-  // get the inspection alert setting from local storage
+function checkQuarantineStatus() {
   chrome.storage.local.get(["quarantineUpdateTime"]).then((result) => {
-      if (result.quarantineUpdateTime == undefined){
-        console.log("No data set");
+    if (result.quarantineUpdateTime == undefined) {
+      console.log("No data set");
+      retreiveQuarantines();
+    } else {
+      const timeNow = new Date().getTime();
+      const timeElapsed = timeNow - result.quarantineUpdateTime;
+      console.log("Time since last Quarantine data update (ms): " + timeElapsed);
+
+      if (timeElapsed > 1800000) {
         retreiveQuarantines();
       } else {
-        const timeNow = new Date().getTime();
-        const timeElapsed = timeNow - result.quarantineUpdateTime;
-        console.log("Time since last Quarantine data update (ms): "+timeElapsed);
-        if (timeElapsed > 1800000){ // check every 30 minutes
-          retreiveQuarantines();
-        } else {
-          var timeRemaining = (1800000 - timeElapsed + 10); // reschedule a check when the time expires.
-          setTimeout(() => {
-            checkQuarantineStatus();
-          }, timeRemaining);
+        const timeRemaining = (1800000 - timeElapsed + 10);
 
-        }
+        // prevent multiple timers
+        if (quarantineCheckTimeout) clearTimeout(quarantineCheckTimeout);
+
+        quarantineCheckTimeout = setTimeout(() => {
+          checkQuarantineStatus();
+        }, timeRemaining);
       }
+    }
   });
 }
+
 
 
 
@@ -350,12 +385,9 @@ async function retreiveOpportunityAssets(opp) {
 
 
 
-
-
-
 // API call to retrieve a list of products?
 
-function getProducts(opp){
+function getProducts(){
   return new Promise(function (resolve, reject) {
     const apiUrl = 'https://api.current-rms.com/api/v1/products/?page='+pageNumber+'&per_page=100&include[]=icon&include[]=accessories&filtermode=active';
     
@@ -451,8 +483,8 @@ function getStock(){
 
 
 
-async function retrieveApiData(opp) {
-
+async function retrieveApiData() {
+  // flushes allProducts and allStock and gets new data from the API
   await recallApiDetails();
   if (apiKey && apiSubdomain){
     // Refresh product list
@@ -460,15 +492,16 @@ async function retrieveApiData(opp) {
     allStock = {stock_levels:[], meta:[]};
 
 
-    var result = await getProducts(opp);
+    var result = await getProducts();
     while (allProducts.meta.row_count > 0){
       pageNumber ++;
-      var result = await getProducts(opp);
+      var result = await getProducts();
       try {
         await chrome.runtime.sendMessage("awaitingproducts");
       } catch (err) {
         if (err.message.includes('Receiving end does not exist')) {
           // fallback or retry logic
+          console.error('Error code 1');
         }
       }
       
@@ -488,10 +521,11 @@ async function retrieveApiData(opp) {
        pageNumber ++;
        var result = await getStock();
        try {
-        await cchrome.runtime.sendMessage("awaitingstock");
+        await chrome.runtime.sendMessage("awaitingstock");
       } catch (err) {
         if (err.message.includes('Receiving end does not exist')) {
           // fallback or retry logic
+          console.error('Error code 2');
         }
       }
       
@@ -530,6 +564,8 @@ async function retrieveApiData(opp) {
 
       let containerList = [];
       let containerData = {};
+    
+
       // loop through the container stock items and create an object for each one
       containerStock.forEach(item => {
         if (item.container_mode) {
@@ -547,18 +583,33 @@ async function retrieveApiData(opp) {
         }
       });
 
+      const containerItems = new Set(
+        allStock.stock_levels
+          .filter(item => item.container_stock_level_id)
+          .map(item => item.asset_number)
+      );
+
+      console.log(containerItems);
+      
+
       // store the container list in local storage
-      chrome.storage.local.set({ 'containerList': containerList, 'containerData': containerData }).then(() => {
+      chrome.storage.local.set({ 'containerList': Array.from(containerList), 'containerData': containerData, 'containerItems': [...containerItems] }).then(() => {
         console.log("Container data was updated");
       });
 
-
-
       try {
-        await chrome.runtime.sendMessage("apidatawasrefreshed");
+        chrome.runtime
+        .sendMessage("apidatawasrefreshed")
+        .catch((err) => {
+          if (!err?.message?.includes("Receiving end does not exist")) {
+            console.error(err);
+            console.error('Error code 3');
+          }
+        });
       } catch (err) {
         if (err.message.includes('Receiving end does not exist')) {
           // fallback or retry logic
+          console.error('Error code 4');
         }
       }
       
@@ -608,7 +659,9 @@ async function sendAlert(message){
     await chrome.runtime.sendMessage({messageType: "alert", messageText: message});
   } catch (err) {
     if (err.message.includes('Receiving end does not exist')) {
+
       // fallback or retry logic
+      console.error('Error code 5');
     }
   }
   
@@ -620,6 +673,8 @@ async function sendProgress(percent){
   } catch (err) {
     if (err.message.includes('Receiving end does not exist')) {
       // fallback or retry logic
+      // console.error('Error code 6');
+      console.log('Error code 9');
     }
   }
   
@@ -665,10 +720,18 @@ async function retreiveQuarantines() {
          console.log("Quarantine data in local storage was updated");
       });
       try {
-        await chrome.runtime.sendMessage("quarantinedatarefreshed");
+
+        chrome.tabs.query({url: ["https://*.current-rms.com/*"]}, function(tabs) {
+          if (tabs.length > 0){
+            tabs.forEach(function(tab) {
+                chrome.tabs.sendMessage(tab.id, "quarantinedatarefreshed");
+            });
+          }
+        });
       } catch (err) {
         if (err.message.includes('Receiving end does not exist')) {
           // fallback or retry logic
+          console.error('Error code 7');
         }
       }
       
@@ -860,10 +923,10 @@ async function checkApiDataStatus(){
           const timeStamped = parseInt(result[`apidata-timestamp-${apiSubdomain}`]);
           const timeElapsed = timeNow - timeStamped;
           console.log("Time since last apiData update (ms): "+timeElapsed);
-          if (timeElapsed > 3600000){ // check every 60 minutes
+          if (timeElapsed > 1800000){ // check every 30 minutes
             updateApiData(timeStamped);
           } else {
-            var timeRemaining = (3600000 - timeElapsed + 10); // reschedule a check when the time expires.
+            var timeRemaining = (1800000 - timeElapsed + 10); // reschedule a check when the time expires.
             setTimeout(() => {
               checkApiDataStatus();
             }, timeRemaining);
@@ -876,6 +939,7 @@ async function checkApiDataStatus(){
 
 
 async function forceAllStockUpdate() {
+  // causes an early run of the stock update
   await recallApiDetails();
 
   if (apiKey && apiSubdomain) {
@@ -884,7 +948,7 @@ async function forceAllStockUpdate() {
     console.log(result);
     if (result[`apidata-timestamp-${apiSubdomain}`] == undefined) {
       console.log("No apiData time stamp set");
-      await updateApiData(600000);
+      await updateApiData(600000); // 600000 = 0 after function subtracts an hour
     } else {
       const timeNow = new Date().getTime();
       const timeStamped = parseInt(result[`apidata-timestamp-${apiSubdomain}`]);
@@ -900,6 +964,7 @@ async function forceAllStockUpdate() {
             catch (error) {
               if (error.message.includes('Receiving end does not exist')) {
                 // fallback or retry logic
+                console.error('Error code 8');
               } else {
                 console.error(`Error sending message to tab ${tab.id}: ${error}`);
               }
@@ -925,114 +990,111 @@ async function updateApiData(timeStamped) {
 
   if (apiKey && apiSubdomain){
 
+    // reset update global variables
+    updatedProducts = {products:[], meta:[]};
+    updatedStock = {stock_levels:[], meta:[]};
 
-  // reset data
-  updatedProducts = {products:[], meta:[]};
-  updatedStock = {stock_levels:[], meta:[]};
+    var updatePageNumber = 1;
 
-  var updatePageNumber = 1;
+    const time = timeStamped - 600000; // subtract 1 hour from the timestamp JIC
 
-  const time = timeStamped - 600000; // subtract 1 hour from the timestamp JIC
+    console.log("Time to check for updates: "+time);
 
-  console.log("Time to check for updates: "+time);
-
-  // Refresh product list
-  var result = await updateProducts(updatePageNumber, time);
-  while (updatedProducts.meta.row_count > 0){
-    updatePageNumber ++;
+    // Refresh product list
     var result = await updateProducts(updatePageNumber, time);
-    try {
-      await chrome.runtime.sendMessage("awaitingproducts");
-    } catch (err) {
-      if (err.message.includes('Receiving end does not exist')) {
-        // fallback or retry logic
+    while (updatedProducts.meta.row_count > 0){
+      updatePageNumber ++;
+      var result = await updateProducts(updatePageNumber, time);
+      try {
+        await chrome.runtime.sendMessage("awaitingproducts");
+      } catch (err) {
+        if (err.message.includes('Receiving end does not exist')) {
+          // fallback or retry logic
+          //console.error('Error code 9');
+          console.log('Error code 9');
+        }
       }
     }
-    
-    
-  }
-  console.log("API call for Products complete");
-  updatePageNumber = 1;
-  var numberOfProducts = updatedProducts.products.length;
-  console.log("Number of updated products: " + numberOfProducts);
 
-  
-  
-  console.log("Products list was updated")
+    console.log("API call for Products complete");
+    updatePageNumber = 1;
+    var numberOfProducts = updatedProducts.products.length;
+    console.log("Number of updated products: " + numberOfProducts);
 
-  console.log(updatedProducts);
+    console.log("Products list was updated")
+    console.log(updatedProducts);
 
-
-
-  // Refresh stock list
-  var result = await updateStock(updatePageNumber, time);
-  while (updatedStock.meta.row_count > 0){
-    updatePageNumber ++;
+    // Refresh stock list
     var result = await updateStock(updatePageNumber, time);
-    try {
-      await chrome.runtime.sendMessage("awaitingstock");
-    } catch (err) {
-      if (err.message.includes('Receiving end does not exist')) {
-        // fallback or retry logic
+    while (updatedStock.meta.row_count > 0){
+      updatePageNumber ++;
+      var result = await updateStock(updatePageNumber, time);
+      try {
+        await chrome.runtime.sendMessage("awaitingstock");
+      } catch (err) {
+        if (err.message.includes('Receiving end does not exist')) {
+          // fallback or retry logic
+          //console.error('Error code 10');
+          console.log('Error code 9');
+        }
       }
+      
+      
     }
+    console.log("API call for Stock complete");
+    updatePageNumber = 1;
+    var numberOfProducts = updatedStock.stock_levels.length;
+    console.log("Number of updated stock items: " + numberOfProducts);
+
+    console.log("Stock list was updated")
+
+    console.log(updatedStock);
+
+    let existingAllStock = {stock_levels:[], meta:[]};
+    let existingAllProducts = {products:[], meta:[]};
+
+    if (time > 0){
+      var productsResult = await chrome.storage.local.get(["allProducts"]);
+      console.log(productsResult);
+      if (productsResult.allProducts != undefined){
+        var allProductsString = productsResult.allProducts;
+        existingAllProducts = JSON.parse(allProductsString);
+      }
+
+      var stockResult = await chrome.storage.local.get(["allStock"]);
+      console.log(stockResult);
+      
+      if (stockResult.allStock != undefined){
+        var allStockString = stockResult.allStock;
+        existingAllStock = JSON.parse(allStockString);
+      }
     
-    
-  }
-  console.log("API call for Stock complete");
-  updatePageNumber = 1;
-  var numberOfProducts = updatedStock.stock_levels.length;
-  console.log("Number of updated stock items: " + numberOfProducts);
-
-  console.log("Stock list was updated")
-
-  console.log(updatedStock);
-
-  let existingAllStock = {stock_levels:[], meta:[]};
-  let existingAllProducts = {products:[], meta:[]};
-
-  if (time > 0){
-    var productsResult = await chrome.storage.local.get(["allProducts"]);
-    console.log(productsResult);
-    if (productsResult.allProducts != undefined){
-      var allProductsString = productsResult.allProducts;
-      existingAllProducts = JSON.parse(allProductsString);
+      
     }
 
-    var stockResult = await chrome.storage.local.get(["allStock"]);
-    console.log(stockResult);
-    
-    if (stockResult.allStock != undefined){
-      var allStockString = stockResult.allStock;
-      existingAllStock = JSON.parse(allStockString);
-    }
-  
-    
-  }
+
+    console.log("Existing all stock: ");
+    console.log(existingAllStock);
+    console.log("Existing all products: ");
+    console.log(existingAllProducts);
+    console.log("Updated stock: ");
+    console.log(updatedStock);
+    console.log("Updated products: ");
+    console.log(updatedProducts);
+    console.log("Merging data...");
 
 
-  console.log("Existing all stock: ");
-  console.log(existingAllStock);
-  console.log("Existing all products: ");
-  console.log(existingAllProducts);
-  console.log("Updated stock: ");
-  console.log(updatedStock);
-  console.log("Updated products: ");
-  console.log(updatedProducts);
-  console.log("Merging data...");
+    allProducts.products = mergeById(existingAllProducts.products, updatedProducts.products);
+    allStock.stock_levels = mergeById(existingAllStock.stock_levels, updatedStock.stock_levels);
 
+    const newAllStockString = JSON.stringify(allStock);
+    const newAllProductsString = JSON.stringify(allProducts);
 
-  allProducts.products = mergeById(existingAllProducts.products, updatedProducts.products);
-  allStock.stock_levels = mergeById(existingAllStock.stock_levels, updatedStock.stock_levels);
+    console.log("New after merge:")
+    console.log(allStock);
+    console.log(allProducts);
 
-  const newAllStockString = JSON.stringify(allStock);
-  const newAllProductsString = JSON.stringify(allProducts);
-
-  console.log("New after merge:")
-  console.log(allStock);
-  console.log(allProducts);
-
-  await chrome.storage.local.set({ 'allProducts': newAllProductsString, 'allStock': newAllStockString });
+    await chrome.storage.local.set({ 'allProducts': newAllProductsString, 'allStock': newAllStockString });
     console.log("apiData for products and stock was updated");
     
     // Get the current date and time
@@ -1049,15 +1111,61 @@ async function updateApiData(timeStamped) {
     // update the api timestamp
     const timecheck = new Date().getTime();
     chrome.storage.local.set({ [`apidata-timestamp-${apiSubdomain}`]: timecheck });
+
+    // Generate container data from new stock data
+    // create a new array that contains only stock items that have a container_mode that isn't null OR a container_stock_level_id that isn't null
+    const containerStock = allStock.stock_levels.filter(item => item.container_mode || item.container_stock_level_id);
+
+    let containerList = [];
+    let containerData = {};
+
+    // loop through the container stock items and create an object for each one
+    containerStock.forEach(item => {
+      if (item.container_mode) {
+        containerList.push(item.asset_number);
+      } else if (item.container_stock_level_id) {
+
+        // find the asset_number from the stock level id
+        const thisContainer = allStock.stock_levels.find(stock => stock.id === item.container_stock_level_id)?.asset_number;
+
+        if (!containerData[thisContainer]) {
+          containerData[thisContainer] = [item];
+        } else {
+          containerData[thisContainer].push(item);
+        }
+      }
+    });
+
+    const containerItems = new Set(
+      allStock.stock_levels
+        .filter(item => item.container_stock_level_id)
+        .map(item => item.asset_number)
+    );
+
+    console.log(containerItems);
+
+    // store the container list in local storage
+    chrome.storage.local.set({ 'containerList': Array.from(containerList), 'containerData': containerData, 'containerItems': [...containerItems] }).then(() => {
+      console.log("Container data was updated");
+    });
+
     try {
-        await chrome.runtime.sendMessage("apidatawasrefreshed");
+      chrome.runtime
+      .sendMessage("apidatawasrefreshed")
+      .catch((err) => {
+        if (!err?.message?.includes("Receiving end does not exist")) {
+          console.error(err);
+          console.error('Error code 11');
+        }
+      });
     } catch (err) {
       if (err.message.includes('Receiving end does not exist')) {
         // fallback or retry logic
+        console.error('Error code 12');
       }
     }
     
-    // run the check again in 60 minutes
+    // run the check again in 30 minutes
     checkApiDataStatus();
 
  
@@ -1072,7 +1180,7 @@ function updateProducts(thisPage, time){
 
   const timeString = new Date(time).toISOString();
   return new Promise(function (resolve, reject) {
-    const apiUrl = `https://api.current-rms.com/api/v1/products/?page=${thisPage}&per_page=100&include[]=icon&include[]=accessories&filtermode=active&q[updated_at_or_product_group_updated_at_or_icon_updated_at_gt]=${timeString}`;
+    const apiUrl = `https://api.current-rms.com/api/v1/products/?page=${thisPage}&per_page=100&include[]=icon&include[]=accessories&filtermode=active&q[updated_at_or_product_group_updated_at_or_icon_updated_at_or_accessories_updated_at_gt]=${timeString}`;
   
     
 
@@ -1336,5 +1444,83 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         sendResponse({spoken: true});
     });
     return true; // indicates we’ll call sendResponse asynchronously
+  }
+});
+
+
+
+// service-worker.js
+
+const GITHUB_OWNER = "CompositeLight";
+const GITHUB_REPO  = "currentRMS-helper";
+const TAG_CHECK_ALARM = "check-latest-github-tag";
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+// Core function: call GitHub API and store latest tag
+async function fetchAndStoreLatestReleaseTag() {
+  try {
+    const res = await fetch(
+      `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest`
+    );
+
+    if (!res.ok) {
+      console.error("GitHub API error:", res.status, await res.text());
+      return;
+    }
+
+    const data = await res.json();
+    const tag = data.tag_name;
+
+    if (!tag) {
+      console.warn("No tag_name returned from GitHub:", data);
+      return;
+    }
+
+    await chrome.storage.local.set({
+      latestReleaseTag: tag,
+      latestReleaseTagCheckedAt: Date.now()
+    });
+
+    console.log("Updated latestReleaseTag:", tag);
+  } catch (err) {
+    console.error("Error fetching latest GitHub release tag:", err);
+  }
+}
+
+// Wrapper: only actually fetch if it’s been > 1 day
+async function maybeUpdateLatestReleaseTag() {
+  const { latestReleaseTagCheckedAt } = await chrome.storage.local.get(
+    "latestReleaseTagCheckedAt"
+  );
+
+  const now = Date.now();
+  if (latestReleaseTagCheckedAt && now - latestReleaseTagCheckedAt < ONE_DAY_MS) {
+    // Checked less than a day ago — skip
+    return;
+  }
+
+  await fetchAndStoreLatestReleaseTag();
+}
+
+
+// Create a daily alarm when the extension is installed/updated
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.alarms.create(TAG_CHECK_ALARM, {
+    periodInMinutes: 60 * 24 // once per day
+  });
+
+  // Do an immediate first check on install/update:
+  maybeUpdateLatestReleaseTag();
+});
+
+// Check on browser startup (service worker wakes)
+chrome.runtime.onStartup.addListener(() => {
+  maybeUpdateLatestReleaseTag();
+});
+
+// Daily trigger
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === TAG_CHECK_ALARM) {
+    maybeUpdateLatestReleaseTag();
   }
 });

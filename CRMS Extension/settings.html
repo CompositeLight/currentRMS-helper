@@ -1,0 +1,476 @@
+<html>
+  <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+  <style>
+    body {
+      background-color: rgb(249, 249, 249);
+      min-width: 300px;
+    }
+
+    .main-panel {
+      min-width: 300px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+
+    }
+
+    .api-key{
+      text-align: center;
+    }
+    .version{
+      font-size: 12px;
+    }
+    input.api-subdomain{
+      width:35% !important;
+      text-align: right;
+    }
+
+    body.dark-mode {
+      background-color: rgb(249, 249, 249);
+      color: black;
+    }
+
+    body.light-mode {
+      background-color: rgb(249, 249, 249);
+      color: black;
+    }
+
+    #open-settings {
+      margin-top: 10px;
+    }
+    .setting-item {
+      border-left: 5px solid #4f4f4f;
+      transition: background 0.2s;
+      max-width: 1000px;
+    }
+
+    .setting-name {
+  font-weight: bold;
+  margin-bottom: 6px;
+}
+
+.setting-options label {
+  display: inline-block;
+  margin-right: 12px;
+  margin-bottom: 6px;
+}
+
+.setting-note p {
+  margin-top: 8px;
+  margin-bottom: 0;
+  line-height: 1.4;
+}
+
+.page-header {
+  margin-top: 20px;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  max-width: 1000px;
+}
+
+.page-title {
+  font-size: 2em;               /* large, but not overwhelming */
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+
+.page-subtitle {
+  font-size: 0.95em;
+  margin-top: 6px;
+}
+  
+  </style>
+
+  <body>
+
+
+  <form class="w3-container w3-card-4 main-panel">
+
+    <div class="w3-container w3-center page-header">
+      <h1 class="page-title">CurrentRMS Helper Settings</h1>
+      <p class="page-subtitle w3-text-grey">
+        Version: <span id="maifest-version"><span>
+      </p>
+    </div>
+
+
+<div class="w3-container">
+  <h2 class="w3-text-theme">Settings</h2>
+
+  <!-- Sounds Setting -->
+  <div class="setting-item w3-card w3-padding w3-margin-bottom">
+    <div class="w3-row">
+      <div class="w3-col s12 setting-name">
+        <strong>Use CurrentRMS Helper Sounds</strong>
+      </div>
+      <div class="w3-col s12 setting-options">
+        <label class="w3-margin-right">
+          <input class="w3-radio" type="radio" name="soundson" value="true" checked> True
+        </label>
+        <label class="w3-margin-right">
+          <input class="w3-radio" type="radio" name="soundson" value="false" > False
+        </label>
+      </div>
+    </div>
+
+    <div class="w3-row setting-note">
+      <div class="w3-col s12">
+        <p class="w3-small w3-text-grey">
+          Enabling this option will trigger alternative sounds and voice prompts when scanning items in detail view. It is recommended that you mute the normal CurrentRMS sounds if using this feature (to avoid double pings).
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Allocate View Setting -->
+  <div class="setting-item w3-card w3-padding w3-margin-bottom">
+    <div class="w3-row">
+      <div class="w3-col s12 setting-name">
+        <strong>Allocate View by Default</strong>
+      </div>
+      <div class="w3-col s12 setting-options">
+        <label class="w3-margin-right">
+          <input class="w3-radio" type="radio" name="allocatedefault" value="true" checked> True
+        </label>
+        <label class="w3-margin-right">
+          <input class="w3-radio" type="radio" name="allocatedefault" value="false" > False
+        </label>
+      </div>
+    </div>
+
+    <div class="w3-row setting-note">
+      <div class="w3-col s12">
+        <p class="w3-small w3-text-grey">
+          By Default, when the Details View page loads, you start on the Functions tab, which is rarely where you want to be. This feature automatically puts you into Allocate, so that you're ready to start scanning.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mark as Prepared Setting -->
+  <div class="setting-item w3-card w3-padding w3-margin-bottom">
+    <div class="w3-row">
+      <div class="w3-col s12 setting-name">
+        <strong>Mark As Prepared on Page Load</strong>
+      </div>
+      <div class="w3-col s12 setting-options">
+        <label class="w3-margin-right">
+          <input class="w3-radio" type="radio" name="markprepared" value="true" checked> True
+        </label>
+        <label class="w3-margin-right">
+          <input class="w3-radio" type="radio" name="markprepared" value="false" > False
+        </label>
+      </div>
+    </div>
+
+    <div class="w3-row setting-note">
+      <div class="w3-col s12">
+        <p class="w3-small w3-text-grey">
+          Many users don't typically use the Allocate step of current-rms, and instead go directly from Reserved to Prepared. By default, the "Mark as Prepared" setting is off, meaning it needs to be turned on after every page load. This feature ensures that Mark As Prepared is On by default.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Inspection Alerts Setting -->
+  <div class="setting-item w3-card w3-padding w3-margin-bottom">
+    <div class="w3-row">
+      <div class="w3-col s12 setting-name">
+        <strong>Inspection Alerts</strong>
+      </div>
+      <div class="w3-col s12 setting-options">
+        <label class="w3-margin-right">
+          <input class="w3-radio" type="radio" name="inspectionalert" value="full" checked> Full
+        </label>
+        <label class="w3-margin-right">
+          <input class="w3-radio" type="radio" name="inspectionalert" value="short" > Short
+        </label>
+        <label class="w3-margin-right">
+          <input class="w3-radio" type="radio" name="inspectionalert" value="off" > Off
+        </label>
+      </div>
+    </div>
+
+    <div class="w3-row setting-note">
+      <div class="w3-col s12">
+        <p class="w3-small w3-text-grey">
+          By default, current-rms provides no audible warning if an item is scanned which is overdue an inspection. This often means returning to the screen to discover an item you scanned 10 minutes ago (that is now buried in a flightcase) needs to be tested. This feature introduces audible warnings when the item is scanned. "Full" means a voice will report "Inspection overdue for item XXXXXXX". "Short" means a voice will report "Inspection overdue".</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Block quarantined Setting -->
+  <div class="setting-item w3-card w3-padding w3-margin-bottom">
+    <div class="w3-row">
+      <div class="w3-col s12 setting-name">
+        <strong>Block Quarantined Allocations *</strong>
+      </div>
+      <div class="w3-col s12 setting-options">
+        <label class="w3-margin-right">
+          <input class="w3-radio" type="radio" name="blockquarantines" value="true" checked> True
+        </label>
+        <label class="w3-margin-right">
+          <input class="w3-radio" type="radio" name="blockquarantines" value="false" > False
+        </label>
+      </div>
+    </div>
+
+    <div class="w3-row setting-note">
+      <div class="w3-col s12">
+        <p class="w3-small w3-text-grey">
+          By default, current-rms will allow an item in quarantine to be allocated to an opportunity; even if that item is in quarantine because it is unsafe to use. This feature will attempt to block quarantined items from being scanned. Note: Due to how current-rms works, this block is not guaranteed to work in all circumstances. For example, items that have only been quarantined a few minutes before being allocated.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Global check in override Setting -->
+  <div class="setting-item w3-card w3-padding w3-margin-bottom">
+    <div class="w3-row">
+      <div class="w3-col s12 setting-name">
+        <strong>Global Check-in Dialog Override</strong>
+      </div>
+      <div class="w3-col s12 setting-options">
+        <label class="w3-margin-right">
+          <input class="w3-radio" type="radio" name="multiglobal" value="true" checked> True
+        </label>
+        <label class="w3-margin-right">
+          <input class="w3-radio" type="radio" name="multiglobal" value="false" > False
+        </label>
+      </div>
+    </div>
+
+    <div class="w3-row setting-note">
+      <div class="w3-col s12">
+        <p class="w3-small w3-text-grey">
+          In Global Check-in, by default a scanned item that is booked out on multiple opportunities will invoke a dialog box to ask which opportunities it should be returned from. In practice, the answer is almost always "all of them", but the need to click this button on the dialog box disrupts the scanning process. This feature automatically selects all opportunities listed for a scanned item and closes the dialog box automatically.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error message timeout Setting -->
+  <div class="setting-item w3-card w3-padding w3-margin-bottom">
+    <div class="w3-row">
+      <div class="w3-col s12 setting-name">
+        <strong>Error Message Timeout</strong>
+      </div>
+      <div class="w3-col s12 setting-options">
+        <input id="error-message-timeout" style="text-align: center; display: inline;" class="w3-border" type="number" min="0" max="60" step="1" value="0">
+<label>seconds</label>
+      </div>
+    </div>
+
+    <div class="w3-row setting-note">
+      <div class="w3-col s12">
+        <p class="w3-small w3-text-grey">
+          This feature will automatically dismiss error messages that appear during scanning. This can be useful when using hand held devices where the message is immediately visible to the user. A setting of 0 seconds disables this feature.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Book out nested containers Setting -->
+  <div class="setting-item w3-card w3-padding w3-margin-bottom">
+    <div class="w3-row">
+      <div class="w3-col s12 setting-name">
+        <strong>Auto Book Out Nested Containers</strong>
+      </div>
+      <div class="w3-col s12 setting-options">
+        <label class="w3-margin-right">
+          <input class="w3-radio" type="radio" name="bookoutcontainers" value="true" checked> True
+        </label>
+        <label class="w3-margin-right">
+          <input class="w3-radio" type="radio" name="bookoutcontainers" value="false" > False
+        </label>
+      </div>
+    </div>
+
+    <div class="w3-row setting-note">
+      <div class="w3-col s12">
+        <p class="w3-small w3-text-grey">
+          When enabled, this feature will automatically book out any items that are contained within the scanned item. For example, scanning a flightcase to book out will cause the flightcase's contents to also be booked out.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detail View Delete Setting -->
+  <div class="setting-item w3-card w3-padding w3-margin-bottom">
+    <div class="w3-row">
+      <div class="w3-col s12 setting-name">
+        <strong>Disable Detail View Delete</strong>
+      </div>
+      <div class="w3-col s12 setting-options">
+        <label class="w3-margin-right">
+          <input class="w3-radio" type="radio" name="detaildelete" value="true" checked> True
+        </label>
+        <label class="w3-margin-right">
+          <input class="w3-radio" type="radio" name="detaildelete" value="false" > False
+        </label>
+      </div>
+    </div>
+
+    <div class="w3-row setting-note">
+      <div class="w3-col s12">
+        <p class="w3-small w3-text-grey">
+        This feature disables the controversial button that allows items to be easily deleted from the Detail View list.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Show Collapsed Item Totals Setting -->
+  <div class="setting-item w3-card w3-padding w3-margin-bottom">
+    <div class="w3-row">
+      <div class="w3-col s12 setting-name">
+        <strong>Show Collapsed Item Totals</strong>
+      </div>
+      <div class="w3-col s12 setting-options">
+        <label class="w3-margin-right">
+          <input class="w3-radio" type="radio" name="nestedtotals" value="true" checked> True
+        </label>
+        <label class="w3-margin-right">
+          <input class="w3-radio" type="radio" name="nestedtotals" value="false" > False
+        </label>
+      </div>
+    </div>
+
+    <div class="w3-row setting-note">
+      <div class="w3-col s12">
+        <p class="w3-small w3-text-grey">
+          In Order View, when an item has accessories but the item is in a collapsed state (accessories are hidden) the total now reflects the item charge plus any charges for accessories inside it. Mousing over this total reveals the item's individual charge. Clicking on it expands the acessories below.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Smart Scan Default Setting -->
+  <div class="setting-item w3-card w3-padding w3-margin-bottom">
+    <div class="w3-row">
+      <div class="w3-col s12 setting-name">
+        <strong>Smart Scan by Default *</strong>
+      </div>
+      <div class="w3-col s12 setting-options">
+        <label class="w3-margin-right">
+          <input class="w3-radio" type="radio" name="smartscan" value="true" checked> True
+        </label>
+        <label class="w3-margin-right">
+          <input class="w3-radio" type="radio" name="smartscan" value="false" > False
+        </label>
+      </div>
+    </div>
+
+    <div class="w3-row setting-note">
+      <div class="w3-col s12">
+        <p class="w3-small w3-text-grey">
+          Normally, any item scanned will be allocated to the first available product line in the opportunity. This can cause issues where common accessory items (such as power cords) become associated with the wrong parent product. Smart Scan attempts to rectify this, by keeping track of the last item scanned and then attempting to pair the next item with an accessory.</p>
+      </div>
+    </div>
+  </div>
+
+    <!-- Container Check Setting -->
+    <div class="setting-item w3-card w3-padding w3-margin-bottom">
+      <div class="w3-row">
+        <div class="w3-col s12 setting-name">
+          <strong>Container Check *</strong>
+        </div>
+        <div class="w3-col s12 setting-options">
+          <label class="w3-margin-right">
+            <input class="w3-radio" type="radio" name="containercheck" value="true" checked> True
+          </label>
+          <label class="w3-margin-right">
+            <input class="w3-radio" type="radio" name="containercheck" value="false" > False
+          </label>
+        </div>
+      </div>
+  
+      <div class="w3-row setting-note">
+        <div class="w3-col s12">
+          <p class="w3-small w3-text-grey">
+            Normally, Current-RMS will allow you to scan a serialised container onto an opportunity, even if the contents are not required at all. For example, if you have cases of 6 x LED tiles containerised, and a job requires 12 tiles, the system will allow you to scan 3 cases (or more) without warning. With Container Check enabled, a list is formed of containerised assets each time the API data is updated (automatically every 30 minutes). To be valid, a container must contain at least one unnallocated item that is not an 'Accessory Only' product. You can defeat Container Check if required by using Free Scan.</p>
+        </div>
+      </div>
+    </div>
+  
+  <p>* Requires API key to have been entered.</p>
+
+  <hr>
+  <h2 class="w3-text-theme">Local Data</h2>
+
+  <!-- API Product & Stock Snapshot -->
+  <div class="setting-item w3-card w3-padding w3-margin-bottom">
+    <div class="w3-row">
+      <div class="w3-col s12 setting-name">
+        <strong>API Product & Stock Snapshot *</strong>
+      </div>
+      <div class="w3-col s12 setting-options">
+        <input id="force-refresh-button" class="w3-button w3-block w3-black" type="button" name="refreshProducts" value="Force Refresh">
+        <div class="w3-border">
+        <div class="w3-white w3-center" id="api-progress-bar" style="height:24px;width:100%">Updated:</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="w3-row setting-note">
+      <div class="w3-col s12">
+        <p class="w3-small w3-text-grey">
+          Some features of the extension rely upon having an offline list of the product and stock inventory. This "snapshot" is automatically updated from time to time, but in some cases you may need to force it to be refreshed.</p>
+      </div>
+    </div>
+  </div>
+
+    <!-- Quarantine Data< -->
+    <div class="setting-item w3-card w3-padding w3-margin-bottom">
+      <div class="w3-row">
+        <div class="w3-col s12 setting-name">
+          <strong>Quarantine Data *</strong>
+        </div>
+        <div class="w3-col s12 setting-options">
+          <input id="quarantines-refresh-button" class="w3-button w3-block w3-black" type="button" name="refreshQuarantines" value="Refresh Quarantines">
+          <div class="w3-border">
+            <div class="w3-white w3-center" id="quarantine-progress-bar" style="height:24px;width:100%">Updated:</div>
+          </div>
+        </div>
+      </div>
+  
+      <div class="w3-row setting-note">
+        <div class="w3-col s12">
+          <p class="w3-small w3-text-grey">
+            For the "block quarantined items from being scanned" feature a list is kept of the currently quarantined items. This is because to make an API call during every scan to check if an item is in quarantine is too slow. This list is automatically refreshed every so often, but in some cases you might need to force it to be refreshed.</p>
+        </div>
+      </div>
+    </div>
+    <p>* Requires API key to have been entered.</p>
+    <hr>
+    <h2 class="w3-text-theme">API Details</h2>
+
+    <!-- Subdomain -->
+    <div class="setting-item w3-card w3-padding w3-margin-bottom">
+      <div class="w3-row">
+        <div class="w3-col s12 setting-name">
+          <strong>Company Subdomain</strong>
+        </div>
+        <div class="w3-col s12 setting-options">
+          <input id="api-subdomain-input" class="w3-border api-subdomain" type="text"><span>.current-rms.com</span>
+        </div>
+      </div>
+      <p></p>
+      <div class="w3-col s12 setting-name">
+        <strong>API Key</strong>
+      </div>
+      <input id="api-key-input" class="w3-input w3-border api-key" type="password" minlength="20" maxlength="25" name="api-key-input">
+<input id="api-save" class="w3-button w3-block w3-black" value="Save API Details">
+  
+      <div class="w3-row setting-note">
+        <div class="w3-col s12">
+          <p class="w3-small w3-text-grey">
+            As stated by CurrentRMS: "API Keys give read and write access to your Current RMS System. You should keep your keys safe just as you do your username and password - only use them with software and services that you trust. Give each key a unique name so you can clearly identify who you have issued the key to."
+          </p><p class="w3-small w3-text-grey">
+            THEREFORE: Do not enter your API key unless you have authority to do so. API key information is stored using chrome.storage.local. Though it isn't sent anywhere outside of your system (beyond making API calls), it is not encrypted, and is only as safe as your system.</p>
+        </div>
+      </div>
+    </div>
+  
+</div>
+
+<p>
+</form>
+
+<script src="scripts/control.js"></script>
+  </body>
+</html>

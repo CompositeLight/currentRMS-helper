@@ -8,6 +8,8 @@ if (!detailView){
   var detailView = false;
 }
 
+
+
 getSetRecents();
 
 function getSetRecents(){
@@ -138,7 +140,17 @@ addHelperSidebar();
 // function to add a CurrentRMS Helper section to the sidebar
 function addHelperSidebar(){
   
-  const sidebar = document.getElementById("sidebar_content");
+  var sidebar = document.getElementById("sidebar_content");
+
+  if (!sidebar){
+    sidebar = document.querySelector("div.group-side-content");
+    if (sidebar){
+      sidebar = sidebar.parentElement;
+    }
+  }
+
+
+
   if (sidebar){
     const existingSection = document.getElementById("helper_sidebar");
     if (existingSection) {
@@ -156,12 +168,16 @@ CurrentRMS Helper
 </h3>
 <a class="toggle-button expand-arrow icn-cobra-contract" href="#"></a>
 <ul class="" id="helper_sidebar_list">
-  <li>
-    <i class="icn-cobra-cog" id="helper-test-cog"></i><span>Version: ${manifestData.version}</span>
+  <li id="helper-version">
+    <i class="icn-cobra-eye" id="helper-test-cog"></i><span>Version: ${manifestData.version}</span>
   </li>
 
   <li>
-    <i class="icn-cobra-file-4"></i><a href="https://github.com/CompositeLight/currentRMS-helper/blob/main/README.md" target="new">Release Notes</a>
+    <i class="icn-cobra-cog"></i><a href="" target="new" id="settings-link">Extension Settings</a>
+  </li>
+
+  <li>
+    <i class="icn-cobra-file-4"></i><a href="https://github.com/CompositeLight/currentRMS-helper/blob/main/README.md" target="new">Extension Readme</a>
   </li>
 
   
@@ -186,11 +202,13 @@ CurrentRMS Helper
       });
       //window.postMessage(
 			//	{ source: 'extension', payload: {messageType: "AjaxTest"}},
-			//);
+			//)
+    };
 
-
-
-
+    const settingsLink = newDiv.querySelector('#settings-link');
+    settingsLink.onclick = function (event) {
+      event.preventDefault();
+      chrome.runtime.sendMessage("fullSettings");
     };
 
     const toggleButton = newDiv.querySelector('.toggle-button');
@@ -214,3 +232,30 @@ CurrentRMS Helper
 
   }
 }
+
+
+async function getCachedLatestTag() {
+  const { latestReleaseTag } = await chrome.storage.local.get("latestReleaseTag");
+  console.log(latestReleaseTag);
+  if (latestReleaseTag){
+    var manifestData = chrome.runtime.getManifest();
+    const liveVersion = manifestData.version;
+    const latestVersion = latestReleaseTag.substring(1);
+
+    if (liveVersion !== latestVersion){
+      const helperVersionLine = document.getElementById("helper-version");
+      if (!helperVersionLine){
+        return;
+      }
+      let newLi = document.createElement('li');
+      newLi.innerHTML = `<i class="icn-cobra-checkmark-circle-2" id=""></i><span><a target="_blank" href="https://github.com/CompositeLight/currentRMS-helper/releases">Update available (${latestVersion})</a></span>`;
+
+      helperVersionLine.insertAdjacentElement("afterend", newLi);
+    
+
+    }
+
+  }
+}
+
+getCachedLatestTag();

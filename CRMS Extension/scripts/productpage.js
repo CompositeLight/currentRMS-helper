@@ -6,6 +6,18 @@ var oppsList = [];
 apiKey = "";
 apiSubdomain = "";
 
+containerData = {}; // retrieved API generated object of container contents
+
+// load the containerData from local storage
+chrome.storage.local.get(["containerData"]).then((result) => {
+  if (result.containerData != undefined){
+    containerData = result.containerData;
+    console.log("Retrieved containerData from storage:");
+    //console.log(containerData);
+  }
+});
+
+
 // scrape the product ID from the page URL if there is one
 let productId = (function() {
   const currentUrl = window.location.href;
@@ -217,3 +229,36 @@ if (dropdownArea && searchField){
         });
     });
 }
+
+
+const containerButtons = document.querySelectorAll("i.icn-cobra-open-container");
+containerButtons.forEach(element => {
+  const theButton = element.closest("span.label.label-border")
+  theButton.classList.add("cursor-hover");
+});
+
+
+// Enable click through for container badges
+document.body.addEventListener("click", function (event) {
+  // Find the nearest span with the desired class
+  const containerLabel = event.target.closest("span.label.label-border");
+  if (!containerLabel) return;
+  // check if contains container icon
+  if (!containerLabel.querySelector(".icn-cobra-open-container")) return;
+
+  const stockTr = event.target.closest("tr");
+  if (stockTr){
+    const stockAsset = stockTr.querySelector("td.essential").innerText.trim();
+    const thisContainer = containerData[stockAsset];
+				if (thisContainer){
+
+          const currentUrl = window.location.href;
+          const match = currentUrl.match(/\/products\/(\d+)/);
+          const rpUrl = match ? `?rp=%2Fproducts%2F${match[1]}` : "";
+
+
+          const stockId = thisContainer[0].container_stock_level_id;
+          window.location.href = `/serialised_containers/${stockId}${rpUrl}`;
+        }
+  }
+});

@@ -5,22 +5,7 @@ document.getElementById("maifest-version").innerHTML = manifestData.version;
 getApiTime();
 getQuarantineTime();
 
-// Code for the Mark As Prepared setting:
-chrome.storage.local.get(["setPrepared"]).then((result) => {
-  if (result.setPrepared == "false"){
-    document.querySelector(`input[name="markprepared"][value="false"]`).checked = true;
-  }
-});
 
-document.querySelectorAll('input[name="markprepared"]').forEach(function(radio) {
-  radio.addEventListener('change', function() {
-    console.log(this.value);
-    //await chrome.storage.session.set({ prepareSet: this.value });
-    chrome.storage.local.set({ "setPrepared": this.value }).then(() => {
-       console.log("Mark as prepared set");
-     });
-  });
-});
 
 // Event listener for Force Refresh button
 var refreshButton = document.getElementById("force-refresh-button");
@@ -31,6 +16,13 @@ refreshButton.addEventListener('click', function() {
   // Tell service worker to refresh the list
   chrome.runtime.sendMessage("refreshProducts");
 });
+
+// Event listener for Open Settings button
+var settingsButton = document.getElementById("open-settings");
+settingsButton.addEventListener('click', function() {
+  chrome.runtime.sendMessage("fullSettings");
+});
+
 
 
 // message listener to reset the button
@@ -76,10 +68,6 @@ quarantinesRefreshButton.addEventListener('click', function() {
   // Tell service worker to refresh the list
   chrome.runtime.sendMessage("refreshQuarantines");
 });
-
-
-
-
 
 
 
@@ -136,210 +124,6 @@ document.querySelectorAll('input[name="soundson"]').forEach(function(radio) {
 
 
 
-// Code for getting the Allocate by Default radio button to match the stored value
-chrome.storage.local.get(["allocateDefault"]).then((result) => {
-  if (result.allocateDefault == "false"){
-    document.querySelector(`input[name="allocatedefault"][value="false"]`).checked = true;
-  }
-});
-
-// Code for watching the Allocate by Default radio buttons for changes and updating local storage
-document.querySelectorAll('input[name="allocatedefault"]').forEach(function(radio) {
-  radio.addEventListener('change', function() {
-    console.log(this.value);
-    //await chrome.storage.session.set({ prepareSet: this.value });
-    chrome.storage.local.set({ "allocateDefault": this.value }).then(() => {
-       console.log("Allocate View by Default setting was changed");
-     });
-
-  });
-});
-
-
-
-// Code for getting the Prepared radio button to match the stored value
-chrome.storage.local.get(["setPrepared"]).then((result) => {
-  if (result.setPrepared == "false"){
-    document.querySelector(`input[name="markprepared"][value="false"]`).checked = true;
-  }
-});
-
-
-
-// Code for the Announce Inspections setting:
-chrome.storage.local.get(["inspectionAlert"]).then((result) => {
-  if (result.inspectionAlert){
-    var selectedOption = "input[name='inspectionalert'][value='" + result.inspectionAlert + "']";
-    document.querySelector(selectedOption).checked = true;
-  }
-});
-
-document.querySelectorAll('input[name="inspectionalert"]').forEach(function(radio) {
-  radio.addEventListener('change', function() {
-    console.log(this.value);
-    //await chrome.storage.session.set({ prepareSet: this.value });
-    chrome.storage.local.set({ "inspectionAlert": this.value }).then(() => {
-       console.log("Inspection alert set");
-       chrome.runtime.sendMessage({ inspectionAlerts: this.value });
-     });
-
-  });
-});
-
-// Code for the Global Check-in setting:
-chrome.storage.local.get(["multiGlobal"]).then((result) => {
-  if (result.multiGlobal){
-    var selectedOption = "input[name='multiglobal'][value='" + result.multiGlobal + "']";
-    document.querySelector(selectedOption).checked = true;
-  }
-});
-
-document.querySelectorAll('input[name="multiglobal"]').forEach(function(radio) {
-  radio.addEventListener('change', function() {
-    console.log(this.value);
-    //await chrome.storage.session.set({ prepareSet: this.value });
-    chrome.storage.local.set({ "multiGlobal": this.value }).then(() => {
-       console.log("Global check-in overide set");
-       chrome.runtime.sendMessage({ multiGlobal: this.value });
-     });
-
-  });
-});
-
-
-
-
-
-// Code for the auto book out nested containers setting:
-chrome.storage.local.get(["bookOutContainers"]).then((result) => {
-  console.log(result.bookOutContainers);
-  if (result.bookOutContainers){
-    var selectedOption = "input[name='bookoutcontainers'][value='" + result.bookOutContainers + "']";
-    document.querySelector(selectedOption).checked = true;
-  }
-});
-
-document.querySelectorAll('input[name="bookoutcontainers"]').forEach(function(radio) {
-  radio.addEventListener('change', function() {
-    console.log(this.value);
-    //await chrome.storage.session.set({ prepareSet: this.value });
-    chrome.storage.local.set({ "bookOutContainers": this.value }).then(() => {
-       console.log("Auto Book Out nested containers changed");
-       console.log(this.value);
-       chrome.runtime.sendMessage("bookOutContainers");
-     });
-
-  });
-});
-
-
-
-// Code for the disable detail view delete function setting:
-chrome.storage.local.get(["detailDelete"]).then((result) => {
-  console.log(result.detailDelete);
-  if (result.detailDelete){
-  var selectedOption = "input[name='detaildelete'][value='" + result.detailDelete + "']";
-    document.querySelector(selectedOption).checked = true;
-  }
-});
-
-document.querySelectorAll('input[name="detaildelete"]').forEach(function(radio) {
-  radio.addEventListener('change', function() {
-    console.log(this.value);
-    //await chrome.storage.session.set({ prepareSet: this.value });
-    chrome.storage.local.set({ "detailDelete": this.value }).then(() => {
-       console.log("Disable Detail View Delete setting changed");
-       console.log(this.value);
-       chrome.runtime.sendMessage("detailDelete");
-     });
-
-  });
-});
-
-
-
-
-
-
-// Code for the block scan of quartantines setting:
-chrome.storage.local.get(["blockQuarantines"]).then((result) => {
-  if ("blockQuarantines" in result){
-    console.log(result);
-    var selectedOption = "input[name='blockquarantines'][value='" + result.blockQuarantines + "']";
-    document.querySelector(selectedOption).checked = true;
-  }
-
-});
-
-document.querySelectorAll('input[name="blockquarantines"]').forEach(function(radio) {
-  radio.addEventListener('change', function() {
-    console.log(this.value);
-    //await chrome.storage.session.set({ prepareSet: this.value });
-    chrome.storage.local.set({ "blockQuarantines": this.value }).then(() => {
-       console.log("Block Quarantines option set");
-       chrome.runtime.sendMessage({ blockQuarantines: this.value });
-     });
-
-  });
-});
-
-
-
-
-// Code for the error timeout setting
-
-var timeOutBox = document.getElementById('error-message-timeout');
-
-chrome.storage.local.get(["errorTimeout"]).then((result) => {
-  if ("errorTimeout" in result){
-    console.log(result);
-    console.log("errorTimeout:" + result.errorTimeout);
-    timeOutBox.value = result.errorTimeout;
-  }
-});
-
-
-timeOutBox.addEventListener('change', function() {
-  console.log(this.value);
-  chrome.storage.local.set({ "errorTimeout": this.value }).then(() => {
-     console.log("errorTimeout value set");
-     chrome.runtime.sendMessage("errortimeoutchanged");
-   });
-
-});
-
-
-
-// Code for the Show Collapsed Item Totals setting:
-chrome.storage.local.get(["nestedTotals"]).then((result) => {
-  console.log(result.nestedTotals);
-  if (result.nestedTotals){
-  var selectedOption = "input[name='nestedtotals'][value='" + result.nestedTotals + "']";
-    document.querySelector(selectedOption).checked = true;
-  }
-});
-
-document.querySelectorAll('input[name="nestedtotals"]').forEach(function(radio) {
-  radio.addEventListener('change', function() {
-    console.log(this.value);
-
-    chrome.storage.local.set({ "nestedTotals": this.value }).then(() => {
-       console.log("Show Collapsed Item Totals setting changed");
-       console.log(this.value);
-       chrome.runtime.sendMessage("nestedTotals");
-     });
-
-  });
-});
-
-
-
-
-
-
-
-
-
 
 
 
@@ -349,35 +133,18 @@ document.querySelectorAll('input[name="nestedtotals"]').forEach(function(radio) 
 chrome.storage.local.get(["api-details"]).then((result) => {
   console.log(result);
   if (result["api-details"].apiKey){
-    document.getElementById("api-key-input").value = result["api-details"].apiKey;
+    //document.getElementById("api-key-input").value = result["api-details"].apiKey;
   } else {
     console.log("No API key saved in local storage.");
   }
   if (result["api-details"].apiSubdomain){
-    document.getElementById("api-subdomain-input").value = result["api-details"].apiSubdomain;
+    //document.getElementById("api-subdomain-input").value = result["api-details"].apiSubdomain;
   } else {
     console.log("No API Subdomain saved in local storage.");
   }
 });
 
-// no add event listener to save api details button
-var setAPIButton = document.getElementById("api-save");
-setAPIButton.addEventListener('click', function() {
 
-  var theApiKey = document.getElementById("api-key-input").value;
-  var theApiSubdomain = document.getElementById("api-subdomain-input").value;
-  var apiDetails = {apiKey: theApiKey, apiSubdomain: theApiSubdomain};
-
-  setAPIButton.disabled = true;
-  setAPIButton.value = "Saving...";
-  chrome.storage.local.set({ "api-details": apiDetails }).then(() => {
-     console.log("API details were saved into local storage.");
-     setAPIButton.disabled = false;
-     setAPIButton.value = "Save API Details";
-   });
-
-
-});
 
 
 

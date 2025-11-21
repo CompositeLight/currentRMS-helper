@@ -1,4 +1,4 @@
-# currentRMS-helper 2.0.13
+# currentRMS-helper 2.1.1
 This is a Chrome extension to add functionality to the CurrentRMS web interface. It was created out of our frustration waiting on "quality of life" modifications to make the user experience better. Since making it available online, I've been blown away by how many users and businesses have started using it on a daily basis. I'm really grateful to the many users who have contributed ideas, or pointed out bugs with the extension.
 
 The extension is free to all, but as a few people have asked, if you really want to [buy me a cup of coffee / tea / beer](https://paypal.me/garethrisdale) you can use this link.
@@ -34,7 +34,36 @@ Aside from the Chrome Desktop Browser, users have successfully used this extensi
 For a full list of the extension's features, check out the [Features.md](/Features.md).
 
 
-## New Featur
+## New Features
+
+### Version 2.1.1 BETA
+
+**This is a BETA version at present, and likely has bigs / unaddressed edge cases. Please deploy responsibly and report issues**
+
+- NEW: The settings popup menu has been reduced, and a new Full Settings page created. This had become necessary as the original popup had become over-crowded. Additionally, the new page is easier to operate from a small screen, and provides more clarity on what the settings do. You can also access the full settings page via the side bar.
+
+- NEW: Smart Scan: This is the Holy Grail feature I've been trying to work out since this all started. Smart Scan tries to better associate accessories with their parent items: Normally, any item scanned will be allocated to the first available product line in the opportunity. This can cause issues where common accessory items (such as power cords) become associated with the wrong parent product. Smart Scan attempts to rectify this, by keeping track of the last item scanned and then attempting to pair the next item scanned with accessories. Potential accessories are highlighted by their Reserved badge turning yellow. Upon scanning the final accessory to an item you will hear the voice prompt "complete". This seems to work... But needs further testing, especially when working on bigger jobs.
+
+- NEW: Container Check: Normally, Current-RMS will allow you to scan a serialised container onto an opportunity, even if the contents are not required at all. For example, if you have cases of 6 x LED tiles containerised, and a job requires 12 tiles, the system will allow you to scan 3 cases (or more) without warning. With Container Check enabled, a list is formed of containerised assets each time the API data is updated (automatically every 30 minutes). To be valid, a container must contain at least one unnallocated item that is not an 'Accessory Only' product. You can defeat Container Check if required by using Free Scan.
+
+- NEW: Serialised Container View - Show Matched Components. In Serialised Container View there is now a togglable option to show Matched Components. This will try to work out (based on product accessory listings) what items should be in this container item. If there are any, it will list them below - minus any already in the container. If there are too many of an item, they will list with a negative quantity required. Nested (accessories of accessories) are also shown. Only default or mandatory accessories are listed. Where the container item itself has accessories, these are assumed to be the contents eg. "6 Way Uplighter Kit" where the kit item is the charging case and has accessories of 6 x uplighters. If there are no direct accessories against the container, the system will check whether the item itself is a default accessory, and use that as the basis for the list. Eg. "Double Flightcase for 55" displays" is a 0.5x accessory to "Samsung 55" Display" will result in a accessories list based on 2 x displays. Where there are multiple possible parent items, they are all listed seperately. (Addressing suggestion in issue 89).
+
+- NEW: Cross Scan: This feature allows you to automatically scan allocated assets from one job to another. For example, on a roadshow where there is a different opportunity for each date for billing purposes, but the kit is actually staying on the truck between them. To use it, go to Detail View and tick the check boxes for some or all of the items (only Booked Out serialised items will be used). Then choose Cross Scan from the Functions tab Action menu. Choose which opportunity to cross scan to, and hit confirm. The target opportunity will then open, and automatically attempt to scan all the assets at the rate of 120 per minute. If you need to abort, close the tab. If this is useful I'll work out adding bulk stock with quantities also.
+
+- FIXED: Booking Out an item from quarantine was not automatically triggering a Quarantine Data refresh. This is now fixed, meaning you can immediately scan the item in Detail View without needing to manually refresh Quarantine Data.
+
+- NEW: Bulk Quantity Barcodes are now accepted in the Serialised Containers screen (issue 133). Reminder: To use this feature, create a barcode preceeded with the require quanity value surrounded in % symbols. For example, for a barcode that adds 5x of product 90210 the barcode would be "*%5%90210*"
+
+- FIXED: Ancient typo causing occaisional random 'Receiving end does not exist' errors.
+
+- IMPROVED: A failed scan due to the asset being containerised now gives the voice prompt "containerised asset" for clarity.
+
+- NEW: When viewing a Product's page, if any of the Stock Levels listed are a container you can now click on the "Container" badge to go directly to the container's page.
+
+
+
+### Version 2.0.13
+
 - FIXED: 2.0.13 - Warehouse notes editing was broken (issue 134).
 
 - FIXED: 2.0.13 - Editing chargable days of Service items was broken.
