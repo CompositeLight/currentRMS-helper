@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "CurrentRMS Helper",
-  "version": "2.0.13",
+  "version": "2.0.14",
   "description": "Adding functionality to Current RMS, one reduced click at a time.",
   "icons": {
     "16": "images/icon-16.png",
@@ -119,6 +119,7 @@
         "scripts/test-injected.js",
         "scripts/detail-header-injected.js",
         "scripts/order-header-injected.js",
+        "scripts/transfer-out.js",
         "style.css"
       ],
       "matches": [

@@ -210,6 +210,17 @@ editContainerView  = document.getElementById('container_mode_div') !== null; // 
 globalCheckinView  = exists('div.col-sm-12.global_check_ins.main-content');
 globalSearchView   = exists('div.global-search-summary');
 
+// Lazy-load transfer out module.
+if (detailView) {
+    import(chrome.runtime.getURL('scripts/transfer-out.js')).then((mod) => {
+        if (mod && typeof mod.initTransferOut === 'function') {
+            mod.initTransferOut();
+        }
+    }).catch((err) => {
+        console.error('Failed to load transfer out module', err);
+    });
+}
+
 
 
 
