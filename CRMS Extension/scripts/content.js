@@ -700,24 +700,332 @@ if (editContainerView){
 
 
 
-if (editOppView){
+function getEditOpportunityForm() {
+	return document.querySelector('form.simple_form.edit_opportunity, form.simple_form.new_opportunity');
+}
 
-	// Create Reset All Dates button
+function initEditOpportunityView() {
+	const MS_PER_DAY = 24 * 60 * 60 * 1000;
+	const oppForm = getEditOpportunityForm();
 
-	const schedule = Array.from(document.querySelectorAll('div')).find(el => el.textContent.trim() === 'Scheduling');
+	if (!oppForm || oppForm.dataset.helperEditOppInitialised === 'true') {
+		return;
+	}
 
-	if (schedule) {
-		// Do something with the link
-		// Create the new element you want to add
-		const newElement = document.createElement('li');
-		newElement.classList.add("helper-btn");
-		newElement.classList.add("helper-bar");
-		newElement.id = "reset-all-dates";
-		newElement.innerText = "Clear All Dates";
-		// Insert the new element after the tr
-		schedule.insertAdjacentElement('afterend', newElement);
+	oppForm.dataset.helperEditOppInitialised = 'true';
 
-		document.getElementById('reset-all-dates').addEventListener('click', function(event) {
+	const scheduleBlock = oppForm.querySelector('#opportunity_ordered_at')?.closest('.form-block');
+	const scheduleInputs = scheduleBlock ? Array.from(scheduleBlock.querySelectorAll('input.ui-datetime-single-picker')) : [];
+	const relativeDateInputs = scheduleInputs.filter(input => input.id !== 'opportunity_ordered_at');
+	let lastEditedScheduleInputId = null;
+
+	const parseDateInputValue = function(value) {
+		if (!value) {
+			return null;
+		}
+
+		const [datePart, timePart] = value.trim().split(' ');
+		if (!datePart) {
+			return null;
+		}
+
+		const [day, month, year] = datePart.split('/').map(Number);
+		if (!day || !month || !year) {
+			return null;
+		}
+
+		let hours = 0;
+		let minutes = 0;
+
+		if (timePart) {
+			const [parsedHours, parsedMinutes] = timePart.split(':').map(Number);
+
+			if (Number.isNaN(parsedHours) || Number.isNaN(parsedMinutes)) {
+				return null;
+			}
+
+			hours = parsedHours;
+			minutes = parsedMinutes;
+		}
+
+		const parsedDate = new Date(year, month - 1, day, hours, minutes, 0, 0);
+
+		if (Number.isNaN(parsedDate.getTime())) {
+			return null;
+		}
+
+		return parsedDate;
+	};
+
+	const formatDateInputValue = function(date, includeTime = true) {
+		const day = String(date.getDate()).padStart(2, '0');
+		const month = String(date.getMonth() + 1).padStart(2, '0');
+		const year = date.getFullYear();
+
+		if (!includeTime) {
+			return `${day}/${month}/${year}`;
+		}
+
+		const hours = String(date.getHours()).padStart(2, '0');
+		const minutes = String(date.getMinutes()).padStart(2, '0');
+
+		return `${day}/${month}/${year} ${hours}:${minutes}`;
+	};
+
+	const formatDateOnly = function(date) {
+		return formatDateInputValue(date, false);
+	};
+
+	const getNormalisedDay = function(date) {
+		return Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+	};
+
+	const pluralise = function(value, unit) {
+		return `${Math.abs(value)} ${unit}${Math.abs(value) === 1 ? '' : 's'}`;
+	};
+
+	const getRelativeDateChange = function(fromDate, toDate) {
+		if (!fromDate || !toDate) {
+			return null;
+		}
+
+		if (getNormalisedDay(fromDate) === getNormalisedDay(toDate)) {
+			return null;
+		}
+
+		const totalMonths = ((toDate.getFullYear() - fromDate.getFullYear()) * 12) + (toDate.getMonth() - fromDate.getMonth());
+
+		if (totalMonths !== 0 && toDate.getDate() === fromDate.getDate()) {
+			if (totalMonths % 12 === 0) {
+				return { unit: 'year', amount: totalMonths / 12 };
+			}
+
+			return { unit: 'month', amount: totalMonths };
+		}
+
+		const dayDelta = Math.round((getNormalisedDay(toDate) - getNormalisedDay(fromDate)) / MS_PER_DAY);
+
+		if (dayDelta % 7 === 0 && Math.abs(dayDelta) >= 7) {
+			return { unit: 'week', amount: dayDelta / 7 };
+		}
+
+		return { unit: 'day', amount: dayDelta };
+	};
+
+	const describeRelativeDateChange = function(change) {
+		if (!change || !change.amount) {
+			return '';
+		}
+
+		return `${change.amount > 0 ? '+' : '-'}${pluralise(change.amount, change.unit)}`;
+	};
+
+	const applyRelativeDateChange = function(date, change) {
+		if (!change || !change.amount) {
+			return new Date(date.getTime());
+		}
+
+		const updatedDate = new Date(date.getTime());
+		const originalDay = updatedDate.getDate();
+
+		if (change.unit === 'year') {
+			const targetYear = updatedDate.getFullYear() + change.amount;
+			const maxDay = new Date(targetYear, updatedDate.getMonth() + 1, 0).getDate();
+			updatedDate.setFullYear(targetYear, updatedDate.getMonth(), Math.min(originalDay, maxDay));
+			return updatedDate;
+		}
+
+		if (change.unit === 'month') {
+			const targetMonthIndex = (updatedDate.getFullYear() * 12) + updatedDate.getMonth() + change.amount;
+			const targetYear = Math.floor(targetMonthIndex / 12);
+			const targetMonth = ((targetMonthIndex % 12) + 12) % 12;
+			const maxDay = new Date(targetYear, targetMonth + 1, 0).getDate();
+			updatedDate.setFullYear(targetYear, targetMonth, Math.min(originalDay, maxDay));
+			return updatedDate;
+		}
+
+		if (change.unit === 'week') {
+			updatedDate.setDate(updatedDate.getDate() + (change.amount * 7));
+			return updatedDate;
+		}
+
+		updatedDate.setDate(updatedDate.getDate() + change.amount);
+		return updatedDate;
+	};
+
+	const setInputBaseline = function(input) {
+		if (!input.value) {
+			delete input.dataset.helperBaselineValue;
+			delete input.dataset.helperBaselineIsoValue;
+			return;
+		}
+
+		input.dataset.helperBaselineValue = input.value;
+
+		if (input.dataset.isoValue) {
+			input.dataset.helperBaselineIsoValue = input.dataset.isoValue;
+		} else {
+			delete input.dataset.helperBaselineIsoValue;
+		}
+	};
+
+	const applyDateToInput = function(input, nextDate) {
+		const includeTime = input.value.includes(':') || input.dataset.format?.includes('LT');
+		input.value = formatDateInputValue(nextDate, includeTime);
+		input.dataset.isoValue = nextDate.toISOString();
+		input.dispatchEvent(new Event('input', { bubbles: true }));
+		input.dispatchEvent(new Event('change', { bubbles: true }));
+	};
+
+	const findChangedRelativeDateInput = function() {
+		return relativeDateInputs.find(input => {
+			const baselineDate = parseDateInputValue(input.dataset.helperBaselineValue || '');
+			const currentDate = parseDateInputValue(input.value);
+
+			if (!baselineDate || !currentDate) {
+				return false;
+			}
+
+			return getNormalisedDay(currentDate) !== getNormalisedDay(baselineDate);
+		});
+	};
+
+	// Create Reset All Dates button and optional relative date update button
+
+	const createScheduleButton = function(id, label) {
+		const button = document.createElement('li');
+		button.classList.add("helper-btn");
+		button.classList.add("helper-bar");
+		button.id = id;
+		button.innerText = label;
+		return button;
+	};
+
+	if (scheduleBlock) {
+		let helperButtonRow = document.getElementById('edit-opp-schedule-helper-buttons');
+
+		if (!helperButtonRow) {
+			helperButtonRow = document.createElement('div');
+			helperButtonRow.classList.add('row');
+			helperButtonRow.id = 'edit-opp-schedule-helper-buttons';
+
+			const helperButtonCol = document.createElement('div');
+			helperButtonCol.classList.add('col-md-12');
+			helperButtonCol.classList.add('col-sm-12');
+			helperButtonRow.appendChild(helperButtonCol);
+
+			const scheduleFormArea = scheduleBlock.querySelector('.form-area');
+			scheduleFormArea.appendChild(helperButtonRow);
+		}
+
+		const helperButtonCol = helperButtonRow.querySelector('.col-md-12');
+
+		const updateOthersButton = createScheduleButton('update-other-dates', 'Update Others');
+		const resetDatesButton = createScheduleButton('reset-all-dates', 'Clear All Dates');
+
+		helperButtonCol.innerHTML = '';
+		helperButtonCol.appendChild(updateOthersButton);
+		helperButtonCol.appendChild(resetDatesButton);
+
+		const updateUpdateOthersButton = function() {
+			let sourceInput = document.getElementById(lastEditedScheduleInputId);
+
+			if (sourceInput) {
+				const baselineDate = parseDateInputValue(sourceInput.dataset.helperBaselineValue || '');
+				const currentDate = parseDateInputValue(sourceInput.value);
+
+				if (!baselineDate || !currentDate || getNormalisedDay(currentDate) === getNormalisedDay(baselineDate)) {
+					sourceInput = null;
+				}
+			}
+
+			if (!sourceInput) {
+				sourceInput = findChangedRelativeDateInput();
+			}
+
+			if (!sourceInput) {
+				updateOthersButton.style.display = 'none';
+				updateOthersButton.innerText = 'Update Others';
+				return null;
+			}
+
+			const baselineDate = parseDateInputValue(sourceInput.dataset.helperBaselineValue || '');
+			const currentDate = parseDateInputValue(sourceInput.value);
+			const relativeChange = getRelativeDateChange(baselineDate, currentDate);
+
+			if (!currentDate || !relativeChange) {
+				updateOthersButton.style.display = 'none';
+				updateOthersButton.innerText = 'Update Others';
+				return null;
+			}
+
+			updateOthersButton.style.display = '';
+			updateOthersButton.innerText = `Update Others (${describeRelativeDateChange(relativeChange)} to ${formatDateOnly(currentDate)})`;
+			return { sourceInput, relativeChange };
+		};
+
+		scheduleInputs.forEach(input => {
+			setInputBaseline(input);
+
+			['focus', 'click', 'input', 'change', 'blur', 'keyup'].forEach(eventName => {
+				input.addEventListener(eventName, function() {
+					if (input.id !== 'opportunity_ordered_at') {
+						lastEditedScheduleInputId = input.id;
+					}
+
+					updateUpdateOthersButton();
+				});
+			});
+
+			const inputObserver = new MutationObserver(() => {
+				if (input.id !== 'opportunity_ordered_at') {
+					lastEditedScheduleInputId = input.id;
+				}
+
+				updateUpdateOthersButton();
+			});
+
+			inputObserver.observe(input, { attributes: true, attributeFilter: ['data-iso-value', 'value'] });
+		});
+
+		updateUpdateOthersButton();
+
+		updateOthersButton.addEventListener('click', function() {
+			const updateConfig = updateUpdateOthersButton();
+
+			if (!updateConfig) {
+				return;
+			}
+
+			const { sourceInput, relativeChange } = updateConfig;
+
+			const baselineDate = parseDateInputValue(sourceInput.dataset.helperBaselineValue || '');
+
+			if (!baselineDate || !relativeChange) {
+				return;
+			}
+
+			relativeDateInputs.forEach(input => {
+				if (input === sourceInput || !input.value) {
+					return;
+				}
+
+				const inputBaselineDate = parseDateInputValue(input.dataset.helperBaselineValue || '');
+
+				if (!inputBaselineDate) {
+					return;
+				}
+
+				const updatedDate = applyRelativeDateChange(inputBaselineDate, relativeChange);
+				applyDateToInput(input, updatedDate);
+				setInputBaseline(input);
+			});
+
+			setInputBaseline(sourceInput);
+			updateUpdateOthersButton();
+		});
+
+		resetDatesButton.addEventListener('click', function() {
 			var clearButtons = document.querySelectorAll('li.clear[data-range-key="Clear"]');
 
 			clearButtons.forEach((item, i) => {
@@ -726,18 +1034,15 @@ if (editOppView){
 				}
 			});
 
+			relativeDateInputs.forEach(input => setInputBaseline(input));
+			updateUpdateOthersButton();
 		});
 
 	} else {
-		console.log('Schedule not found');
+		console.log('Schedule block not found');
 	}
 
 	// Prevent form from submitting if any input has a value of "Required"
-	let oppForm = document.querySelector('form.simple_form.edit_opportunity');
-	if (!oppForm) {
-		oppForm = document.querySelector('form.simple_form.new_opportunity');
-	}
-
 	if (oppForm) {
 
 		let hasError = false;
@@ -810,89 +1115,71 @@ if (editOppView){
 		});
 	
 	}
-
-
 	// Create button to delete the locally stored data for this opportunity
+	const rpValue = document.getElementById("rp")?.value;
+	if (!rpValue) {
+		return;
+	}
 
-	// find the element with the id "rp"
-	const rpValue = document.getElementById("rp").value;
-
-	// value will be something like "/opportunities/375" so extract just the bit after the final "/"
-	const opportunityID = rpValue.substring(rpValue.lastIndexOf("/") + 1);
-
+	const editOpportunityId = rpValue.substring(rpValue.lastIndexOf("/") + 1);
 	let opportunityItemsLength = 0;
 
-	// retreive the locally stored data for this opportunity
+	chrome.storage.local.get([`opp-${editOpportunityId}`]).then((result) => {
+		if (result && result[`opp-${editOpportunityId}`]) {
+			const localOppData = result[`opp-${editOpportunityId}`];
+			const local_opportunity_items = JSON.parse(localOppData.opportunity_items);
+			opportunityItemsLength = local_opportunity_items.length;
+		} else {
+			console.log("No locally stored data for this opportunity");
+		}
 
-	chrome.storage.local.get([`opp-${opportunityID}`]).then((result) => {
-			if (result && result[`opp-${opportunityID}`]) {
-				const localOppData = result[`opp-${opportunityID}`];
-				
-					const local_opportunity_items = JSON.parse(localOppData.opportunity_items);
-					opportunityItemsLength = local_opportunity_items.length;
-					
-			} else {
-				console.log("No locally stored data for this opportunity");
-			}
+		const subjectDiv = document.querySelector('div.row.string.required.opportunity_subject');
+		const parentDiv = subjectDiv?.closest('div.col-md-12.col-sm-12');
 
+		if (!parentDiv || document.getElementById('clear-local-data')) {
+			return;
+		}
 
+		const localDataDiv = document.createElement('div');
+		localDataDiv.classList.add("form-block");
 
-		 
-		
-
-
-
-
-	const subjectDiv = document.querySelector('div.row.string.required.opportunity_subject');
-
-	// find the closest div with col-md-12 col-sm-12
-	const parentDiv = subjectDiv.closest('div.col-md-12.col-sm-12');
-
-	// Create the new element you want to add
-	const localDataDiv = document.createElement('div');
-	localDataDiv.classList.add("form-block");
-
-	localDataDiv.innerHTML = `
-	<fieldset class="row">
-	<div class="col-md-2 col-sm-2 form-icon">
-	<i class="icn-cobra-shuffle"></i>
-	</div>
-	<div class="col-md-8 col-sm-8 form-area">
-		<div class="row check_boxes optional opportunity_assigned_surcharge_group_ids">
-			<div class="col-md-12 col-sm-12">
-			<H3>Helper Extension Local Opportunity Data</H3>
-			<p>Locally stored opportunity items: <span id="opp-data-length">${opportunityItemsLength}</span></p>
-			<li class="helper-btn helper-bar" id="clear-local-data">Clear Local Data</li>
-			</div>
+		localDataDiv.innerHTML = `
+		<fieldset class="row">
+		<div class="col-md-2 col-sm-2 form-icon">
+		<i class="icn-cobra-shuffle"></i>
 		</div>
+		<div class="col-md-8 col-sm-8 form-area">
+			<div class="row check_boxes optional opportunity_assigned_surcharge_group_ids">
+				<div class="col-md-12 col-sm-12">
+				<H3>Helper Extension Local Opportunity Data</H3>
+				<p>Locally stored opportunity items: <span id="opp-data-length">${opportunityItemsLength}</span></p>
+				<li class="helper-btn helper-bar" id="clear-local-data">Clear Local Data</li>
+				</div>
+			</div>
 
-	</div>
-	</fieldset>
-	</div>`
+		</div>
+		</fieldset>
+		</div>`;
 
-	// Append the new element at the end of the div
-	parentDiv.appendChild(localDataDiv);
+		parentDiv.appendChild(localDataDiv);
 
-	document.addEventListener('click', function(event) {
-		if (event.target && event.target.id === 'clear-local-data') {
+		document.getElementById('clear-local-data').addEventListener('click', function() {
 			console.log("Clicked clear local data button");
-			// remove the locally stored data for this opportunity
-			chrome.storage.local.remove(`opp-${opportunityID}`, function() {
-				console.log(`Removed opp-${opportunityID} from local storage`);
-				makeToast("toast-info", `Removed opp-${opportunityID} from local storage`, 5);
+			chrome.storage.local.remove(`opp-${editOpportunityId}`, function() {
+				console.log(`Removed opp-${editOpportunityId} from local storage`);
+				makeToast("toast-info", `Removed opp-${editOpportunityId} from local storage`, 5);
 				document.getElementById("opp-data-length").innerText = "0";
 			});
-		}
+		});
 	});
+}
 
-});
+initEditOpportunityView();
 
+const editOpportunityInitObserver = new MutationObserver(initEditOpportunityView);
 
-
-
-
-
-
+if (document.body) {
+	editOpportunityInitObserver.observe(document.body, { childList: true, subtree: true });
 }
 
 
