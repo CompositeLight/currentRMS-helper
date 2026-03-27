@@ -871,8 +871,22 @@ function initEditOpportunityView() {
 
 	const applyDateToInput = function(input, nextDate) {
 		const includeTime = input.value.includes(':') || input.dataset.format?.includes('LT');
+		const nextValue = formatDateInputValue(nextDate, includeTime);
 		input.value = formatDateInputValue(nextDate, includeTime);
 		input.dataset.isoValue = nextDate.toISOString();
+		input.setAttribute('data-iso-value', nextDate.toISOString());
+
+		if (window.jQuery) {
+			const picker = window.jQuery(input).data('daterangepicker');
+
+			if (picker) {
+				picker.setStartDate(window.moment(nextDate));
+				if (picker.container && picker.container.find) {
+					picker.container.find('input[name="daterangepicker_start"]').val(nextValue);
+				}
+			}
+		}
+
 		input.dispatchEvent(new Event('input', { bubbles: true }));
 		input.dispatchEvent(new Event('change', { bubbles: true }));
 	};
