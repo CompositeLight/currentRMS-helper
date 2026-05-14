@@ -36,13 +36,15 @@ For a full list of the extension's features, check out the [Features.md](/Featur
 
 ## New Features
 
-### Version 2.1.1 BETA
+### Version 2.1.2
 
-**This is a BETA version at present, and likely has bigs / unaddressed edge cases. Please deploy responsibly and report issues**
+- FIXED: The extension became unusable due to the new lazy-loading approach of CurrentRMS. Hopefully patched around this, but please report things that I have missed.
+
+### Version 2.1.1
 
 - NEW: The settings popup menu has been reduced, and a new Full Settings page created. This had become necessary as the original popup had become over-crowded. Additionally, the new page is easier to operate from a small screen, and provides more clarity on what the settings do. You can also access the full settings page via the side bar.
 
-- NEW: Smart Scan: This is the Holy Grail feature I've been trying to work out since this all started. Smart Scan tries to better associate accessories with their parent items: Normally, any item scanned will be allocated to the first available product line in the opportunity. This can cause issues where common accessory items (such as power cords) become associated with the wrong parent product. Smart Scan attempts to rectify this, by keeping track of the last item scanned and then attempting to pair the next item scanned with accessories. Potential accessories are highlighted by their Reserved badge turning yellow. Upon scanning the final accessory to an item you will hear the voice prompt "complete". This seems to work... But needs further testing, especially when working on bigger jobs.
+- NEW: Smart Scan BETA: This was the Holy Grail feature I've been trying to work out since this all started. Smart Scan tries to better associate accessories with their parent items: Normally, any item scanned will be allocated to the first available product line in the opportunity. This can cause issues where common accessory items (such as power cords) become associated with the wrong parent product. Smart Scan attempts to rectify this, by keeping track of the last item scanned and then attempting to pair the next item scanned with accessories. Potential accessories are highlighted by their Reserved badge turning yellow. Upon scanning the final accessory to an item you will hear the voice prompt "complete". This seems to work, but one current issue is that smart scanned items are not auto-returned from other jobs.
 
 - NEW: Container Check: Normally, Current-RMS will allow you to scan a serialised container onto an opportunity, even if the contents are not required at all. For example, if you have cases of 6 x LED tiles containerised, and a job requires 12 tiles, the system will allow you to scan 3 cases (or more) without warning. With Container Check enabled, a list is formed of containerised assets each time the API data is updated (automatically every 30 minutes). To be valid, a container must contain at least one unnallocated item that is not an 'Accessory Only' product. You can defeat Container Check if required by using Free Scan.
 

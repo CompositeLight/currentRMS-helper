@@ -1,4 +1,5 @@
 // injected.js (page context)
+
 window.addEventListener('message', event => {
     // only accept messages from your own content script
     if (event.source !== window || event.data.source !== 'MY_EXTENSION') return;
@@ -58,14 +59,18 @@ function addEditableDays() {
 
 
 (function() {
-    window.onload = function() {
+    function initialiseInjectedHelpers() {
 
         // SECTION TO LOG AJAX REQUESTS
-        const originalAjax = $.ajax;
-        $.ajax = function(settings) {
-            //console.log('AJAX request:', settings);
-            return originalAjax.apply(this, arguments);
-        };
+        if (typeof $ !== 'undefined' && $.ajax) {
+            const originalAjax = $.ajax;
+            $.ajax = function(settings) {
+                //console.log('AJAX request:', settings);
+                return originalAjax.apply(this, arguments);
+            };
+        } else {
+            console.log('jQuery is not available for AJAX hook.');
+        }
 
 
         addEditableDays();
@@ -105,6 +110,11 @@ function addEditableDays() {
         // FUNCTION TO MARK AN ACTIVITY AS COMPLETE
         function completeActivity(activityId) {
             console.log("AJAX COMPLETE ACTIVITY FUNCTION TRIGGERED");
+
+            if (typeof $ === 'undefined' || !$.ajax) {
+                console.warn('CurrentRMS Helper: jQuery AJAX is unavailable; activity completion skipped.');
+                return;
+            }
             
             const testStartTime = performance.now();
             // Build an absolute URL at the site root:
@@ -150,10 +160,21 @@ function addEditableDays() {
 
 
     }
+
+    if (document.readyState === 'complete') {
+        initialiseInjectedHelpers();
+    } else {
+        window.addEventListener('load', initialiseInjectedHelpers, { once: true });
+    }
+
     // AJAX TEST FUNCTION
     // Function to tell the server to add the description
     function ajaxTest() {
     console.log("AJAX TEST FUNCTION TRIGGERED");
+    if (typeof $ === 'undefined' || !$.ajax) {
+        console.warn('CurrentRMS Helper: jQuery AJAX is unavailable; AJAX test skipped.');
+        return;
+    }
     let activityId = 128;
     const testStartTime = performance.now();
     // Build an absolute URL at the site root:

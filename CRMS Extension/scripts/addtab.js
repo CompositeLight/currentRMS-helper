@@ -1,5 +1,51 @@
 
 let recentOppsList = [];
+const addtabMissingElementLogs = new Set();
+let helperSidebarObserverStarted = false;
+let helperSidebarAddScheduled = false;
+
+function logAddtabMissingElement(feature, selector){
+  const key = `${feature}:${selector}`;
+  if (!addtabMissingElementLogs.has(key)){
+    addtabMissingElementLogs.add(key);
+    console.warn(`CurrentRMS Helper: ${feature} missing expected element: ${selector}`);
+  }
+}
+
+function addtabWaitForElement(selector, timeout = 10000, root = document.documentElement){
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector(selector);
+    if (existing){
+      resolve(existing);
+      return;
+    }
+
+    const observer = new MutationObserver(() => {
+      const element = document.querySelector(selector);
+      if (element){
+        clearTimeout(timer);
+        observer.disconnect();
+        resolve(element);
+      }
+    });
+
+    const timer = setTimeout(() => {
+      observer.disconnect();
+      reject(new Error(`Timed out waiting for ${selector}`));
+    }, timeout);
+
+    observer.observe(root, { childList: true, subtree: true });
+  });
+}
+
+async function addtabWaitForOptionalElement(selector, feature, timeout = 10000){
+  try {
+    return await addtabWaitForElement(selector, timeout);
+  } catch (err) {
+    logAddtabMissingElement(feature, selector);
+    return null;
+  }
+}
 
 if (!orderView){
   var orderView = false;
@@ -12,9 +58,9 @@ if (!detailView){
 
 getSetRecents();
 
-function getSetRecents(){
+async function getSetRecents(){
   // get the multi global check in setting from local storage
-  chrome.storage.local.get(["recentsOpps"]).then((result) => {
+  chrome.storage.local.get(["recentsOpps"]).then(async (result) => {
 
     if (result.recentsOpps != undefined){
       recentOppsList = result.recentsOpps;
@@ -27,11 +73,16 @@ function getSetRecents(){
     if (orderView || detailView){
 
       //var title = document.querySelector("h1.subject-title").innerText;
-      var titleElement = document.querySelector("h1.subject-title");
+      var titleElement = await addtabWaitForOptionalElement("h1.subject-title", "recents opportunity title", 15000);
+      if (!titleElement){
+        console.log("CurrentRMS Helper: opportunity title not found; recents entry was not updated.");
+        return;
+      }
+
       var title = Array.from(titleElement.childNodes)
-    .filter(node => node.nodeType === Node.TEXT_NODE)
-    .map(node => node.textContent.trim())
-    .join(" ");
+        .filter(node => node.nodeType === Node.TEXT_NODE)
+        .map(node => node.textContent.trim())
+        .join(" ");
 
 
       // scrape the opportunity ID from the page URL if there is one
@@ -42,6 +93,11 @@ function getSetRecents(){
           // Check if there is a match and return the opportunity ID (group 1 in the regex)
         return match ? match[1] : null;
       })();
+
+      if (!opportunityID){
+        console.log("CurrentRMS Helper: opportunity ID not found; recents entry was not updated.");
+        return;
+      }
 
       // Check if opportunityID already exists in the recentOppsList array of objects
       const found = recentOppsList.some(item => item[opportunityID] !== undefined);
@@ -80,9 +136,9 @@ function clearRecentOpportunitiesList() {
 
 
 
-function addMenuItemToNavbar() {
+async function addMenuItemToNavbar() {
   // Find the first <ul> element with classes "nav" and "navbar-nav"
-  const navbar = document.querySelector('ul.nav.navbar-nav');
+  const navbar = await addtabWaitForOptionalElement('ul.nav.navbar-nav', "recents navbar", 15000);
 
   const existingMenu = document.getElementById('recentsmenu');
   if (existingMenu){
@@ -125,34 +181,44 @@ function addMenuItemToNavbar() {
     });
 
     // modify the normal menu items to make room for the new one
-    var dashButton = document.querySelector("li.menu00");
-    dashButton.querySelector("a").innerText = "Dash";
+    var dashButton = await addtabWaitForOptionalElement("li.menu00", "recents navbar", 15000);
+    var dashButtonLink = dashButton ? dashButton.querySelector("a") : null;
+    if (dashButtonLink){
+      dashButtonLink.innerText = "Dash";
+    } else {
+      logAddtabMissingElement("recents navbar", "li.menu00 a");
+    }
 
-    var peopleButton = document.querySelector("li.menu01");
-    peopleButton.querySelector("a").innerText = "People & Orgs";
+    var peopleButton = await addtabWaitForOptionalElement("li.menu01", "recents navbar", 15000);
+    var peopleButtonLink = peopleButton ? peopleButton.querySelector("a") : null;
+    if (peopleButtonLink){
+      peopleButtonLink.innerText = "People & Orgs";
+    } else {
+      logAddtabMissingElement("recents navbar", "li.menu01 a");
+    }
 
+  } else {
+    logAddtabMissingElement("recents navbar", "ul.nav.navbar-nav");
   }
 }
 
 
 addHelperSidebar();
+observeHelperSidebarContainer();
 
 // function to add a CurrentRMS Helper section to the sidebar
-function addHelperSidebar(){
+async function addHelperSidebar(){
   
-  var sidebar = document.getElementById("sidebar_content");
+  var sidebar = await addtabWaitForOptionalElement("#sidebar_content, div.group-side-content", "helper sidebar", 15000);
 
-  if (!sidebar){
-    sidebar = document.querySelector("div.group-side-content");
-    if (sidebar){
-      sidebar = sidebar.parentElement;
-    }
+  if (sidebar && !sidebar.id){
+    sidebar = sidebar.parentElement;
   }
 
 
 
   if (sidebar){
-    const existingSection = document.getElementById("helper_sidebar");
+    const existingSection = sidebar.querySelector("#helper_sidebar");
     if (existingSection) {
       // if there's already a section, quit
       return;
@@ -230,7 +296,50 @@ CurrentRMS Helper
     // Add inline style for the toggle-button size
     toggleButton.style.fontSize = '14px'; // Adjust the size as needed
 
+  } else {
+    logAddtabMissingElement("helper sidebar", "#sidebar_content or div.group-side-content");
   }
+}
+
+function scheduleAddHelperSidebar(){
+  if (helperSidebarAddScheduled){
+    return;
+  }
+  helperSidebarAddScheduled = true;
+  setTimeout(() => {
+    helperSidebarAddScheduled = false;
+    addHelperSidebar();
+  }, 100);
+}
+
+function observeHelperSidebarContainer(){
+  if (helperSidebarObserverStarted){
+    return;
+  }
+  helperSidebarObserverStarted = true;
+
+  const observer = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      const addedNodes = Array.from(mutation.addedNodes);
+      const removedNodes = Array.from(mutation.removedNodes);
+
+      const sidebarChanged = addedNodes.concat(removedNodes).some((node) => {
+        if (!(node instanceof Element)){
+          return false;
+        }
+        return node.id === "sidebar_content" ||
+          node.classList.contains("group-side-content") ||
+          node.querySelector("#sidebar_content, div.group-side-content");
+      });
+
+      if (sidebarChanged){
+        scheduleAddHelperSidebar();
+        return;
+      }
+    }
+  });
+
+  observer.observe(document.documentElement, { childList: true, subtree: true });
 }
 
 
@@ -243,7 +352,7 @@ async function getCachedLatestTag() {
     const latestVersion = latestReleaseTag.substring(1);
 
     if (liveVersion !== latestVersion){
-      const helperVersionLine = document.getElementById("helper-version");
+      const helperVersionLine = await addtabWaitForOptionalElement("#helper-version", "helper sidebar update check", 15000);
       if (!helperVersionLine){
         return;
       }

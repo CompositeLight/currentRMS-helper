@@ -7,23 +7,74 @@ document.documentElement.appendChild(script);
 script.remove();
 
 
+const costsviewMissingElementLogs = new Set();
+function logCostsviewMissingElement(feature, selector){
+  const key = `${feature}:${selector}`;
+  if (!costsviewMissingElementLogs.has(key)){
+    costsviewMissingElementLogs.add(key);
+    console.warn(`CurrentRMS Helper: ${feature} missing expected element: ${selector}`);
+  }
+}
 
-// Reduce the unecessary width of the supplier column
-document.querySelectorAll('td.quantity-column').forEach(function(element) {
-  element.classList.add("center-column");
-});
+function costsviewWaitForElement(selector, timeout = 10000, root = document.documentElement){
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector(selector);
+    if (existing){
+      resolve(existing);
+      return;
+    }
+
+    const observer = new MutationObserver(() => {
+      const element = document.querySelector(selector);
+      if (element){
+        clearTimeout(timer);
+        observer.disconnect();
+        resolve(element);
+      }
+    });
+
+    const timer = setTimeout(() => {
+      observer.disconnect();
+      reject(new Error(`Timed out waiting for ${selector}`));
+    }, timeout);
+
+    observer.observe(root, { childList: true, subtree: true });
+  });
+}
+
+async function costsviewWaitForOptionalElement(selector, feature, timeout = 10000){
+  try {
+    return await costsviewWaitForElement(selector, timeout);
+  } catch (err) {
+    logCostsviewMissingElement(feature, selector);
+    return null;
+  }
+}
 
 
-// Add a cost-type column immediately after the days column
-document.querySelectorAll('td.optional-04.align-right.days-column').forEach(function(element) {
+function prepareCostViewColumns(root = document){
+  // Reduce the unecessary width of the supplier column
+  root.querySelectorAll('td.quantity-column').forEach(function(element) {
+    element.classList.add("center-column");
+  });
 
-  var thisCostTypeCell = document.createElement('td');
-  thisCostTypeCell.classList.add("force-left", "cost-type-select-column");
-  element.insertAdjacentElement('afterend', thisCostTypeCell);
+  // Add a cost-type column immediately after the days column
+  root.querySelectorAll('td.optional-04.align-right.days-column').forEach(function(element) {
+    element.style.display = "table-cell"; // Ensure the days column is displayed as a table cell
 
-  element.style.display = "table-cell"; // Ensure the days column is displayed as a table cell
-  
-});
+    if (element.nextElementSibling?.classList.contains("cost-type-select-column")){
+      return;
+    }
+
+    var thisCostTypeCell = document.createElement('td');
+    thisCostTypeCell.classList.add("force-left", "cost-type-select-column");
+    element.insertAdjacentElement('afterend', thisCostTypeCell);
+  });
+
+  root.querySelectorAll('td.quantity-column.align-right').forEach(function(element) {
+    element.classList.add("force-left");
+  });
+}
 
 
 
@@ -281,28 +332,37 @@ function formatCurrency(value, currencySymbol) {
 
 console.log("add Details cost view");
 
-// get the start date and time
-const thisSidebar = document.getElementById("sidebar_content");
-const spans = thisSidebar.querySelectorAll('span');
-// Iterate over each <span>
 let startDateValue = null;
 let endDateValue = null;
-spans.forEach((span, index) => {
-    // Check if the text content of this <span> is 'Start Date:'
-    if (span.textContent.trim() === 'Start Date:') {
-        // The next sibling element should be the <span> with the date
-        const nextSpan = spans[index + 1];
-        if (nextSpan) {
-            startDateValue = nextSpan.textContent.trim();
-        }
-    } else if (span.textContent.trim() === 'End Date:') {
-        // The next sibling element should be the <span> with the date
-        const nextSpan = spans[index + 1];
-        if (nextSpan) {
-            endDateValue = nextSpan.textContent.trim();
-        }
-    }
-});
+
+async function initialiseCostView(){
+  // get the start date and time
+  const thisSidebar = await costsviewWaitForOptionalElement("#sidebar_content", "cost view sidebar", 15000);
+  if (!thisSidebar){
+    return;
+  }
+
+  const spans = thisSidebar.querySelectorAll('span');
+  // Iterate over each <span>
+  spans.forEach((span, index) => {
+      // Check if the text content of this <span> is 'Start Date:'
+      if (span.textContent.trim() === 'Start Date:') {
+          // The next sibling element should be the <span> with the date
+          const nextSpan = spans[index + 1];
+          if (nextSpan) {
+              startDateValue = nextSpan.textContent.trim();
+          }
+      } else if (span.textContent.trim() === 'End Date:') {
+          // The next sibling element should be the <span> with the date
+          const nextSpan = spans[index + 1];
+          if (nextSpan) {
+              endDateValue = nextSpan.textContent.trim();
+          }
+      }
+  });
+
+  costDetails();
+}
 
 
 
@@ -318,7 +378,7 @@ let opportunityID = (function() {
 
 
 
-costDetails();
+initialiseCostView();
 
 
 async function costDetails(){
@@ -525,7 +585,14 @@ async function costDetails(){
 
   //console.log(oppData.opportunity_items);
 
-  theList = document.getElementById("nestable-grid");
+  let theList = await costsviewWaitForOptionalElement("#nestable-grid", "cost view item grid", 15000);
+  if (!theList){
+    return;
+  }
+
+  const firstGridRow = await costsviewWaitForOptionalElement("#nestable-grid tbody tr", "cost view rows", 15000);
+  theList = firstGridRow?.closest("#nestable-grid") || document.getElementById("nestable-grid") || theList;
+  prepareCostViewColumns(theList);
 
   // remove orange highlighting from any rows that are below cost
   const rowsToFix = theList.querySelectorAll('tr.item-price-below-cost');
@@ -534,9 +601,13 @@ async function costDetails(){
   });
 
 
-  var assetBodies = document.querySelectorAll('tbody');
+  var assetBodies = theList.querySelectorAll('tbody');
   for (let n = 0; n < assetBodies.length; n++) {
     var thisProd = assetBodies[n].querySelector('tr');
+    if (!thisProd){
+      continue;
+    }
+
     if (thisProd.id){ // the tr id contains the opporunity cost Id reference
       //console.log(thisProd.id); // ignore rows that don't have a cost reference
       var thisID = findItemIdByOpportunityCostId(thisProd.id); // find which opp item contains this cost id
@@ -574,6 +645,9 @@ async function costDetails(){
 
         if (thisType == "Service"){
           var daysBox = assetBodies[n].querySelector('td.optional-04.align-right.days-column');
+          if (!daysBox){
+            continue;
+          }
 
           daysBox.classList.remove("cost-warning");
           daysBox.classList.remove("mismatch-warning");
@@ -621,6 +695,9 @@ async function costDetails(){
 
           // Add cost type selectors
           var thisCostTypeCell = thisProd.querySelector('td.cost-type-select-column');
+          if (!thisCostTypeCell){
+            continue;
+          }
 
           var oldSelect = thisCostTypeCell.querySelector('select');
             if (oldSelect){
@@ -676,16 +753,25 @@ async function costDetails(){
 
     } else if (thisProd.classList.contains("item-group")){ // the tr id contains the opporunity cost Id reference)
       var thisGroup = thisProd.closest("li.dd-haschildren");
+      if (!thisGroup){
+        continue;
+      }
       const thisGroupCostTotalCells = thisGroup.querySelectorAll('td.essential.align-right.predicted-cost-column');
 
       var thisGroupTotal = 0.0;
       for (let i = 0; i < thisGroupCostTotalCells.length; i++) {
-        thisGroupCellCostSpan = thisGroupCostTotalCells[i].querySelector('span[data-original-title="Cost detail"]');
+        const thisGroupCellCostSpan = thisGroupCostTotalCells[i].querySelector('span[data-original-title="Cost detail"]');
+        if (!thisGroupCellCostSpan){
+          continue;
+        }
         thisGroupTotal += parseMoneyInputToFloat(thisGroupCellCostSpan.innerText);
       }
 
 
       var thisGroupDiv = thisProd.querySelector("div.dd-content.group-name");
+      if (!thisGroupDiv){
+        continue;
+      }
 
       var thisoldGroupName = thisGroupDiv.querySelector('span.cost-group-name');
       if (thisoldGroupName){
@@ -711,11 +797,6 @@ async function costDetails(){
 
     }
   }
-
-  document.querySelectorAll('td.quantity-column.align-right').forEach(function(element) {
-    element.classList.add("force-left");
-
-  });
 
 
 
@@ -750,7 +831,7 @@ const observer = new MutationObserver((mutations) => {
 });
 
 // Start observing the body for mutations. This looks out for changes to the webpage, so we can spot toast messages appearing.
-observer.observe(document.body, {
+observer.observe(document.body || document.documentElement, {
   childList: true,
   subtree: true,
   characterData: true
@@ -761,33 +842,38 @@ observer.observe(document.body, {
 
 
 // Add To Existing Purchase Order improvement section
-const addToPoButton = document.querySelector('a[href="#add-to-purchase-order-modal"]');
-
-if (addToPoButton) {
-  addToPoButton.addEventListener('click', function(event) {
-      //event.preventDefault(); // Prevent the default anchor behavior if needed
-      getPoSupplier();
-  });
-} else {
-    console.log("Add to PO Button not found.");
-}
+document.addEventListener('click', (event) => {
+  const addToPoButton = event.target.closest?.('a[href="#add-to-purchase-order-modal"]');
+  if (addToPoButton){
+    getPoSupplier();
+  }
+});
 
 
 
-function getPoSupplier(){
+async function getPoSupplier(){
   var supplier;
   const tickBoxes = document.querySelectorAll("input.item-select");
   for (let i = 0; i < tickBoxes.length; i++) {
     var item = tickBoxes[i];
     if (item.checked){
       var thisRow = item.closest("tr");
-      supplier = thisRow.querySelector('td.optional-01.asset.asset-column').innerText;
+      const supplierCell = thisRow?.querySelector('td.optional-01.asset.asset-column');
+      supplier = supplierCell?.innerText;
       break;
     }
   };
+  if (!supplier){
+    logCostsviewMissingElement("add to PO supplier", "input.item-select:checked + supplier cell");
+    return;
+  }
+
   console.log(supplier);
-  const poAddModal = document.getElementById("add-to-purchase-order-modal");
-  const infoLine = poAddModal.querySelector("p.subtitle");
+  const infoLine = await costsviewWaitForOptionalElement("#add-to-purchase-order-modal p.subtitle", "add to PO modal subtitle", 10000);
+  if (!infoLine){
+    return;
+  }
+
   infoLine.innerHTML = `Items will need to have the same supplier as the existing purchase order:<br><span class="supplier-name">${supplier}</span>`;
 
   chrome.runtime.sendMessage({
@@ -798,10 +884,12 @@ function getPoSupplier(){
 }
 
 // List supplier POs when returned from a scrape
-function listPOs(poArray){
+async function listPOs(poArray){
 
-  const poAddModal = document.getElementById("add-to-purchase-order-modal");
-  const targetDiv = poAddModal.querySelector("div.modal-body");
+  const targetDiv = await costsviewWaitForOptionalElement("#add-to-purchase-order-modal div.modal-body", "add to PO modal body", 10000);
+  if (!targetDiv){
+    return;
+  }
 
   var poListDiv = document.getElementById('po-list');
 
@@ -814,7 +902,12 @@ function listPOs(poArray){
     targetDiv.appendChild(poListDiv);
   }
 
-  const thisJob = document.querySelector("h1.subject-title").innerText.trim();
+  const subjectTitle = await costsviewWaitForOptionalElement("h1.subject-title", "cost view subject title", 10000);
+  if (!subjectTitle){
+    return;
+  }
+
+  const thisJob = subjectTitle.innerText.trim();
   console.log(thisJob);
 
   const sortedArray = prioritiseMatches(poArray, thisJob);
@@ -831,9 +924,12 @@ function listPOs(poArray){
 
 document.addEventListener('click', (event) => {
     // Check if the clicked element has the class "po-select"
-    if (event.target.classList.contains('po-select')) {
+    if (event.target.classList?.contains('po-select')) {
         console.log(event.target.textContent);
-        document.getElementById("purchase_order_name").value = event.target.textContent;
+        const purchaseOrderName = document.getElementById("purchase_order_name");
+        if (purchaseOrderName){
+          purchaseOrderName.value = event.target.textContent;
+        }
     }
 });
 

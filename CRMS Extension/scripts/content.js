@@ -91,6 +91,9 @@ pickerQtyMemory = new Map();
 pickerChosenQtyMemory = new Map();
 pickerPageStorage = new Map();
 rowsAdded = false;
+detailControlsObserverStarted = false;
+detailControlsAddScheduled = false;
+detailControlsDblClickBound = false;
 
 
 blockQuarantines = true;
@@ -108,6 +111,47 @@ console.log(`Content.js was triggered at ${performance.now()}ms`);
 
 // check if we're scraping warehouse notes for another window
 pageUrl = window.location.href;
+let currentOpportunityNavigationKey = getOpportunityNavigationKey(window.location.href);
+let lastObservedHref = window.location.href;
+
+function getOpportunityNavigationKey(href) {
+	try {
+		const url = new URL(href);
+		const match = url.pathname.match(/^\/opportunities\/(\d+)\/?$/);
+		if (!match){
+			return null;
+		}
+		const view = url.searchParams.get("view") || "o";
+		return `${match[1]}:${view}`;
+	} catch (err) {
+		return null;
+	}
+}
+
+setInterval(() => {
+	if (window.location.href === lastObservedHref){
+		return;
+	}
+
+	const nextHref = window.location.href;
+	const nextOpportunityNavigationKey = getOpportunityNavigationKey(nextHref);
+	console.log("CurrentRMS Helper navigation detected:", {
+		from: lastObservedHref,
+		to: nextHref,
+		currentOpportunityNavigationKey,
+		nextOpportunityNavigationKey
+	});
+
+	lastObservedHref = nextHref;
+
+	if (currentOpportunityNavigationKey && nextOpportunityNavigationKey && currentOpportunityNavigationKey !== nextOpportunityNavigationKey){
+		console.log("CurrentRMS Helper: opportunity view changed without a full page load; reloading to reset extension state.");
+		window.location.reload();
+		return;
+	}
+
+	currentOpportunityNavigationKey = nextOpportunityNavigationKey;
+}, 250);
 
 
 if (pageUrl.endsWith("view=d&scrape")){
@@ -209,80 +253,145 @@ function createBlockOutOverlay() {
 
 
 const exists = sel => document.querySelector(sel) !== null;
+const missingElementLogs = new Set();
+const logMissingElement = (feature, selector) => {
+	const key = `${feature}:${selector}`;
+	if (!missingElementLogs.has(key)){
+		missingElementLogs.add(key);
+		console.warn(`CurrentRMS Helper: ${feature} missing expected element: ${selector}`);
+	}
+};
+const clickIfPresent = (id, feature = "click action") => {
+	const element = document.getElementById(id);
+	if (element){
+		element.click();
+	} else {
+		logMissingElement(feature, `#${id}`);
+	}
+};
+const waitForElement = (selector, timeout = 10000, root = document.documentElement) => {
+	return new Promise((resolve, reject) => {
+		const existing = document.querySelector(selector);
+		if (existing){
+			resolve(existing);
+			return;
+		}
+
+		const observer = new MutationObserver(() => {
+			const element = document.querySelector(selector);
+			if (element){
+				clearTimeout(timer);
+				observer.disconnect();
+				resolve(element);
+			}
+		});
+
+		const timer = setTimeout(() => {
+			observer.disconnect();
+			reject(new Error(`Timed out waiting for ${selector}`));
+		}, timeout);
+
+		observer.observe(root, { childList: true, subtree: true });
+	});
+};
+const waitForOptionalElement = async (selector, feature, timeout = 10000) => {
+	try {
+		return await waitForElement(selector, timeout);
+	} catch (err) {
+		logMissingElement(feature, selector);
+		return null;
+	}
+};
 
 // Detect views
-orderView          = exists('div.row.sticky.quick-add-section');
-detailView         = exists('#quick_prepare.tab-pane');
+const opportunityShowPath = /^\/opportunities\/\d+\/?$/.test(window.location.pathname);
+const opportunityViewParam = new URLSearchParams(window.location.search).get("view");
+const domOrderView = exists('div.row.sticky.quick-add-section');
+const domDetailView = exists('#quick_prepare.tab-pane');
+
 editOppView        = exists('form.simple_form.edit_opportunity, form.simple_form.new_opportunity');
 editContainerView  = document.getElementById('container_mode_div') !== null; // ID lookup is fastest
 globalCheckinView  = exists('div.col-sm-12.global_check_ins.main-content');
 globalSearchView   = exists('div.global-search-summary');
+const otherKnownView = editOppView || editContainerView || globalCheckinView || globalSearchView;
+const explicitOrderView = opportunityShowPath && (!opportunityViewParam || opportunityViewParam === "o");
+const explicitDetailView = opportunityShowPath && opportunityViewParam === "d";
 
+orderView          = !otherKnownView && (domOrderView || explicitOrderView);
+detailView         = !otherKnownView && !orderView && (explicitDetailView || (domDetailView && opportunityShowPath && opportunityViewParam !== "o" && opportunityViewParam !== "c"));
 
+console.log("CurrentRMS Helper view detection:", {
+	orderView,
+	detailView,
+	domOrderView,
+	domDetailView,
+	opportunityShowPath,
+	opportunityViewParam,
+	explicitOrderView,
+	explicitDetailView,
+	otherKnownView,
+	editOppView,
+	editContainerView,
+	globalCheckinView,
+	globalSearchView
+});
 
 
 if (orderView){
 	console.log("Order view: "+orderView);
-}
-
-if (detailView){
+} else if (detailView){
 	console.log("Detail view: "+detailView);
-}
-
-if (editOppView){
+} else if (editOppView){
 	console.log("Edit Opportunity View: "+editOppView);
-}
-
-if (globalCheckinView){
+} else if (globalCheckinView){
 	console.log("Global Check-in view: "+globalCheckinView);
-}
-
-if (editContainerView){
+} else if (editContainerView){
 	console.log("Edit container view: "+editContainerView);
+} else {
+	console.log("No view detected");
 }
 
 
 // Code chunk to enable auto-scrolling to last position in Order or Detail View.
-if (detailView){
-
+function restoreSavedDetailFilters(){
 	var currentView = "detail";
 	
 	chrome.storage.local.get(["last-scroll"]).then((result) => {
-			if (result){
+			if (result && result["last-scroll"]){
 				console.log(result);
 				if (result["last-scroll"].opp == opportunityID && result["last-scroll"].view == currentView){
 					console.log("Reloading filters!");
 
 					if (result["last-scroll"].notesHidden == true){
-						document.getElementById("notes-button").click();
+						clickIfPresent("notes-button", "saved filters");
 					}
 
 					if (result["last-scroll"].preparedHidden == true){
-						document.getElementById("prepared-button").click();
+						clickIfPresent("prepared-button", "saved filters");
 					}
 
 					if (result["last-scroll"].bookedOutHidden == true){
-						document.getElementById("booked-out-button").click();
+						clickIfPresent("booked-out-button", "saved filters");
 					}
 
 					if (result["last-scroll"].checkedInHidden == true){
-						document.getElementById("checked-in-button").click();
+						clickIfPresent("checked-in-button", "saved filters");
 					}
 
 					if (result["last-scroll"].bulkOnly == true){
-						document.getElementById("bulk-button").click();
+						clickIfPresent("bulk-button", "saved filters");
 					}
 
 					if (result["last-scroll"].subhiresHidden == true){
-						document.getElementById("subhires-button").click();
+						clickIfPresent("subhires-button", "saved filters");
 					}
 
 					if (result["last-scroll"].nonsubsHidden == true){
-						document.getElementById("nonsubs-button").click();
+						clickIfPresent("nonsubs-button", "saved filters");
 					}
 
 					if (result["last-scroll"].nonShortsHidden == true){
-						document.getElementById("nonshorts-button").click();
+						clickIfPresent("nonshorts-button", "saved filters");
 					}
 
 				} else {
@@ -290,9 +399,6 @@ if (detailView){
 				}
 			}
 	});
-
-	
-
 }
 
 // Save scroll position on click
@@ -326,6 +432,7 @@ if (detailView || orderView || globalCheckinView){
 	// Create event listener to close the modal if clicked
 	modalElement.addEventListener('click', function() {
 			modalElement.style.display = "none";
+			focusInput();
 	});
 }
 
@@ -395,7 +502,11 @@ chrome.storage.local.get(["detailDelete"]).then((result) => {
 		console.log("Disable Detail View Delete setting: "+detailDelete);
 
 		if (detailView){
-			hideDeleteButtons();
+			waitForOptionalElement("#opportunity_item_assets_body", "hide delete buttons", 15000).then((assetList) => {
+				if (assetList){
+					hideDeleteButtons();
+				}
+			});
 		}
 });
 
@@ -1027,24 +1138,41 @@ async function addDetails(mode) {
 			console.log("Running offline addDetails");
 		}
 
-		console.log("oppData:");
-		console.log(oppData);
+			console.log("oppData:");
+			console.log(oppData);
 
-		// Find all elements with class "optional-01 asset asset-column"
-		var assetColumns = document.querySelectorAll('td.optional-01.asset.asset-column');
+				await waitForOptionalElement("#opportunity_item_assets_body", "addDetails asset list", 15000);
+
+				// Find all elements with class "optional-01 asset asset-column"
+				var assetColumns = document.querySelectorAll('td.optional-01.asset.asset-column');
+			if (assetColumns.length === 0){
+				logMissingElement("addDetails product rows", "td.optional-01.asset.asset-column");
+			}
 
 		var notedOppAssetIds = [];
 		var thisDescription = "";
 
 	
-		for (var i = 0; i < assetColumns.length; i++) {
-			var parentRow = assetColumns[i].closest('tr');
-			var oppItemId = parentRow.getAttribute("data-oi-id");
-			var parentTableBody = assetColumns[i].closest('tbody');
-			var nameElement = parentRow.querySelector('.essential.asset.dd-name');
-			var nameDiv = nameElement.querySelector('div:last-child');
-			// Find the span with class 'product-tip' within nameDiv
-			var productTip = nameDiv.querySelector('span.product-tip');
+			for (var i = 0; i < assetColumns.length; i++) {
+				var parentRow = assetColumns[i].closest('tr');
+				if (!parentRow){
+					logMissingElement("addDetails product rows", "closest tr from td.optional-01.asset.asset-column");
+					continue;
+				}
+				var oppItemId = parentRow.getAttribute("data-oi-id");
+				var parentTableBody = assetColumns[i].closest('tbody');
+				var nameElement = parentRow.querySelector('.essential.asset.dd-name');
+				if (!nameElement){
+					logMissingElement("addDetails product rows", ".essential.asset.dd-name");
+					continue;
+				}
+				var nameDiv = nameElement.querySelector('div:last-child');
+				if (!nameDiv){
+					logMissingElement("addDetails product rows", ".essential.asset.dd-name div:last-child");
+					nameDiv = nameElement;
+				}
+				// Find the span with class 'product-tip' within nameDiv
+				var productTip = nameDiv.querySelector('span.product-tip');
 			// If the element exists, remove it
 			if (productTip) {
 					productTip.remove();
@@ -1062,10 +1190,11 @@ async function addDetails(mode) {
 						prodName = prodName.slice("Expand\n".length);
 					}
 
-					// find the closest <a>
-					const closestLink = nameElement.querySelector('a').href;
-					let linkId = 0;
-					const lastSlash = closestLink.lastIndexOf('/');
+						// find the closest <a>
+						const closestLinkElement = nameElement.querySelector('a');
+						const closestLink = closestLinkElement ? closestLinkElement.href : "";
+						let linkId = 0;
+						const lastSlash = closestLink.lastIndexOf('/');
 					const firstQuestion = closestLink.indexOf('?', lastSlash + 1); // search *after* the last “/”
 
 					// Guard against edge‑cases
@@ -1103,9 +1232,13 @@ async function addDetails(mode) {
 			}
 
 
-			if (thisDescription && !notedOppAssetIds.includes(oppItemId)){
-				notedOppAssetIds.push(oppItemId);
-				// add item description/note section
+				if (thisDescription && !notedOppAssetIds.includes(oppItemId)){
+					if (!parentTableBody){
+						logMissingElement("addDetails item descriptions", "closest tbody from td.optional-01.asset.asset-column");
+						continue;
+					}
+					notedOppAssetIds.push(oppItemId);
+					// add item description/note section
 				const numberOfPadElemenets = parentRow.getElementsByClassName("essential padding-column");
 
 				// Count the number of matching elements
@@ -1216,11 +1349,13 @@ async function addDetails(mode) {
 
 
 
-	} else if (orderView){
-		console.log("add Details order view");
+		} else if (orderView){
+			console.log("add Details order view");
 
-		// Find empty descriptions and remove them
-		const allEditableDescs = document.querySelectorAll('div.editable.opportunity-item-description');
+			await waitForOptionalElement("#opportunity_items_body, #opportunity_items_scrollable", "order addDetails item list", 15000);
+
+			// Find empty descriptions and remove them
+			const allEditableDescs = document.querySelectorAll('div.editable.opportunity-item-description');
 		const emptyDescs = Array.from(allEditableDescs)
 		.filter(el => el.innerText === '');
 		// remove any empty descriptions
@@ -1230,9 +1365,13 @@ async function addDetails(mode) {
 	
 
 
-		// get the start date and time
-		const thisSidebar = document.getElementById("sidebar_content");
-		const spans = thisSidebar.querySelectorAll('span');
+			// get the start date and time
+			const thisSidebar = await waitForOptionalElement("#sidebar_content", "order addDetails sidebar", 15000);
+			if (!thisSidebar){
+				addDetailsRunning = false;
+				return;
+			}
+			const spans = thisSidebar.querySelectorAll('span');
 		// Iterate over each <span>
 		let startDateValue = null;
 		let endDateValue = null;
@@ -3894,7 +4033,8 @@ const observer = new MutationObserver((mutations) => {
 			messageText.includes('Set container successfully') ||
 			messageText.includes('Asset(s) successfully checked in')){
 				addDetails(true);
-				if (detailView && (document.querySelector('input[type="text"][name="container"]').value)){
+				const containerInput = detailView ? document.querySelector('input[type="text"][name="container"]') : null;
+				if (containerInput && containerInput.value){
 					containerScanSound();
 				
 				} else if (!orderView){
@@ -4181,12 +4321,17 @@ function newCalculateContainerWeights() {
 		if (subhireWeightLi){
 			subhireWeightLi.innerHTML = `${subhireWeight} ${weightUnit}`;
 			stockWeightLi.innerHTML = `${stockWeight} ${weightUnit}`;
-		} else {
-			// Find the <li> element that contains the weight
-			var weightLi = document.querySelector('#weight_total').closest('li');
+			} else {
+				// Find the <li> element that contains the weight
+				var weightTotalElement = document.querySelector('#weight_total');
+				var weightLi = weightTotalElement ? weightTotalElement.closest('li') : null;
+				if (!weightLi || !weightLi.parentNode){
+					logMissingElement("order weights", "#weight_total li");
+					return;
+				}
 
-			// Create a new <li> element
-			var subLi = document.createElement('li');
+				// Create a new <li> element
+				var subLi = document.createElement('li');
 			subLi.innerHTML = `<span>&#8627; Sub-Rent Weight:</span>
 												 <span id="subhire_weight";>
 												 ${subhireWeight} ${weightUnit}
@@ -4278,44 +4423,46 @@ listToastPosts();
 
 // add a section to the sidebar if it exists
 if (detailView){
-	try {
-	  var containerWeightsSection = document.getElementById("sidebar_content");
-	 
-	  if (containerWeightsSection) {
-	    var htmlContent = `<div class='group-side-content' id='containerWeightsSection'><h3>Container Weights<a class='toggle-button expand-arrow icn-cobra-contract' href='#'></a></h3><div><ul id='containerlist' style='display: block;'></ul></div></div>`;
-	 
-	    containerWeightsSection.insertAdjacentHTML("afterend", htmlContent);
-	 
-	    var containerWeightsSectionDiv = document.getElementById('containerWeightsSection');
-	    var toggleButton = containerWeightsSectionDiv.querySelector('.toggle-button');
-	 
-	    // Adjust the display property for the initial state
-	    var containerListElement = document.getElementById('containerlist');
-	    containerListElement.style.display = 'block';
-	 
-	    toggleButton.onclick = function (event) {
-	      event.preventDefault();
-	      if (containerListElement.style.display === 'none' || containerListElement.style.display === '') {
-	        containerListElement.style.display = 'block';
-	        toggleButton.classList.remove('icn-cobra-expand');
-	        toggleButton.classList.add('icn-cobra-contract');
-	      } else {
-	        containerListElement.style.display = 'none';
-	        toggleButton.classList.remove('icn-cobra-contract');
-	        toggleButton.classList.add('icn-cobra-expand');
-	      }
-	    };
-	 
-	    getWeightUnit(); // check to see what weight unit the user has set by looking at the total weight field
-			newCalculateContainerWeights(); // set initial container weigh values in the side bar
-	 
-	    // Add inline style for the toggle-button size
-	    toggleButton.style.fontSize = '14px'; // Adjust the size as needed
-	  }
-	} catch (err) {
-	  console.error(err);
-	}
+	initialiseDetailContainerWeightsSection();
+}
 
+async function initialiseDetailContainerWeightsSection(){
+	try {
+		var containerWeightsSection = await waitForOptionalElement("#sidebar_content", "container weights section", 15000);
+		if (containerWeightsSection) {
+			var htmlContent = `<div class='group-side-content' id='containerWeightsSection'><h3>Container Weights<a class='toggle-button expand-arrow icn-cobra-contract' href='#'></a></h3><div><ul id='containerlist' style='display: block;'></ul></div></div>`;
+
+			containerWeightsSection.insertAdjacentHTML("afterend", htmlContent);
+
+			var containerWeightsSectionDiv = document.getElementById('containerWeightsSection');
+			var toggleButton = containerWeightsSectionDiv.querySelector('.toggle-button');
+
+			// Adjust the display property for the initial state
+			var containerListElement = document.getElementById('containerlist');
+			containerListElement.style.display = 'block';
+
+			toggleButton.onclick = function (event) {
+				event.preventDefault();
+				if (containerListElement.style.display === 'none' || containerListElement.style.display === '') {
+					containerListElement.style.display = 'block';
+					toggleButton.classList.remove('icn-cobra-expand');
+					toggleButton.classList.add('icn-cobra-contract');
+				} else {
+					containerListElement.style.display = 'none';
+					toggleButton.classList.remove('icn-cobra-contract');
+					toggleButton.classList.add('icn-cobra-expand');
+				}
+			};
+
+			getWeightUnit(); // check to see what weight unit the user has set by looking at the total weight field
+			newCalculateContainerWeights(); // set initial container weigh values in the side bar
+
+			// Add inline style for the toggle-button size
+			toggleButton.style.fontSize = '14px'; // Adjust the size as needed
+		}
+	} catch (err) {
+		console.error(err);
+	}
 }
 
 
@@ -4323,11 +4470,102 @@ if (detailView){
 
 // Create control Items
 if (detailView){
+	initialiseDetailControls();
+	observeDetailControlsContainer();
+} else if (orderView){
+	initialiseOrderControls();
+} else if (globalSearchView){
+
+	var searchTerm = returnGlobalSearchTerm();
+	if (searchTerm){
+		chrome.runtime.sendMessage({messageType: "globalsearchscrape", messageText: searchTerm});
+	}
+
+	const theForm = document.querySelector("form.form-search");
+		if (theForm){
+		theForm.addEventListener('submit', function(event) {
+			searchTerm = document.getElementById("search_term").value;
+			if (searchTerm.length > 0){
+					chrome.runtime.sendMessage({messageType: "globalsearchscrape", messageText: searchTerm});
+			}
+		});
+	}
+}
+
+function syncDetailFilterButtonStates(){
+	const buttonStates = [
+		{ id: "notes-button", active: notesHidden, strike: notesHidden },
+		{ id: "prepared-button", active: preparedHidden, strike: preparedHidden },
+		{ id: "booked-out-button", active: bookedOutHidden, strike: bookedOutHidden },
+		{ id: "checked-in-button", active: checkedInHidden, strike: checkedInHidden },
+		{ id: "bulk-button", active: bulkOnly, strike: false },
+		{ id: "subhires-button", active: subhiresHidden, strike: subhiresHidden },
+		{ id: "nonsubs-button", active: nonsubsHidden, strike: false },
+		{ id: "nonshorts-button", active: nonShortsHidden, strike: false }
+	];
+
+	buttonStates.forEach((buttonState) => {
+		const button = document.getElementById(buttonState.id);
+		if (!button){
+			return;
+		}
+		button.classList.toggle("turned-on", buttonState.active);
+		button.classList.toggle("strike-through", buttonState.strike);
+	});
+}
+
+function scheduleDetailControlsReadd(){
+	if (detailControlsAddScheduled){
+		return;
+	}
+	detailControlsAddScheduled = true;
+	setTimeout(() => {
+		detailControlsAddScheduled = false;
+		initialiseDetailControls(false);
+	}, 100);
+}
+
+function observeDetailControlsContainer(){
+	if (detailControlsObserverStarted){
+		return;
+	}
+	detailControlsObserverStarted = true;
+
+	const observer = new MutationObserver((mutations) => {
+		for (const mutation of mutations) {
+			const changedNodes = Array.from(mutation.addedNodes).concat(Array.from(mutation.removedNodes));
+			const controlsChanged = changedNodes.some((node) => {
+				if (!(node instanceof Element)){
+					return false;
+				}
+				return node.id === "opportunity_items_title" ||
+					node.id === "helper-control-panel" ||
+					node.classList.contains("helper-sticky") ||
+					node.querySelector("#opportunity_items_title, #helper-control-panel, .helper-sticky");
+			});
+
+			if (controlsChanged){
+				scheduleDetailControlsReadd();
+				return;
+			}
+		}
+	});
+
+	observer.observe(document.documentElement, { childList: true, subtree: true });
+}
+
+async function initialiseDetailControls(restoreFilters = true){
 	try {
 
 		// start of new gui
 
-		var titleRow = document.getElementById("opportunity_items_title");
+		var titleRow = await waitForElement("#opportunity_items_title", 15000);
+		const titleParent = titleRow.parentElement;
+		const existingPanel = titleParent ? titleParent.querySelector("#helper-control-panel") : document.getElementById("helper-control-panel");
+		if (existingPanel){
+			syncDetailFilterButtonStates();
+			return;
+		}
 
 
 
@@ -4413,13 +4651,19 @@ if (detailView){
 		document.getElementById("subhires-button").addEventListener("click", subhiresButton);
 		document.getElementById("nonsubs-button").addEventListener("click", nonsubsButton);
 		document.getElementById("nonshorts-button").addEventListener("click", nonShortsButton);
+		if (restoreFilters){
+			restoreSavedDetailFilters();
+		} else {
+			syncDetailFilterButtonStates();
+			updateHidings();
+		}
 
 
 		// create a cross scan option in the function menu
-		const functionDiv = document.getElementById("functions");
-		if (functionDiv){
-			const dropDownMenu = functionDiv.querySelector("ul.dropdown-menu");
-			if (dropDownMenu){
+			const functionDiv = document.getElementById("functions");
+			if (functionDiv){
+				const dropDownMenu = functionDiv.querySelector("ul.dropdown-menu");
+				if (dropDownMenu && !dropDownMenu.querySelector("#crossscan-option")){
 
 				const newDivider = document.createElement('li');
 				newDivider.classList.add("divider");
@@ -4448,9 +4692,9 @@ if (detailView){
 
 		
 		// Find the existing Allocate button
-		const allocateButton = document.querySelector('input.btn[value="allocate"]');
+		const allocateButton = await waitForOptionalElement('input.btn[value="allocate"]', "smart scan setup", 15000);
 
-		if (allocateButton) {
+			if (allocateButton && !document.getElementById('smart_scan')) {
 			const ScInsertTarget = allocateButton.closest("div");
 
 			if (ScInsertTarget && ScInsertTarget.parentNode) {
@@ -4489,12 +4733,12 @@ if (detailView){
 
 			const smartScanCheckbox = document.getElementById('smart_scan');
 
-			// auto set "smart Scan" to on depending on the user setting
-			chrome.storage.local.get(["smartScan"]).then((result) => {
-				if (result.smartScan != "false"){
-					if(!smartScanCheckbox.checked){
-						smartScanCheckbox.click();
-					};
+				// auto set "smart Scan" to on depending on the user setting
+				chrome.storage.local.get(["smartScan"]).then((result) => {
+					if (result.smartScan == "true"){
+						if(smartScanCheckbox && !smartScanCheckbox.checked){
+							smartScanCheckbox.click();
+						};
 					focusInput();
 				}
 			});
@@ -4513,9 +4757,9 @@ if (detailView){
 			});
 			}
 
-		} else {
-			console.warn('Allocate button not found!');
-		}
+			} else if (!allocateButton) {
+				console.warn('Allocate button not found!');
+			}
 
 
 
@@ -4524,25 +4768,30 @@ if (detailView){
 		// end of new gui
 
 
-		document.addEventListener("dblclick", function(event) {
-			// Check if the clicked element is an <a> inside an <li> within #od-function-tabs
-			const listItem = event.target.closest("li");
-			if (listItem && listItem.classList.contains("active")) {
-					// Scroll the window to the top only if the <li> has the "active" class
-					window.scrollTo({ top: 0, behavior: "smooth" });
+			if (!detailControlsDblClickBound){
+				detailControlsDblClickBound = true;
+				document.addEventListener("dblclick", function(event) {
+					// Check if the clicked element is an <a> inside an <li> within #od-function-tabs
+					const listItem = event.target.closest("li");
+					if (listItem && listItem.classList.contains("active")) {
+							// Scroll the window to the top only if the <li> has the "active" class
+							window.scrollTo({ top: 0, behavior: "smooth" });
+					}
+				});
 			}
-		});
 
 
-	} catch (err){
-		console.log(err);
-	}
-} else if (orderView){
+		} catch (err){
+			console.log(err);
+		}
+}
+
+async function initialiseOrderControls(){
 	try {
 
 		// start of new gui
 
-		var titleRow = document.getElementById("opportunity_items_title");
+		var titleRow = await waitForElement("#opportunity_items_title", 15000);
 
 		// Create a new row element
 		let newElement = document.createElement('div');
@@ -4575,33 +4824,41 @@ if (detailView){
 		// Find all <a> elements and filter by text content
 		var recalcA = Array.from(document.querySelectorAll('a')).find(a => a.textContent.trim() === "Recent actions");
 
-		if (recalcA) {
+			if (recalcA) {
 
-				var recalcLi = recalcA.closest('li');
+					var recalcLi = recalcA.closest('li');
+					if (!recalcLi || !recalcLi.parentNode){
+						logMissingElement("order check accessories option", 'li parent for "Recent actions"');
+					} else {
+						// create a new li element
+						var newLi = document.createElement('li');
+						newLi.innerHTML = `
+						<i class="icn-cobra-shuffle"></i>
+						<a data-toggle="" id="check-accessories" href="#">Check Accessories</a>`;
+
+						// insert the new li after the recalcLi
+						recalcLi.parentNode.insertBefore(newLi, recalcLi.nextSibling);
+
+						// add event listener to the new li
+						newLi.addEventListener("click", function() {
+							console.log("Check Accessories clicked");
+							// send a message to the background script
+							chrome.runtime.sendMessage({messageType: "forceAllStockUpdate"});
+						});
+					}
 		
-				// create a new li element
-				var newLi = document.createElement('li');
-				newLi.innerHTML = `
-				<i class="icn-cobra-shuffle"></i>
-				<a data-toggle="" id="check-accessories" href="#">Check Accessories</a>`;
-
-				// insert the new li after the recalcLi
-				recalcLi.parentNode.insertBefore(newLi, recalcLi.nextSibling);
-
-				// add event listener to the new li
-				newLi.addEventListener("click", function() {
-					console.log("Check Accessories clicked");
-					// send a message to the background script
-					chrome.runtime.sendMessage({messageType: "forceAllStockUpdate"});
-				});
-		
-		}
+			}
 
 		
 		// Add complete buttons for each activity
 		// find all a elements with the classes "favourite activity unpinned"
 		var activityAs = document.querySelectorAll('a.favourite.activity.unpinned');
 		activityAs.forEach(function(activityA) {
+			const activityRow = activityA.closest('tr');
+			if (!activityRow){
+				return;
+			}
+
 			const newCompleteButton = document.createElement('a');
 			newCompleteButton.href = "#";
 			newCompleteButton.classList.add('activity-complete-btn');
@@ -4610,7 +4867,7 @@ if (detailView){
 
 
 			// get the id of the closest tr
-			const thisActivityId = activityA.closest('tr').id.replace('id-','');
+			const thisActivityId = activityRow.id.replace('id-','');
 
 
 			newCompleteButton.addEventListener("click", function(event) {
@@ -4618,7 +4875,8 @@ if (detailView){
 				// get the closest a.title element and extract the text
 				// get the tr
 				const activityRow = activityA.closest('tr');
-				const activityTitle = activityRow.querySelector('td.content-title').innerText.trim();
+				const activityTitleElement = activityRow ? activityRow.querySelector('td.content-title') : null;
+				const activityTitle = activityTitleElement ? activityTitleElement.innerText.trim() : "this activity";
 
 
 
@@ -4651,12 +4909,18 @@ if (detailView){
 						// now get the number of tbody elements left in the table
 						const remainingTbody = table.querySelectorAll('tbody').length;
 
-						// find in the document the a element with name="activities"
-						const activitiesA = document.querySelector('a[name="activities"]');
-						// get the parent div of the a element
-						const parentDiv = activitiesA.closest('div');
-						// get the div with class "listing-label-number" inside the parent div
-						const activityLabelDiv = parentDiv.querySelector('div.listing-label-number');
+							// find in the document the a element with name="activities"
+							const activitiesA = document.querySelector('a[name="activities"]');
+							if (!activitiesA){
+								return;
+							}
+							// get the parent div of the a element
+							const parentDiv = activitiesA.closest('div');
+							if (!parentDiv){
+								return;
+							}
+							// get the div with class "listing-label-number" inside the parent div
+							const activityLabelDiv = parentDiv.querySelector('div.listing-label-number');
 
 						if (activityLabelDiv){
 							console.log(activityLabelDiv);
@@ -4672,32 +4936,9 @@ if (detailView){
 			}
 		})
 	
-
-
-
 	} catch (err){
 		console.log(err);
 	}
-
-
-
-} else if (globalSearchView){
-
-	var searchTerm = returnGlobalSearchTerm();
-	if (searchTerm){
-		chrome.runtime.sendMessage({messageType: "globalsearchscrape", messageText: searchTerm});
-	}
-
-	const theForm = document.querySelector("form.form-search");
-		if (theForm){
-		theForm.addEventListener('submit', function(event) {
-			searchTerm = document.getElementById("search_term").value;
-			if (searchTerm.length > 0){
-					chrome.runtime.sendMessage({messageType: "globalsearchscrape", messageText: searchTerm});
-			}
-		});
-	}
-
 }
 
 
@@ -4723,16 +4964,25 @@ function returnGlobalSearchTerm() {
 
 
 if (detailView){
-	// Add an event listener to the select all check box
-	var checkAllBox = document.getElementById("asset_select_all")
-	checkAllBox.addEventListener('click', function(event) {
+	initialiseDetailSelectAllHandler();
+}
 
+async function initialiseDetailSelectAllHandler(){
+	const checkAllBox = await waitForOptionalElement("#asset_select_all", "detail select all handler", 15000);
+	if (!checkAllBox){
+		return;
+	}
+
+	checkAllBox.addEventListener('click', function(event) {
 		setTimeout(function(){
 			if (checkAllBox.checked){
 				itemSelects = document.querySelectorAll("input.item-select");
 
 				itemSelects.forEach((item) => {
 					var theRow = item.closest("li.grid-body-row");
+					if (!theRow){
+						return;
+					}
 					if (theRow.classList.contains("hide-nonsub")){
 						item.checked = false;
 					} else if (theRow.classList.contains("hide-nonbulk")){
@@ -4744,12 +4994,10 @@ if (detailView){
 					} else if (theRow.classList.contains("hide-nonshort")){
 						item.checked = false;
 					}
-
 				});
 			}
-			}, 10);
+		}, 10);
 	});
-
 }
 
 
@@ -4771,22 +5019,48 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 
 if (detailView){
+	initialiseDetailFocusHandlers();
+}
+
+async function initialiseDetailFocusHandlers(){
 	try { // try block in case some ellements may not exist in some circumstances
+			await waitForElement("#quick_prepare.tab-pane", 15000);
 
-		// Add an event listener to the Free Scan toggle slider, to make the asset input box focus afterwards
-		var freeScanElement = document.querySelectorAll('label[for="free_scan"][class="checkbox toggle android"]');
-		freeScanElement[0].addEventListener('click', function(event) {
-			focusInput();
-		});
+				// Add an event listener to the Free Scan toggle slider, to make the asset input box focus afterwards
+				var freeScanElement = document.querySelectorAll('label[for="free_scan"][class="checkbox toggle android"]');
+			if (freeScanElement[0]){
+				freeScanElement[0].addEventListener('click', function(event) {
+					focusInput();
+				});
+			} else {
+				logMissingElement("detail focus handlers", 'label[for="free_scan"][class="checkbox toggle android"]');
+			}
 
-		// Add an event listener to the Mark As Prepared toggle slider, to make the asset input box focus afterwards
-		var freeScanElement = document.querySelectorAll('label[for="mark_as_prepared"][class="checkbox toggle android"]');
-		freeScanElement[0].addEventListener('click', function(event) {
-			focusInput();
-		});
+			// Add an event listener to the Mark As Prepared toggle slider, to make the asset input box focus afterwards
+			var markAsPreparedElement = document.querySelectorAll('label[for="mark_as_prepared"][class="checkbox toggle android"]');
+			if (markAsPreparedElement[0]){
+				markAsPreparedElement[0].addEventListener('click', function(event) {
+					focusInput();
+				});
+			} else {
+				logMissingElement("detail focus handlers", 'label[for="mark_as_prepared"][class="checkbox toggle android"]');
+			}
 
-		// Add an event listener to all collapse and expand buttons
-		var expandButtons = document.querySelectorAll('button[data-action="expand"], button[data-action="collapse"]');
+			// Add an event listener to the SmartScan toggle slider, to make the asset input box focus afterwards
+			var smartScanElement = document.querySelectorAll('label[for="smart_scan"][class="checkbox toggle android"]');
+			if (smartScanElement[0]){
+				smartScanElement[0].addEventListener('click', function(event) {
+					focusInput();
+				});
+			} else {
+				logMissingElement("detail focus handlers", 'label[for="smart_scan"][class="checkbox toggle android"]');
+			}
+
+			// Add an event listener to all collapse and expand buttons
+			var expandButtons = document.querySelectorAll('button[data-action="expand"], button[data-action="collapse"]');
+			if (expandButtons.length === 0){
+				logMissingElement("detail focus handlers", 'button[data-action="expand"], button[data-action="collapse"]');
+			}
 
 		// loop through each button and add a click event listener
 		expandButtons.forEach(function(button) {
@@ -4796,8 +5070,11 @@ if (detailView){
 			});
 		});
 
-		// Add an event listener to all lock/unlock buttons
-		var lockButtons = document.querySelectorAll('a[data-unlock-title="Unlock this group"]');
+			// Add an event listener to all lock/unlock buttons
+			var lockButtons = document.querySelectorAll('a[data-unlock-title="Unlock this group"]');
+			if (lockButtons.length === 0){
+				logMissingElement("detail focus handlers", 'a[data-unlock-title="Unlock this group"]');
+			}
 
 		// loop through each button and add a click event listener
 		lockButtons.forEach(function(button) {
@@ -4809,8 +5086,37 @@ if (detailView){
 			});
 		});
 
-		// Add an event listener to Detail View mode buttons
-		var detailModeButtons = document.querySelectorAll('a[class="btn"][data-toggle="tab"]');
+			// Add an event listener to all check boxes
+			var lineCheckBoxes = document.querySelectorAll('input.item-select');
+			if (lineCheckBoxes.length === 0){
+				logMissingElement("detail focus handlers", "input.item-select");
+			}
+
+		// loop through each button and add a click event listener
+		lineCheckBoxes.forEach(function(button) {
+			button.addEventListener("click", function() {
+
+				// do something when the button is clicked
+				focusInput();
+
+			});
+		});
+
+			// Add an event listener to the select all checkbox
+			var selectAllBox = document.querySelector('input.select-all-items');
+			if (selectAllBox){
+				selectAllBox.addEventListener('click', function(event) {
+					focusInput();
+				});
+			} else {
+				logMissingElement("detail focus handlers", "input.select-all-items");
+			}
+
+			// Add an event listener to Detail View mode buttons
+			var detailModeButtons = document.querySelectorAll('a[class="btn"][data-toggle="tab"]');
+			if (detailModeButtons.length === 0){
+				logMissingElement("detail mode handlers", 'a[class="btn"][data-toggle="tab"]');
+			}
 
 		// loop through each button and add a click event listener
 		detailModeButtons.forEach(function(button) {
@@ -4822,12 +5128,22 @@ if (detailView){
 		});
 
 
-		chrome.storage.local.get(["allocateDefault"]).then((result) => {
-			if (result.allocateDefault != "false" && detailViewMode == "functions"){
-				var allocateButton = document.querySelector('a.btn[href="#quick_allocate"]');
-				allocateButton.click();
-			}
-		});
+
+
+
+
+
+
+			chrome.storage.local.get(["allocateDefault"]).then((result) => {
+				if (result.allocateDefault != "false" && detailViewMode == "functions"){
+					var allocateButton = document.querySelector('a.btn[href="#quick_allocate"]');
+					if (allocateButton){
+						allocateButton.click();
+					} else {
+						logMissingElement("allocate default", 'a.btn[href="#quick_allocate"]');
+					}
+				}
+			});
 
 		chrome.storage.local.get(["soundsOn"]).then((result) => {
 			console.log("Sound = "+result.soundsOn);
@@ -4842,7 +5158,6 @@ if (detailView){
 	catch(err) {
 		console.log(err);
 	}
-
 }
 
 
@@ -4858,19 +5173,28 @@ if (detailView){
 // function to put the page focus to the scanner input box
 function focusInput(){
 	if (detailView){
+		let inputId = "";
 		switch (detailViewMode) {
 			case "allocate":
-				document.getElementById("stock_level_asset_number").focus();
+				inputId = "stock_level_asset_number";
 				break;
 			case "prepare":
-				document.getElementById("p_stock_level_asset_number").focus();
+				inputId = "p_stock_level_asset_number";
 				break;
 			case "book out":
-				document.getElementById("bo_stock_level_asset_number").focus();
+				inputId = "bo_stock_level_asset_number";
 				break;
 			case "check-in":
-				document.getElementById("ci_stock_level_asset_number").focus();
+				inputId = "ci_stock_level_asset_number";
 				break;
+		}
+		if (inputId){
+			const inputElement = document.getElementById(inputId);
+			if (inputElement){
+				inputElement.focus();
+			} else {
+				logMissingElement("focus input", `#${inputId}`);
+			}
 		}
 	}
 }
@@ -4894,12 +5218,15 @@ chrome.runtime.sendMessage({messageType: "check"}, function(response) {
 // auto set "mark as prepared" to on depending on the user setting
 chrome.storage.local.get(["setPrepared"]).then((result) => {
 	if (result.setPrepared != "false" && detailView){
-
-		var preparedCheckbox = document.getElementById('mark_as_prepared');
-		if(!preparedCheckbox.checked){
-			preparedCheckbox.click();
-		};
-		focusInput();
+		waitForOptionalElement("#mark_as_prepared", "set prepared default", 15000).then((preparedCheckbox) => {
+			if (!preparedCheckbox){
+				return;
+			}
+			if(!preparedCheckbox.checked){
+				preparedCheckbox.click();
+			};
+			focusInput();
+		});
 	}
 });
 
@@ -4965,22 +5292,30 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 	}
 
-	if (message.messageType == "availabilityData"){
-			console.log("Availability data was delivered");
-			//console.log(message.messageData);
-			if (orderView){
-				addAvailability(message.messageData);
-			}
-	}
+		if (message.messageType == "availabilityData"){
+				console.log("Availability data was delivered");
+				//console.log(message.messageData);
+				if (orderView){
+					waitForOptionalElement("#opportunity_items_body, #opportunity_items_scrollable", "order availability data", 15000).then((itemList) => {
+						if (itemList){
+							addAvailability(message.messageData);
+						}
+					});
+				}
+		}
 
 	// handle scrape returns for warehouse notes and also subhire members
 	if (message.messageType == "warehouseNotesData"){
 			console.log("Warehouse Notes Data was delivered");
 			console.log(message.messageData);
-			if (orderView){
+				if (orderView){
+					waitForOptionalElement("#opportunity_items_body, #opportunity_items_scrollable", "order warehouse notes data", 15000).then((itemList) => {
+						if (!itemList){
+							return;
+						}
 
-				let obj = message.messageData.warehouseNotesLog;
-				for (let key in obj) {
+					let obj = message.messageData.warehouseNotesLog;
+					for (let key in obj) {
 					if (obj.hasOwnProperty(key)) {  // Ensures the key belongs to the object, not its prototype
 						let value = obj[key];
 
@@ -5030,11 +5365,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 								memberElement.innerText = memberName;
 							}
 
+							}
 						}
 					}
+					});
 				}
-			}
-	}
+		}
 
 
 	if (message.messageType == "productQtyData"){
@@ -5253,7 +5589,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 
 if (detailView){
-	activeIntercept(); // Intercept scanning actions to handle special scans without submitting the form
+	waitForOptionalElement("#stock_level_asset_number", "scan intercept", 15000).then((scanInput) => {
+		if (scanInput){
+			activeIntercept(); // Intercept scanning actions to handle special scans without submitting the form
+		}
+	});
 };
 
 
@@ -5275,34 +5615,59 @@ function hideDeleteButtons(){
 
 
 function activeIntercept(){
-	if (detailView){
+		if (detailView){
 
-		// allocate panel items
-		allocateScanBox = document.getElementById("stock_level_asset_number");
-		var parentSpan = allocateScanBox.parentNode;
-		var quantityBox = document.querySelector('input[type="text"][name="quantity"]');
-		var containerBox = document.querySelector('input[type="text"][name="container"]');
+			// allocate panel items
+			allocateScanBox = document.getElementById("stock_level_asset_number");
+			if (!allocateScanBox){
+				logMissingElement("scan intercept", "#stock_level_asset_number");
+				return;
+			}
 
-		// book out panel items
-		bookoutScanBox = document.getElementById("bo_stock_level_asset_number");
-		boContainerBox = document.getElementById('bo_container');
+			var parentSpan = allocateScanBox.parentNode;
+			var quantityBox = document.querySelector('input[type="text"][name="quantity"]');
+			var containerBox = document.querySelector('input[type="text"][name="container"]');
+			if (!quantityBox){
+				logMissingElement("scan intercept", 'input[type="text"][name="quantity"]');
+			}
+			if (!containerBox){
+				logMissingElement("scan intercept", 'input[type="text"][name="container"]');
+			}
 
-		function resetScanBox(){
-			// block to clear the allocate and book out boxes after an intercept
-			allocateScanBox.value = '';
-			bookoutScanBox.value = '';
+			// book out panel items
+			bookoutScanBox = document.getElementById("bo_stock_level_asset_number");
+			boContainerBox = document.getElementById('bo_container');
+			if (!bookoutScanBox){
+				logMissingElement("book-out scan intercept", "#bo_stock_level_asset_number");
+			}
+			if (!boContainerBox){
+				logMissingElement("book-out scan intercept", "#bo_container");
+			}
 
-			parentSpan = allocateScanBox.parentNode;
-			var htmlFudge = parentSpan.innerHTML;
-			parentSpan.innerHTML = htmlFudge;
+			function resetScanBox(){
+				// block to clear the allocate and book out boxes after an intercept
+				if (allocateScanBox){
+					allocateScanBox.value = '';
+				}
+				if (bookoutScanBox){
+					bookoutScanBox.value = '';
+				}
 
-			boParentSpan = bookoutScanBox.parentNode;
-			var boHtmlFudge = boParentSpan.innerHTML;
-			boParentSpan.innerHTML = boHtmlFudge;
+				if (allocateScanBox && allocateScanBox.parentNode){
+					parentSpan = allocateScanBox.parentNode;
+					var htmlFudge = parentSpan.innerHTML;
+					parentSpan.innerHTML = htmlFudge;
+				}
 
-			setTimeout(focusInput, 100); // delayed to avoid the jQuery function messing it up
-			activeIntercept(); // need to re-run because we've just nuked the scan section DOM so the event listener won't work
-		}
+				if (bookoutScanBox && bookoutScanBox.parentNode){
+					boParentSpan = bookoutScanBox.parentNode;
+					var boHtmlFudge = boParentSpan.innerHTML;
+					boParentSpan.innerHTML = boHtmlFudge;
+				}
+
+				setTimeout(focusInput, 100); // delayed to avoid the jQuery function messing it up
+				activeIntercept(); // need to re-run because we've just nuked the scan section DOM so the event listener won't work
+			}
 
 		// event listener for the scanbox in the Allocate panel
 		allocateScanBox.addEventListener("keypress", function(event) {
@@ -6128,6 +6493,11 @@ function getCurrencySymbol() {
 //// SMART SCAN SECTION - WORK IN PROGRESS
 function smartScanSetup(assetScanned){
 
+	if (assetScanned == ""){
+		return;
+	}
+
+
 
 	// reset reserved badges
 	var smartScanBadges = document.querySelectorAll("span.smart-scan-candidate");
@@ -6565,9 +6935,12 @@ function removeAsset(assetToRemove){
 
 // section below is to deal with modifying the picker behaviour in regards to items spread across Pages
 if (orderView){
+	initialiseOrderPickerHandlers();
+}
 
+async function initialiseOrderPickerHandlers(){
 	// Select the target table you want to observe
-	const targetTable = document.querySelector('#picker_search_results'); // Replace '#myTable' with your actual table selector
+	const targetTable = await waitForOptionalElement('#picker_search_results', "order picker results", 15000); // Replace '#myTable' with your actual table selector
 
 
 
@@ -6606,21 +6979,34 @@ if (orderView){
 		observer.observe(targetTable, config);
 
 		// Define the function to handle table updates
-		function handleTableUpdate() {
-			// Your custom logic to handle the table update
-			console.log('Picker table content has been updated.');
-			// Perform your desired actions here
-			const pickerModal = document.getElementById('pickerModal');
+			function handleTableUpdate() {
+				// Your custom logic to handle the table update
+				console.log('Picker table content has been updated.');
+				// Perform your desired actions here
+				const pickerModal = document.getElementById('pickerModal');
+				if (!pickerModal){
+					logMissingElement("order picker update", "#pickerModal");
+					tableUpdated = false;
+					return;
+				}
 
-			var pickerBody = pickerModal.querySelector("tbody");
+				var pickerBody = pickerModal.querySelector("tbody");
+				if (!pickerBody){
+					logMissingElement("order picker update", "#pickerModal tbody");
+					tableUpdated = false;
+					return;
+				}
 
-			// set minimum of all number inputs to 0
-			if (pickerBody){
-					var allPickerRows = pickerBody.querySelectorAll("tr");
-					allPickerRows.forEach((item, i) => {
-					item.querySelector('input[type="number"]').min = "0";
-				});
-			}
+				// set minimum of all number inputs to 0
+				if (pickerBody){
+						var allPickerRows = pickerBody.querySelectorAll("tr");
+						allPickerRows.forEach((item, i) => {
+						const qtyInput = item.querySelector('input[type="number"]');
+						if (qtyInput){
+							qtyInput.min = "0";
+						}
+					});
+				}
 
 			let activePageLi = pickerModal.querySelector("li.active");
 
@@ -6642,16 +7028,20 @@ if (orderView){
 				// resurrect the previous rows so that we see the expanded accessories
 				pickerBody.innerHTML = pickerPageStorage.get(activePage);
 
-				var arrayOfPickedValues = pickerQtyMemory.get(activePage);
-				var allPickerRows = pickerBody.querySelectorAll("tr");
-				allPickerRows.forEach((item, i) => {
-					if (arrayOfPickedValues[i] > 0){
-						item.querySelector('input[type="number"]').value = arrayOfPickedValues[i];
-					} else {
-						item.querySelector('input[type="number"]').value = "";
-					}
-				});
-			}
+					var arrayOfPickedValues = pickerQtyMemory.get(activePage);
+					var allPickerRows = pickerBody.querySelectorAll("tr");
+					allPickerRows.forEach((item, i) => {
+						const qtyInput = item.querySelector('input[type="number"]');
+						if (!qtyInput){
+							return;
+						}
+						if (arrayOfPickedValues[i] > 0){
+							qtyInput.value = arrayOfPickedValues[i];
+						} else {
+							qtyInput.value = "";
+						}
+					});
+				}
 
 
 			// now add values from other pages to the bottom of this one.
@@ -6685,13 +7075,16 @@ if (orderView){
 
 				var rowsToAdd = temp.querySelectorAll('tr');
 
-				if (rowsToAdd){
-					rowsToAdd.forEach((rowToAdd, i) => {
+					if (rowsToAdd){
+						rowsToAdd.forEach((rowToAdd, i) => {
 
-						pickerBody.appendChild(rowToAdd);
-						rowToAdd.querySelector('input[type="number"]').value = valuesToAdd[i];
-						rowToAdd.dataset.additional = 'true';
-						rowToAdd.style.display = "none";
+							pickerBody.appendChild(rowToAdd);
+							const qtyInput = rowToAdd.querySelector('input[type="number"]');
+							if (qtyInput){
+								qtyInput.value = valuesToAdd[i];
+							}
+							rowToAdd.dataset.additional = 'true';
+							rowToAdd.style.display = "none";
 
 					});
 				}
@@ -6710,7 +7103,7 @@ if (orderView){
 
 
 		// Select the pickerModal element
-	const pickerModal = document.getElementById('pickerModal');
+	const pickerModal = await waitForOptionalElement('#pickerModal', "order picker modal", 15000);
 
 	// Check if the element exists to avoid errors
 	if (pickerModal) {
@@ -6733,22 +7126,30 @@ if (orderView){
 		});
 
 		// Define the function to handle the valid <a> click
-		function handleValidLinkClick(linkElement) {
+			function handleValidLinkClick(linkElement) {
 
-			// work out the current page:
-			let activePage = pickerModal.querySelector("li.active").innerText;
+				// work out the current page:
+				const activePageLi = pickerModal.querySelector("li.active");
+				if (!activePageLi){
+					return;
+				}
+				let activePage = activePageLi.innerText;
 
 			let arrayOfrows = [];
 			let arrayOfValues = [];
 			let arrayOfChosenValues = [];
 
-			// Log any values entered:
-			var pickerBody = pickerModal.querySelector("tbody");
-			var allPickerRows = pickerBody.querySelectorAll("tr");
-			console.log(allPickerRows.length);
-			allPickerRows.forEach((item, i) => {
-					if (item.dataset.additional != 'true'){
-					var inputQty = item.querySelector('input[type="number"]').value;
+				// Log any values entered:
+				var pickerBody = pickerModal.querySelector("tbody");
+				if (!pickerBody){
+					return;
+				}
+				var allPickerRows = pickerBody.querySelectorAll("tr");
+				console.log(allPickerRows.length);
+				allPickerRows.forEach((item, i) => {
+						if (item.dataset.additional != 'true'){
+						const qtyInput = item.querySelector('input[type="number"]');
+						var inputQty = qtyInput ? qtyInput.value : "";
 					if (parseInt(inputQty) > 0){
 						arrayOfrows.push(item.outerHTML);
 						arrayOfValues.push(inputQty);
@@ -7842,7 +8243,8 @@ async function handleSmartScan(scanCode, targetItemId, stockLevelId, assetNumber
   
 	const container = doc.createElement("div");
 
-	const containerScanValue = document.querySelector('input[type="text"][name="container"]').value;
+	const containerInput = document.querySelector('input[type="text"][name="container"]');
+	const containerScanValue = containerInput ? containerInput.value : "";
   
 	container.innerHTML = `
 	  <input type="hidden"
