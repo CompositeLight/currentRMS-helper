@@ -1317,10 +1317,14 @@ async function addDetails(mode) {
 		const tableFunctionsHeader = document.querySelector('div.row.sticky.quick-function-section');
 
 		if (tableFunctionsHeader) {
-				const helperButtonRow = document.querySelector('div.row.helper-sticky');
 				const observer = new MutationObserver(function(mutations) {
 						mutations.forEach(function(mutation) {
 								if (mutation.target === tableFunctionsHeader) {
+										const helperButtonRow = document.querySelector('div.row.helper-sticky');
+										if (!helperButtonRow) {
+											return;
+										}
+
 										// Your logic for handling changes to tableFunctionsHeader
 										const topValue = tableFunctionsHeader.style.top; // Get the current 'top' style value
 										console.log('Top style value changed:', topValue);
@@ -4776,6 +4780,7 @@ async function initialiseDetailControls(restoreFilters = true){
 					if (listItem && listItem.classList.contains("active")) {
 							// Scroll the window to the top only if the <li> has the "active" class
 							window.scrollTo({ top: 0, behavior: "smooth" });
+							focusInput();
 					}
 				});
 			}
@@ -5047,14 +5052,13 @@ async function initialiseDetailFocusHandlers(){
 			}
 
 			// Add an event listener to the SmartScan toggle slider, to make the asset input box focus afterwards
-			var smartScanElement = document.querySelectorAll('label[for="smart_scan"][class="checkbox toggle android"]');
-			if (smartScanElement[0]){
-				smartScanElement[0].addEventListener('click', function(event) {
-					focusInput();
-				});
-			} else {
-				logMissingElement("detail focus handlers", 'label[for="smart_scan"][class="checkbox toggle android"]');
-			}
+			waitForOptionalElement('label.checkbox.toggle.android[for="smart_scan"]', "detail focus handlers", 15000).then((smartScanElement) => {
+				if (smartScanElement){
+					smartScanElement.addEventListener('click', function(event) {
+						focusInput();
+					});
+				}
+			});
 
 			// Add an event listener to all collapse and expand buttons
 			var expandButtons = document.querySelectorAll('button[data-action="expand"], button[data-action="collapse"]');
@@ -5112,20 +5116,43 @@ async function initialiseDetailFocusHandlers(){
 				logMissingElement("detail focus handlers", "input.select-all-items");
 			}
 
-			// Add an event listener to Detail View mode buttons
-			var detailModeButtons = document.querySelectorAll('a[class="btn"][data-toggle="tab"]');
-			if (detailModeButtons.length === 0){
-				logMissingElement("detail mode handlers", 'a[class="btn"][data-toggle="tab"]');
-			}
+				// Add an event listener to Detail View mode buttons
+				let detailModeManuallySelected = false;
+				var detailModeButtons = document.querySelectorAll('a.btn[data-toggle="tab"]');
+				if (detailModeButtons.length === 0){
+					logMissingElement("detail mode handlers", 'a.btn[data-toggle="tab"]');
+				}
 
-		// loop through each button and add a click event listener
-		detailModeButtons.forEach(function(button) {
-			button.addEventListener("click", function() {
-				// do something when the button is clicked
-				detailViewMode = button.lastChild.textContent.toLowerCase().toString().trim();;
-				console.log(detailViewMode);
-			});
-		});
+				const detailModeByHref = {
+					"#quick_allocate": "allocate",
+					"#quick_prepare": "prepare",
+					"#quick_book_out": "book out",
+					"#quick_check_in": "check-in"
+				};
+				const detailModesWithInputs = new Set(Object.values(detailModeByHref));
+				const getDetailModeFromButton = (button) => {
+					const href = button.getAttribute("href");
+					if (detailModeByHref[href]){
+						return detailModeByHref[href];
+					}
+
+					const textMode = button.textContent.toLowerCase().trim().replace(/\s+/g, " ");
+					return textMode === "check in" ? "check-in" : textMode;
+				};
+
+				// loop through each button and add a click event listener
+				detailModeButtons.forEach(function(button) {
+					button.addEventListener("click", function(event) {
+						detailViewMode = getDetailModeFromButton(button);
+						if (event.isTrusted){
+							detailModeManuallySelected = true;
+							if (detailModesWithInputs.has(detailViewMode)){
+								setTimeout(focusInput, 0);
+							}
+						}
+						console.log(detailViewMode);
+					});
+				});
 
 
 
@@ -5134,16 +5161,32 @@ async function initialiseDetailFocusHandlers(){
 
 
 
-			chrome.storage.local.get(["allocateDefault"]).then((result) => {
-				if (result.allocateDefault != "false" && detailViewMode == "functions"){
-					var allocateButton = document.querySelector('a.btn[href="#quick_allocate"]');
+				const allocateDefaultResult = await chrome.storage.local.get(["allocateDefault"]);
+				if (allocateDefaultResult.allocateDefault != "false" && detailViewMode == "functions"){
+					const allocateButton = await waitForOptionalElement('a.btn[href="#quick_allocate"]', "allocate default", 15000);
 					if (allocateButton){
-						allocateButton.click();
-					} else {
-						logMissingElement("allocate default", 'a.btn[href="#quick_allocate"]');
+						const isAllocateTabActive = () => {
+							const activeAllocateButton = document.querySelector('a.btn[href="#quick_allocate"]');
+							const activeAllocatePane = document.querySelector("#quick_allocate");
+							return (activeAllocateButton && activeAllocateButton.closest("li.active")) || (activeAllocatePane && activeAllocatePane.classList.contains("active"));
+						};
+						const clickAllocateIfNeeded = () => {
+							if (detailModeManuallySelected || isAllocateTabActive()){
+								return;
+							}
+
+							const currentAllocateButton = document.querySelector('a.btn[href="#quick_allocate"]');
+							if (currentAllocateButton){
+								currentAllocateButton.click();
+								focusInput();
+							}
+						};
+
+						[0, 250, 750, 1500, 3000, 5000].forEach((delay) => {
+							setTimeout(clickAllocateIfNeeded, delay);
+						});
 					}
 				}
-			});
 
 		chrome.storage.local.get(["soundsOn"]).then((result) => {
 			console.log("Sound = "+result.soundsOn);

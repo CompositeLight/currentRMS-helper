@@ -1,4 +1,4 @@
-# currentRMS-helper 2.1.2
+# currentRMS-helper 2.1.3
 This is a Chrome extension to add functionality to the CurrentRMS web interface. It was created out of our frustration waiting on "quality of life" modifications to make the user experience better. Since making it available online, I've been blown away by how many users and businesses have started using it on a daily basis. I'm really grateful to the many users who have contributed ideas, or pointed out bugs with the extension.
 
 The extension is free to all, but as a few people have asked, if you really want to [buy me a cup of coffee / tea / beer](https://paypal.me/garethrisdale) you can use this link.
@@ -35,6 +35,10 @@ For a full list of the extension's features, check out the [Features.md](/Featur
 
 
 ## New Features
+
+### Version 2.1.3
+
+- FIXED: Various additional glitches caused by the CurrentRMS lazy-loading update.
 
 ### Version 2.1.2
 
