@@ -1371,19 +1371,21 @@ async function addDetails(mode) {
 				addDetailsRunning = false;
 				return;
 			}
-			const spans = thisSidebar.querySelectorAll('span');
+
+			const sidebarAttributes = thisSidebar.querySelector('.sidebar-attributes');
+			const spans = sidebarAttributes.querySelectorAll('div');
 		// Iterate over each <span>
 		let startDateValue = null;
 		let endDateValue = null;
 		spans.forEach((span, index) => {
 				// Check if the text content of this <span> is 'Start Date:'
-				if (span.textContent.trim() === 'Start Date:') {
+				if (span.textContent.trim() === 'Start Date') {
 						// The next sibling element should be the <span> with the date
 						const nextSpan = spans[index + 1];
 						if (nextSpan) {
 								startDateValue = nextSpan.textContent.trim();
 						}
-				} else if (span.textContent.trim() === 'End Date:') {
+				} else if (span.textContent.trim() === 'End Date') {
 						// The next sibling element should be the <span> with the date
 						const nextSpan = spans[index + 1];
 						if (nextSpan) {
@@ -1397,6 +1399,8 @@ async function addDetails(mode) {
 		//chrome.runtime.sendMessage({messageType: "availabilityscape", messageText: opportunityID, messageStartDate:startDateValue, messageEndDate:endDateValue});
 
 		// Local parse text version
+
+		console.log(`Scraping availability for opportunity ${opportunityID} from ${startDateValue} to ${endDateValue}`);
 		availabilityScrapeNonDom(opportunityID, startDateValue, endDateValue);
 
 		// Scrape warehouse notes
@@ -4074,7 +4078,9 @@ const observer = new MutationObserver((mutations) => {
 			} else if (messageText.includes('Helper failed to fetch from API. Retrying.')){
 				// do nothing
 				console.log("Re-trying to fetch from API");
-			
+			} else if (messageText.includes('Scan the item to be removed.')){
+				// do nothing
+				console.log("Scan the item to be removed.");
 
 			// If any other alert appears, log it so that I can spot it and add it to this code
 			} else {
@@ -5118,32 +5124,46 @@ async function initialiseDetailFocusHandlers(){
 				logMissingElement("detail mode handlers", 'a[class="btn"][data-toggle="tab"]');
 			}
 
+			// add an event listener to all td elements in the table with id "opportunity_items"
+			var tableCells = document.querySelectorAll('#opportunity_items td');
+			if (tableCells.length === 0){
+				logMissingElement("detail focus handlers", "#opportunity_items td");
+			} else {
+				tableCells.forEach(function(cell) {
+					cell.addEventListener("click", function() {
+						focusInput();
+					});
+				});
+			}
+
+
+
+
+
 		// loop through each button and add a click event listener
 		detailModeButtons.forEach(function(button) {
 			button.addEventListener("click", function() {
 				// do something when the button is clicked
 				detailViewMode = button.lastChild.textContent.toLowerCase().toString().trim();;
 				console.log(detailViewMode);
+				setTimeout(focusInput, 250);
 			});
 		});
 
 
-
-
-
-
-
-
-			chrome.storage.local.get(["allocateDefault"]).then((result) => {
-				if (result.allocateDefault != "false" && detailViewMode == "functions"){
-					var allocateButton = document.querySelector('a.btn[href="#quick_allocate"]');
-					if (allocateButton){
-						allocateButton.click();
-					} else {
-						logMissingElement("allocate default", 'a.btn[href="#quick_allocate"]');
-					}
+		chrome.storage.local.get(["allocateDefault"]).then((result) => {
+			if (result.allocateDefault != "false" && detailViewMode == "functions"){
+				var allocateButton = document.querySelector('a.btn[href="#quick_allocate"]');
+				if (allocateButton){
+					console.log("Allocate Default = "+result.allocateDefault);
+					//allocateButton.click();
+					activateAllocateTab();
+				} else {
+					logMissingElement("allocate default", 'a.btn[href="#quick_allocate"]');
 				}
-			});
+			}
+		});
+
 
 		chrome.storage.local.get(["soundsOn"]).then((result) => {
 			console.log("Sound = "+result.soundsOn);
@@ -5160,7 +5180,18 @@ async function initialiseDetailFocusHandlers(){
 	}
 }
 
+async function activateAllocateTab() {
+    const allocateButton =
+        await waitForElement('a.btn[href="#quick_allocate"]', 15000);
 
+    await new Promise(resolve =>
+        requestAnimationFrame(() =>
+            requestAnimationFrame(resolve)
+        )
+    );
+    allocateButton.click();
+	focusInput();
+}
 
 
 
@@ -5189,6 +5220,7 @@ function focusInput(){
 				break;
 		}
 		if (inputId){
+			console.log("Focusing input with ID: " + inputId);
 			const inputElement = document.getElementById(inputId);
 			if (inputElement){
 				inputElement.focus();
@@ -6918,7 +6950,10 @@ function removeAsset(assetToRemove){
 			if (assetColumns[i].innerText == assetToRemove){
 					removeFound = true;
 					var parentRow = assetColumns[i].closest('tr');
-					var editButton = parentRow.querySelector('a[data-rp="true"]');
+
+					const editButton = [...parentRow.querySelectorAll('a')]
+  						.find(a => a.textContent.trim() === 'Edit');
+					//var editButton = parentRow.querySelector('a[data-rp="true"]');
 					if (editButton) {
 						// Append "&remove-" to the href attribute of the <a> element
 						editButton.href += "&"+assetToRemove+"&remove";

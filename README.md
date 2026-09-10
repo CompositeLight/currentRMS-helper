@@ -1,7 +1,10 @@
-# currentRMS-helper 2.1.2
+# currentRMS-helper 2.2.1
 This is a Chrome extension to add functionality to the CurrentRMS web interface. It was created out of our frustration waiting on "quality of life" modifications to make the user experience better. Since making it available online, I've been blown away by how many users and businesses have started using it on a daily basis. I'm really grateful to the many users who have contributed ideas, or pointed out bugs with the extension.
 
 The extension is free to all, but as a few people have asked, if you really want to [buy me a cup of coffee / tea / beer](https://paypal.me/garethrisdale) you can use this link.
+
+Since I don't use CurrentRMS anywhere near as much as I used to, development of this extension is now very limited. However, I can thoroughly recommend the [Hub](https://hubapp.uk) extension which is light-years ahead and in active development. Many of the features of this extension are already available in Hub, and many more besides.
+
 
 **DISCLAIMER: This extension is a personal side project, written by me. I am not a professional programmer. Use entirely at your own risk. This code is in no way affiliated with InspHire Ltd, or any of my employers.**
 
@@ -35,6 +38,18 @@ For a full list of the extension's features, check out the [Features.md](/Featur
 
 
 ## New Features
+
+
+### Version 2.2.1 - Maintenance Update for new GUI
+
+- FIXED: Global Search additions failing.
+
+- FIXED: Availability numbers broken in order view.
+
+- FIXED: Overriding horrible new reserved/prepared/booked-out/checked-in colours.
+
+- FIXED: Allocate by default broken.
+
 
 ### Version 2.1.2
 

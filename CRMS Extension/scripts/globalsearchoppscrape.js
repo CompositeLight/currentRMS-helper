@@ -90,8 +90,9 @@ if (shouldScrape()) {
         if (i < 5){
           var titleElement = item.querySelector(".content-title");
           var stateElement = item.querySelector("span.avatar");
+          var cobraElement = stateElement.querySelector("span");
           var statusElement = item.querySelector("td[data-label='Status:']");
-          var cobra = stateElement.querySelector("i").className;
+          var cobra = cobraElement.className;
           theRecords.push({title: titleElement.innerText, state: stateElement.innerText, oppid: getSectionBeforeLastSlash(titleElement.querySelector("a").href), status: statusElement.innerText.trim(), avatar: cobra});
         }
 

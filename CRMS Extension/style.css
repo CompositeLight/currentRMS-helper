@@ -786,3 +786,22 @@ ul.accessory-item{
   color: green !important;
   font-weight: bold !important;
 }
+
+
+
+.label[href]:hover,.label[href]:focus{color:#fff;text-decoration:none;cursor:pointer}
+.label:empty{display:none}.label-default{background-color:#999999}
+.label-default[href]:hover,.label-default[href]:focus{background-color:gray}
+.label-primary{background-color:#0088f0 !important; color: white !important;}
+.label-primary[href]:hover,.label-primary[href]:focus{background-color:#006bbd}
+.label-success{background-color:#81bc00 !important; color: white !important;}
+.label-success[href]:hover,.label-success[href]:focus{background-color:#5e8900}
+
+.label-info{background-color:#5bc0de !important; color: white !important;}
+.label-info[href]:hover,.label-info[href]:focus{background-color:#31b0d5}
+.label-warning{background-color:#ef7d00 !important; color: white !important;}
+.label-warning[href]:hover,.label-warning[href]:focus{background-color:#bc6200}
+.label-danger{background-color:#cc001e !important; color: white !important;}
+.label-danger[href]:hover,.label-danger[href]:focus{background-color:#990017}
+.label-secondary{background-color:#f2a700}
+.label-secondary[href]:hover,.label-secondary[href]:focus{background-color:#bf8400}
