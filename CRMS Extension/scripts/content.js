@@ -1331,8 +1331,8 @@ async function addDetails(mode) {
 											
 
 												const topValue = tableFunctionsHeader.style.top;
-												console.log('+++++++++++ Top style value changed:', topValue);
-												console.log('+++++++++++ Helper row height: ', helperButtonRow.offsetHeight);
+												//console.log('+++++++++++ Top style value changed:', topValue);
+												//console.log('+++++++++++ Helper row height: ', helperButtonRow.offsetHeight);
 
 												// Ignore the mutation caused by previous write.
 												if (topValue === lastTopValue) return;
