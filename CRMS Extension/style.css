@@ -805,3 +805,42 @@ ul.accessory-item{
 .label-danger[href]:hover,.label-danger[href]:focus{background-color:#990017}
 .label-secondary{background-color:#f2a700}
 .label-secondary[href]:hover,.label-secondary[href]:focus{background-color:#bf8400}
+
+
+.app-chip__accent{
+  display:none !important;
+}
+
+.app-chip__surface {
+  border-radius: 0.6rem !important;
+}
+
+.app-chip--palette-cyan.opportunity-item-status-chip:not(.opportunity-transaction-type-chip){
+  --app-chip-background: #00BDFF !important;
+  --app-chip-label-foreground: white !important;
+}
+
+.app-chip--palette-green.opportunity-item-status-chip:not(.opportunity-transaction-type-chip){
+  --app-chip-background: #81bc00 !important;
+  --app-chip-label-foreground: white !important;
+}
+
+.app-chip--palette-red.opportunity-item-status-chip:not(.opportunity-transaction-type-chip){
+  --app-chip-background: #cc001e !important;
+  --app-chip-label-foreground: white !important;
+}
+
+.app-chip--palette-orange.opportunity-item-status-chip:not(.opportunity-transaction-type-chip){
+  --app-chip-background: #ef7d00 !important;
+  --app-chip-label-foreground: white !important;
+}
+
+.app-chip--palette-grey.opportunity-item-status-chip:not(.opportunity-transaction-type-chip){
+  --app-chip-background: #333333 !important;
+  --app-chip-label-foreground: white !important;
+}
+
+.app-chip--palette-blue.opportunity-item-status-chip:not(.opportunity-transaction-type-chip){
+  --app-chip-background: #0088F0 !important;
+  --app-chip-label-foreground: white !important;
+}

@@ -105,6 +105,8 @@ quarantineData = {quarantines:[], meta:[]};
 quarantinedItemList = [];
 quarantineCounts = [];
 
+lastTopValue = null;
+
 
 console.log(`Content.js was triggered at ${performance.now()}ms`);
 
@@ -1314,23 +1316,63 @@ async function addDetails(mode) {
 		}
 
 		// catching changes to the table functions header
-		const tableFunctionsHeader = document.querySelector('div.row.sticky.quick-function-section');
+		const tableFunctionsHeader = document.querySelector('div.row.opportunity-show-sticky--items-toolbar.quick-function-section');
 
 		if (tableFunctionsHeader) {
-				const helperButtonRow = document.querySelector('div.row.helper-sticky');
+				
 				const observer = new MutationObserver(function(mutations) {
 						mutations.forEach(function(mutation) {
 								if (mutation.target === tableFunctionsHeader) {
 										// Your logic for handling changes to tableFunctionsHeader
-										const topValue = tableFunctionsHeader.style.top; // Get the current 'top' style value
-										console.log('Top style value changed:', topValue);
-										console.log('Helper row heigh: ', helperButtonRow.offsetHeight);
-										//tableFunctionsHeader.style.top = (parseInt(topValue) + helperButtonRow.offsetHeight) + 'px';
+										
+										const helperButtonRow = document.querySelector('div.row.helper-sticky'); // get the helper button row
+
+										if (helperButtonRow){
+											
+
+												const topValue = tableFunctionsHeader.style.top;
+												console.log('+++++++++++ Top style value changed:', topValue);
+												console.log('+++++++++++ Helper row height: ', helperButtonRow.offsetHeight);
+
+												// Ignore the mutation caused by previous write.
+												if (topValue === lastTopValue) return;
+
+
+												const top = parseFloat(topValue);
+												if (!Number.isFinite(top)) return;
+
+												const newTopValue = `${top + helperButtonRow.offsetHeight}px`;
+												lastTopValue = newTopValue;
+												tableFunctionsHeader.style.top = newTopValue;
+											
+										} else {
+											setTimeout(function() {
+												const helperButtonRow = document.querySelector('div.row.helper-sticky'); // get the helper button row
+												if (helperButtonRow){
+
+													const topValue = tableFunctionsHeader.style.top;
+													console.log('+++++++++++ Top style value changed:', topValue);
+													console.log('+++++++++++ Helper row height (delayed): ', helperButtonRow.offsetHeight);
+
+												// Ignore the mutation caused by previous write.
+												if (topValue === lastTopValue) return;
+
+												if (!helperButtonRow) return;
+
+												const top = parseFloat(topValue);
+												if (!Number.isFinite(top)) return;
+
+												const newTopValue = `${top + helperButtonRow.offsetHeight}px`;
+												lastTopValue = newTopValue;
+												tableFunctionsHeader.style.top = newTopValue;
+												}
+											}, 500);
 
 
 
+										}
+									}
 
-								}
 						});
 				});
 
@@ -4760,6 +4802,7 @@ async function initialiseDetailControls(restoreFilters = true){
 					smartScan = false;
 				}
 				console.log("smartScan:" + smartScan);
+				focusInput();
 			});
 			}
 
@@ -4839,8 +4882,8 @@ async function initialiseOrderControls(){
 						// create a new li element
 						var newLi = document.createElement('li');
 						newLi.innerHTML = `
-						<i class="icn-cobra-shuffle"></i>
-						<a data-toggle="" id="check-accessories" href="#">Check Accessories</a>`;
+						
+						<a data-toggle="" id="check-accessories" href="#"><i class="icn-cobra-shuffle"></i> Check Accessories</a>`;
 
 						// insert the new li after the recalcLi
 						recalcLi.parentNode.insertBefore(newLi, recalcLi.nextSibling);
