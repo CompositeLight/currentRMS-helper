@@ -1013,59 +1013,75 @@ if (editOppView){
 				console.log("No locally stored data for this opportunity");
 			}
 
+		const subjectDiv = document.querySelector('div.row.string.required.opportunity_subject');
 
+		// find the closest div with col-md-12 col-sm-12
+		const parentDiv = subjectDiv.closest('div.col-md-12.col-sm-12');
 
-		 
-		
+		// Create the new element you want to add
+		const localDataDiv = document.createElement('div');
+		localDataDiv.classList.add("form-block");
 
-
-
-
-	const subjectDiv = document.querySelector('div.row.string.required.opportunity_subject');
-
-	// find the closest div with col-md-12 col-sm-12
-	const parentDiv = subjectDiv.closest('div.col-md-12.col-sm-12');
-
-	// Create the new element you want to add
-	const localDataDiv = document.createElement('div');
-	localDataDiv.classList.add("form-block");
-
-	localDataDiv.innerHTML = `
-	<fieldset class="row">
-	<div class="col-md-2 col-sm-2 form-icon">
-	<i class="icn-cobra-shuffle"></i>
-	</div>
-	<div class="col-md-8 col-sm-8 form-area">
-		<div class="row check_boxes optional opportunity_assigned_surcharge_group_ids">
-			<div class="col-md-12 col-sm-12">
-			<H3>Helper Extension Local Opportunity Data</H3>
-			<p>Locally stored opportunity items: <span id="opp-data-length">${opportunityItemsLength}</span></p>
-			<li class="helper-btn helper-bar" id="clear-local-data">Clear Local Data</li>
-			</div>
+		localDataDiv.innerHTML = `
+		<fieldset class="row">
+		<div class="col-md-2 col-sm-2 form-icon">
+		<i class="icn-cobra-shuffle"></i>
 		</div>
+		<div class="col-md-8 col-sm-8 form-area">
+			<div class="row check_boxes optional opportunity_assigned_surcharge_group_ids">
+				<div class="col-md-12 col-sm-12">
+				<H3>Helper Extension Local Opportunity Data</H3>
+				<p>Locally stored opportunity items: <span id="opp-data-length">${opportunityItemsLength}</span></p>
+				<li class="helper-btn helper-bar" id="clear-local-data">Clear Local Data</li>
+				</div>
+			</div>
 
-	</div>
-	</fieldset>
-	</div>`
+		</div>
+		</fieldset>
+		</div>`
 
-	// Append the new element at the end of the div
-	parentDiv.appendChild(localDataDiv);
+		// Append the new element at the end of the div
+		parentDiv.appendChild(localDataDiv);
 
-	document.addEventListener('click', function(event) {
-		if (event.target && event.target.id === 'clear-local-data') {
-			console.log("Clicked clear local data button");
-			// remove the locally stored data for this opportunity
-			chrome.storage.local.remove(`opp-${opportunityID}`, function() {
-				console.log(`Removed opp-${opportunityID} from local storage`);
-				makeToast("toast-info", `Removed opp-${opportunityID} from local storage`, 5);
-				document.getElementById("opp-data-length").innerText = "0";
-			});
-		}
+		document.addEventListener('click', function(event) {
+			if (event.target && event.target.id === 'clear-local-data') {
+				console.log("Clicked clear local data button");
+				// remove the locally stored data for this opportunity
+				chrome.storage.local.remove(`opp-${opportunityID}`, function() {
+					console.log(`Removed opp-${opportunityID} from local storage`);
+					makeToast("toast-info", `Removed opp-${opportunityID} from local storage`, 5);
+					document.getElementById("opp-data-length").innerText = "0";
+				});
+			}
+		});
+
 	});
 
-});
+	// find the div.opportunity-form-footer-row
+	const footerRow = document.querySelector('div.opportunity-form-footer-row');
+	// find the closest div.row
+	const footerRowParent = footerRow.closest('div.row');
+
+	// find the h1.subject-title
+	const subjectTitle = document.querySelector('h1.subject-title');
+	// find the closest div.row
+	const subjectTitleParent = subjectTitle.closest('div.row');
+
+	// copy the footerRow and append it to before the subjectTitleParent
+	const footerRowClone = footerRowParent.cloneNode(true);
+
+	const topRow =footerRowClone.querySelector('.opportunity-form-footer-row');
+	if (topRow){
+		topRow.style.marginTop = "0px";
+		const newTitle = document.createElement('h1');
+		newTitle.style.marginRight = "auto";
+		newTitle.innerText = subjectTitle.innerText;
+		topRow.insertAdjacentElement('afterbegin', newTitle);
+		subjectTitle.innerText = "";
 
 
+	}
+	subjectTitleParent.insertAdjacentElement('beforebegin', footerRowClone);
 
 
 
