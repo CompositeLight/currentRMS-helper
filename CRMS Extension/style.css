@@ -549,7 +549,7 @@ a.allocation-link{
   border-radius: 6px;
   padding: 5px;
   position: absolute;
-  z-index: 1;
+  z-index: 2;
   top: -5px;
   left: 110%;
   opacity: 0;
