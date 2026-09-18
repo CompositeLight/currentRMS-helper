@@ -46,6 +46,7 @@ For a full list of the extension's features, check out the [Features.md](/Featur
 
 - NEW: Removed strange icons.
 
+- FIXED: Warehouse Note icons / tooltips had stopped appearing in Order View. 
 
 
 ### Version 2.2.1 - Maintenance Update for new GUI

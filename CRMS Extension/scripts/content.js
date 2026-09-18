@@ -7917,14 +7917,13 @@ async function warehouseNotesScrapeNonDom(opp){
 
 	await recallApiDetails();          // ← your helper (sets apiSubdomain, …)
 
+	// The detail page now contains skeleton rows; its items section supplies the row HTML.
 	const res = await fetch(
-		`https://${apiSubdomain}.current-rms.com/opportunities/${opportunityID}?view=d`,
+		`https://${apiSubdomain}.current-rms.com/opportunities/${opp}/section?section=items&sort=path&tab=functions&view=d`,
 		{ credentials: 'include' }
 	);
-	if (!res.ok) throw new Error(`detail page fetch failed (${res.status})`);
+	if (!res.ok) throw new Error(`detail items section fetch failed (${res.status})`);
 	const html = await res.text();
-
-	console.log(html);
 
 	// warehouse notes
 	const warehouseNotesLog = {};
@@ -7992,6 +7991,13 @@ async function warehouseNotesScrapeNonDom(opp){
 	// log + return
 	const thisEnded = Date.now();
 	console.log("warehouseNotesScrapeNonDom took " + (thisEnded - thisStarted) + "ms");
+	console.log("Warehouse notes scrape summary", {
+		opportunity: opp,
+		responseURL: res.url,
+		noteBlocks: [...html.matchAll(noteDivRE)].length,
+		mappedNotes: Object.keys(warehouseNotesLog).length,
+		members: Object.keys(members).length
+	});
 
 	if (Object.keys(warehouseNotesLog).length || Object.keys(members).length) {
 		console.log({
