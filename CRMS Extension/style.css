@@ -786,3 +786,103 @@ ul.accessory-item{
   color: green !important;
   font-weight: bold !important;
 }
+
+
+
+.label[href]:hover,.label[href]:focus{color:#fff;text-decoration:none;cursor:pointer}
+.label:empty{display:none}.label-default{background-color:#999999}
+.label-default[href]:hover,.label-default[href]:focus{background-color:gray}
+.label-primary{background-color:#0088f0 !important; color: white !important;}
+.label-primary[href]:hover,.label-primary[href]:focus{background-color:#006bbd}
+.label-success{background-color:#81bc00 !important; color: white !important;}
+.label-success[href]:hover,.label-success[href]:focus{background-color:#5e8900}
+
+.label-info{background-color:#5bc0de !important; color: white !important;}
+.label-info[href]:hover,.label-info[href]:focus{background-color:#31b0d5}
+.label-warning{background-color:#ef7d00 !important; color: white !important;}
+.label-warning[href]:hover,.label-warning[href]:focus{background-color:#bc6200}
+.label-danger{background-color:#cc001e !important; color: white !important;}
+.label-danger[href]:hover,.label-danger[href]:focus{background-color:#990017}
+.label-secondary{background-color:#f2a700}
+.label-secondary[href]:hover,.label-secondary[href]:focus{background-color:#bf8400}
+
+
+.app-chip__accent{
+  display:none !important;
+}
+
+.app-chip__surface {
+  border-radius: 0.6rem !important;
+}
+
+.app-chip--palette-cyan.opportunity-item-status-chip:not(.opportunity-transaction-type-chip){
+  --app-chip-background: #00BDFF !important;
+  --app-chip-label-foreground: white !important;
+}
+
+.app-chip--palette-green.opportunity-item-status-chip:not(.opportunity-transaction-type-chip){
+  --app-chip-background: #81bc00 !important;
+  --app-chip-label-foreground: white !important;
+}
+
+.app-chip--palette-red.opportunity-item-status-chip:not(.opportunity-transaction-type-chip){
+  --app-chip-background: #cc001e !important;
+  --app-chip-label-foreground: white !important;
+}
+
+.app-chip--palette-orange.opportunity-item-status-chip:not(.opportunity-transaction-type-chip){
+  --app-chip-background: #ef7d00 !important;
+  --app-chip-label-foreground: white !important;
+}
+
+.app-chip--palette-grey.opportunity-item-status-chip:not(.opportunity-transaction-type-chip){
+  --app-chip-background: #333333 !important;
+  --app-chip-label-foreground: white !important;
+}
+
+.app-chip--palette-blue.opportunity-item-status-chip:not(.opportunity-transaction-type-chip){
+  --app-chip-background: #0088F0 !important;
+  --app-chip-label-foreground: white !important;
+}
+
+.helper-progress-chip > .app-chip__surface {
+    width: 180px !important;
+    border-radius: 10rem !important;
+    position: relative !important;
+    overflow: hidden !important;
+    isolation: isolate;
+
+    /* Unfilled portion = original colour mixed 50% with white */
+    background: color-mix(
+        in srgb,
+        var(--app-chip-background) 50%,
+        white
+    ) !important;
+
+}
+
+.helper-progress-chip > .app-chip__surface > .helper-progress-fill {
+    position: absolute;
+    z-index: 0;
+
+    top: 0;
+    bottom: 0;
+    left: 0;
+
+    width: var(--helper-progress);
+
+    /* Filled portion = original Current colour */
+    background: var(--app-chip-background);
+
+    cursor: pointer;
+}
+
+.helper-progress-chip > .app-chip__surface > .app-chip__label,
+.helper-progress-chip > .app-chip__surface > [class*="icn-"] {
+    position: relative;
+    z-index: 1;
+}
+
+.app-chip__surface > [class*="icn-"][class$="-svg"] {
+    display: none !important;
+}

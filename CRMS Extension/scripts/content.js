@@ -105,6 +105,8 @@ quarantineData = {quarantines:[], meta:[]};
 quarantinedItemList = [];
 quarantineCounts = [];
 
+lastTopValue = null;
+
 
 console.log(`Content.js was triggered at ${performance.now()}ms`);
 
@@ -1314,27 +1316,63 @@ async function addDetails(mode) {
 		}
 
 		// catching changes to the table functions header
-		const tableFunctionsHeader = document.querySelector('div.row.sticky.quick-function-section');
+		const tableFunctionsHeader = document.querySelector('div.row.opportunity-show-sticky--items-toolbar.quick-function-section');
 
 		if (tableFunctionsHeader) {
+				
 				const observer = new MutationObserver(function(mutations) {
 						mutations.forEach(function(mutation) {
 								if (mutation.target === tableFunctionsHeader) {
-										const helperButtonRow = document.querySelector('div.row.helper-sticky');
-										if (!helperButtonRow) {
-											return;
-										}
-
 										// Your logic for handling changes to tableFunctionsHeader
-										const topValue = tableFunctionsHeader.style.top; // Get the current 'top' style value
-										console.log('Top style value changed:', topValue);
-										console.log('Helper row heigh: ', helperButtonRow.offsetHeight);
-										//tableFunctionsHeader.style.top = (parseInt(topValue) + helperButtonRow.offsetHeight) + 'px';
+										
+										const helperButtonRow = document.querySelector('div.row.helper-sticky'); // get the helper button row
+
+										if (helperButtonRow){
+											
+
+												const topValue = tableFunctionsHeader.style.top;
+												//console.log('+++++++++++ Top style value changed:', topValue);
+												//console.log('+++++++++++ Helper row height: ', helperButtonRow.offsetHeight);
+
+												// Ignore the mutation caused by previous write.
+												if (topValue === lastTopValue) return;
+
+
+												const top = parseFloat(topValue);
+												if (!Number.isFinite(top)) return;
+
+												const newTopValue = `${top + helperButtonRow.offsetHeight}px`;
+												lastTopValue = newTopValue;
+												tableFunctionsHeader.style.top = newTopValue;
+											
+										} else {
+											setTimeout(function() {
+												const helperButtonRow = document.querySelector('div.row.helper-sticky'); // get the helper button row
+												if (helperButtonRow){
+
+													const topValue = tableFunctionsHeader.style.top;
+													console.log('+++++++++++ Top style value changed:', topValue);
+													console.log('+++++++++++ Helper row height (delayed): ', helperButtonRow.offsetHeight);
+
+												// Ignore the mutation caused by previous write.
+												if (topValue === lastTopValue) return;
+
+												if (!helperButtonRow) return;
+
+												const top = parseFloat(topValue);
+												if (!Number.isFinite(top)) return;
+
+												const newTopValue = `${top + helperButtonRow.offsetHeight}px`;
+												lastTopValue = newTopValue;
+												tableFunctionsHeader.style.top = newTopValue;
+												}
+											}, 500);
 
 
 
+										}
+									}
 
-								}
 						});
 				});
 
@@ -1375,19 +1413,21 @@ async function addDetails(mode) {
 				addDetailsRunning = false;
 				return;
 			}
-			const spans = thisSidebar.querySelectorAll('span');
+
+			const sidebarAttributes = thisSidebar.querySelector('.sidebar-attributes');
+			const spans = sidebarAttributes.querySelectorAll('div');
 		// Iterate over each <span>
 		let startDateValue = null;
 		let endDateValue = null;
 		spans.forEach((span, index) => {
 				// Check if the text content of this <span> is 'Start Date:'
-				if (span.textContent.trim() === 'Start Date:') {
+				if (span.textContent.trim() === 'Start Date') {
 						// The next sibling element should be the <span> with the date
 						const nextSpan = spans[index + 1];
 						if (nextSpan) {
 								startDateValue = nextSpan.textContent.trim();
 						}
-				} else if (span.textContent.trim() === 'End Date:') {
+				} else if (span.textContent.trim() === 'End Date') {
 						// The next sibling element should be the <span> with the date
 						const nextSpan = spans[index + 1];
 						if (nextSpan) {
@@ -1401,6 +1441,8 @@ async function addDetails(mode) {
 		//chrome.runtime.sendMessage({messageType: "availabilityscape", messageText: opportunityID, messageStartDate:startDateValue, messageEndDate:endDateValue});
 
 		// Local parse text version
+
+		console.log(`Scraping availability for opportunity ${opportunityID} from ${startDateValue} to ${endDateValue}`);
 		availabilityScrapeNonDom(opportunityID, startDateValue, endDateValue);
 
 		// Scrape warehouse notes
@@ -4078,7 +4120,9 @@ const observer = new MutationObserver((mutations) => {
 			} else if (messageText.includes('Helper failed to fetch from API. Retrying.')){
 				// do nothing
 				console.log("Re-trying to fetch from API");
-			
+			} else if (messageText.includes('Scan the item to be removed.')){
+				// do nothing
+				console.log("Scan the item to be removed.");
 
 			// If any other alert appears, log it so that I can spot it and add it to this code
 			} else {
@@ -4758,6 +4802,7 @@ async function initialiseDetailControls(restoreFilters = true){
 					smartScan = false;
 				}
 				console.log("smartScan:" + smartScan);
+				focusInput();
 			});
 			}
 
@@ -4780,7 +4825,6 @@ async function initialiseDetailControls(restoreFilters = true){
 					if (listItem && listItem.classList.contains("active")) {
 							// Scroll the window to the top only if the <li> has the "active" class
 							window.scrollTo({ top: 0, behavior: "smooth" });
-							focusInput();
 					}
 				});
 			}
@@ -4838,8 +4882,8 @@ async function initialiseOrderControls(){
 						// create a new li element
 						var newLi = document.createElement('li');
 						newLi.innerHTML = `
-						<i class="icn-cobra-shuffle"></i>
-						<a data-toggle="" id="check-accessories" href="#">Check Accessories</a>`;
+						
+						<a data-toggle="" id="check-accessories" href="#"><i class="icn-cobra-shuffle"></i> Check Accessories</a>`;
 
 						// insert the new li after the recalcLi
 						recalcLi.parentNode.insertBefore(newLi, recalcLi.nextSibling);
@@ -5052,13 +5096,14 @@ async function initialiseDetailFocusHandlers(){
 			}
 
 			// Add an event listener to the SmartScan toggle slider, to make the asset input box focus afterwards
-			waitForOptionalElement('label.checkbox.toggle.android[for="smart_scan"]', "detail focus handlers", 15000).then((smartScanElement) => {
-				if (smartScanElement){
-					smartScanElement.addEventListener('click', function(event) {
-						focusInput();
-					});
-				}
-			});
+			var smartScanElement = document.querySelectorAll('label[for="smart_scan"][class="checkbox toggle android"]');
+			if (smartScanElement[0]){
+				smartScanElement[0].addEventListener('click', function(event) {
+					focusInput();
+				});
+			} else {
+				logMissingElement("detail focus handlers", 'label[for="smart_scan"][class="checkbox toggle android"]');
+			}
 
 			// Add an event listener to all collapse and expand buttons
 			var expandButtons = document.querySelectorAll('button[data-action="expand"], button[data-action="collapse"]');
@@ -5116,77 +5161,52 @@ async function initialiseDetailFocusHandlers(){
 				logMissingElement("detail focus handlers", "input.select-all-items");
 			}
 
-				// Add an event listener to Detail View mode buttons
-				let detailModeManuallySelected = false;
-				var detailModeButtons = document.querySelectorAll('a.btn[data-toggle="tab"]');
-				if (detailModeButtons.length === 0){
-					logMissingElement("detail mode handlers", 'a.btn[data-toggle="tab"]');
-				}
+			// Add an event listener to Detail View mode buttons
+			var detailModeButtons = document.querySelectorAll('a[class="btn"][data-toggle="tab"]');
+			if (detailModeButtons.length === 0){
+				logMissingElement("detail mode handlers", 'a[class="btn"][data-toggle="tab"]');
+			}
 
-				const detailModeByHref = {
-					"#quick_allocate": "allocate",
-					"#quick_prepare": "prepare",
-					"#quick_book_out": "book out",
-					"#quick_check_in": "check-in"
-				};
-				const detailModesWithInputs = new Set(Object.values(detailModeByHref));
-				const getDetailModeFromButton = (button) => {
-					const href = button.getAttribute("href");
-					if (detailModeByHref[href]){
-						return detailModeByHref[href];
-					}
-
-					const textMode = button.textContent.toLowerCase().trim().replace(/\s+/g, " ");
-					return textMode === "check in" ? "check-in" : textMode;
-				};
-
-				// loop through each button and add a click event listener
-				detailModeButtons.forEach(function(button) {
-					button.addEventListener("click", function(event) {
-						detailViewMode = getDetailModeFromButton(button);
-						if (event.isTrusted){
-							detailModeManuallySelected = true;
-							if (detailModesWithInputs.has(detailViewMode)){
-								setTimeout(focusInput, 0);
-							}
-						}
-						console.log(detailViewMode);
+			// add an event listener to all td elements in the table with id "opportunity_items"
+			var tableCells = document.querySelectorAll('#opportunity_items td');
+			if (tableCells.length === 0){
+				logMissingElement("detail focus handlers", "#opportunity_items td");
+			} else {
+				tableCells.forEach(function(cell) {
+					cell.addEventListener("click", function() {
+						focusInput();
 					});
 				});
+			}
 
 
 
 
 
+		// loop through each button and add a click event listener
+		detailModeButtons.forEach(function(button) {
+			button.addEventListener("click", function() {
+				// do something when the button is clicked
+				detailViewMode = button.lastChild.textContent.toLowerCase().toString().trim();;
+				console.log(detailViewMode);
+				setTimeout(focusInput, 250);
+			});
+		});
 
 
-
-				const allocateDefaultResult = await chrome.storage.local.get(["allocateDefault"]);
-				if (allocateDefaultResult.allocateDefault != "false" && detailViewMode == "functions"){
-					const allocateButton = await waitForOptionalElement('a.btn[href="#quick_allocate"]', "allocate default", 15000);
-					if (allocateButton){
-						const isAllocateTabActive = () => {
-							const activeAllocateButton = document.querySelector('a.btn[href="#quick_allocate"]');
-							const activeAllocatePane = document.querySelector("#quick_allocate");
-							return (activeAllocateButton && activeAllocateButton.closest("li.active")) || (activeAllocatePane && activeAllocatePane.classList.contains("active"));
-						};
-						const clickAllocateIfNeeded = () => {
-							if (detailModeManuallySelected || isAllocateTabActive()){
-								return;
-							}
-
-							const currentAllocateButton = document.querySelector('a.btn[href="#quick_allocate"]');
-							if (currentAllocateButton){
-								currentAllocateButton.click();
-								focusInput();
-							}
-						};
-
-						[0, 250, 750, 1500, 3000, 5000].forEach((delay) => {
-							setTimeout(clickAllocateIfNeeded, delay);
-						});
-					}
+		chrome.storage.local.get(["allocateDefault"]).then((result) => {
+			if (result.allocateDefault != "false" && detailViewMode == "functions"){
+				var allocateButton = document.querySelector('a.btn[href="#quick_allocate"]');
+				if (allocateButton){
+					console.log("Allocate Default = "+result.allocateDefault);
+					//allocateButton.click();
+					activateAllocateTab();
+				} else {
+					logMissingElement("allocate default", 'a.btn[href="#quick_allocate"]');
 				}
+			}
+		});
+
 
 		chrome.storage.local.get(["soundsOn"]).then((result) => {
 			console.log("Sound = "+result.soundsOn);
@@ -5203,7 +5223,18 @@ async function initialiseDetailFocusHandlers(){
 	}
 }
 
+async function activateAllocateTab() {
+    const allocateButton =
+        await waitForElement('a.btn[href="#quick_allocate"]', 15000);
 
+    await new Promise(resolve =>
+        requestAnimationFrame(() =>
+            requestAnimationFrame(resolve)
+        )
+    );
+    allocateButton.click();
+	focusInput();
+}
 
 
 
@@ -5232,6 +5263,7 @@ function focusInput(){
 				break;
 		}
 		if (inputId){
+			console.log("Focusing input with ID: " + inputId);
 			const inputElement = document.getElementById(inputId);
 			if (inputElement){
 				inputElement.focus();
@@ -6961,7 +6993,10 @@ function removeAsset(assetToRemove){
 			if (assetColumns[i].innerText == assetToRemove){
 					removeFound = true;
 					var parentRow = assetColumns[i].closest('tr');
-					var editButton = parentRow.querySelector('a[data-rp="true"]');
+
+					const editButton = [...parentRow.querySelectorAll('a')]
+  						.find(a => a.textContent.trim() === 'Edit');
+					//var editButton = parentRow.querySelector('a[data-rp="true"]');
 					if (editButton) {
 						// Append "&remove-" to the href attribute of the <a> element
 						editButton.href += "&"+assetToRemove+"&remove";
@@ -7882,11 +7917,12 @@ async function warehouseNotesScrapeNonDom(opp){
 
 	await recallApiDetails();          // ← your helper (sets apiSubdomain, …)
 
+	// The detail page now contains skeleton rows; its items section supplies the row HTML.
 	const res = await fetch(
-		`https://${apiSubdomain}.current-rms.com/opportunities/${opportunityID}?view=d`,
+		`https://${apiSubdomain}.current-rms.com/opportunities/${opp}/section?section=items&sort=path&tab=functions&view=d`,
 		{ credentials: 'include' }
 	);
-	if (!res.ok) throw new Error(`detail page fetch failed (${res.status})`);
+	if (!res.ok) throw new Error(`detail items section fetch failed (${res.status})`);
 	const html = await res.text();
 
 	// warehouse notes
@@ -7955,6 +7991,13 @@ async function warehouseNotesScrapeNonDom(opp){
 	// log + return
 	const thisEnded = Date.now();
 	console.log("warehouseNotesScrapeNonDom took " + (thisEnded - thisStarted) + "ms");
+	console.log("Warehouse notes scrape summary", {
+		opportunity: opp,
+		responseURL: res.url,
+		noteBlocks: [...html.matchAll(noteDivRE)].length,
+		mappedNotes: Object.keys(warehouseNotesLog).length,
+		members: Object.keys(members).length
+	});
 
 	if (Object.keys(warehouseNotesLog).length || Object.keys(members).length) {
 		console.log({
