@@ -111,14 +111,14 @@ if (shouldScrape()) {
 }  else {
     console.log("This will not be scraped (URL is missing 'scrape' suffix).");
 
-    // Section to add quick shortcut to reach Detail View directly by clicking on the avater symbol
+    // Section to add quick shortcut to reach Detail View directly by clicking on the progress losenge
     // Add event listener to the document (or a parent element)
     document.addEventListener('click', function(event) {
-        // Check if the clicked element or any of its ancestors is a td with class 'row-avatar'
-        const tdElement = event.target.closest('td.row-avatar');
-        if (tdElement) {
+        // Check if the clicked element or any of its ancestors is a span with class 'app-chip'
+        const appChip = event.target.closest('span.app-chip');
+        if (appChip) {
             // Find the parent tr element
-            const trElement = tdElement.closest('tr');
+            const trElement = appChip.closest('tr');
             if (trElement) {
                 // Extract the reference number from the tr element's id
                 const refNumber = trElement.id.split('-')[1];
@@ -162,14 +162,72 @@ if (shouldScrape()) {
         });
     }
 
+    // section to style the new progress lozenges based on progress status
+
+    // inject the CSS into the page
+    const css = document.createElement('link');
+    css.rel = 'stylesheet';
+    css.type = 'text/css';
+    css.href = chrome.runtime.getURL('style.css'); // Path to the external script
+    document.documentElement.appendChild(css);
 
 
+    document.querySelectorAll("span.app-chip").forEach(styleProgressChip);
+  
 
+    function getProgressFromString(text) {
+            // Handles ordinary spaces and the thin spaces Current uses around "/"
+            const match = text.match(/([\d,]+)\s*\/\s*([\d,]+)/u);
 
+            if (!match) return null;
 
+            const current = Number(match[1].replaceAll(",", ""));
+            const total = Number(match[2].replaceAll(",", ""));
 
+            if (!Number.isFinite(current) || !Number.isFinite(total) || total <= 0) {
+                return null;
+            }
 
+            // Clamp between 0 and 100
+            return Math.max(0, Math.min(100, (current / total) * 100));
+        }
 
+        function styleProgressChip(element) {
+        const label = element.querySelector(".app-chip__label");
+        const surface = element.querySelector(".app-chip__surface");
+
+        if (!label || !surface) return;
+
+        const text = label.textContent.trim().toLowerCase();
+
+        let mode;
+
+        if (text.includes("prepared")) {
+            mode = "prepared";
+        } else if (text.includes("booked out")) {
+            mode = "booked-out";
+        } else if (text.includes("checked in")) {
+            mode = "checked-in";
+        } else {
+            return;
+        }
+
+        const progress = getProgressFromString(text);
+        if (progress === null) return;
+
+        element.classList.add("helper-progress-chip");
+        element.dataset.progressMode = mode;
+        element.style.setProperty("--helper-progress", `${progress}%`);
+
+        // Add progress fill if it doesn't already exist
+        let fill = surface.querySelector(".helper-progress-fill");
+
+        if (!fill) {
+            fill = document.createElement("span");
+            fill.className = "helper-progress-fill";
+            surface.prepend(fill);
+        }
+    }
 }
 
 

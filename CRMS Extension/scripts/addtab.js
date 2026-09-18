@@ -8,7 +8,7 @@ function logAddtabMissingElement(feature, selector){
   const key = `${feature}:${selector}`;
   if (!addtabMissingElementLogs.has(key)){
     addtabMissingElementLogs.add(key);
-    console.warn(`CurrentRMS Helper: ${feature} missing expected element: ${selector}`);
+    // console.warn(`CurrentRMS Helper: ${feature} missing expected element: ${selector}`);
   }
 }
 

@@ -7924,6 +7924,8 @@ async function warehouseNotesScrapeNonDom(opp){
 	if (!res.ok) throw new Error(`detail page fetch failed (${res.status})`);
 	const html = await res.text();
 
+	console.log(html);
+
 	// warehouse notes
 	const warehouseNotesLog = {};
 
