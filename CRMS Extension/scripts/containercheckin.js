@@ -1,7 +1,7 @@
 console.log("Container check-in script is live");
 
 // Find the submit button with type "submit" and value "scan"
-const submitButton = document.querySelector('input[type="submit"][value="Scan"]');
+const submitButton = document.getElementById('scan_component_submit');
 
 let containerRef;
 
@@ -12,7 +12,7 @@ const globalOption = document.querySelector('a[href="/global_check_in"]');
 // Check if the submit button was found and has a parent div
 if (globalOption && submitButton && submitButton.parentElement.tagName === 'DIV') {
     // Get the parent div
-    const parentDiv = submitButton.parentElement;
+    const parentDiv = submitButton.parentElement.parentElement.parentElement;
 
     // Create a new div with the specified classes
     const newDiv = document.createElement('div');

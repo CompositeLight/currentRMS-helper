@@ -851,6 +851,7 @@ async function globalSearchScrape(toSearch){
 async function containercheckin(containerRef){
   await recallApiDetails();
   if (apiSubdomain){
+    console.log("Running check-in request for "+containerRef);
     chrome.tabs.create({
         url: `https://${apiSubdomain}.current-rms.com/global_check_in?autocheckin&${containerRef}`,
         active: false

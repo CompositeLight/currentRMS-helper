@@ -17,69 +17,8 @@ console.log(containerRef);
 window.addEventListener("load", function() {
   // Your code here
   console.log("Page is fully loaded, including all resources.");
-});
 
-
-function processItem(){
-  if (readyToProcess){
-  readyToProcess = false;
-  console.log(listToCheckIn.length);
-    if (listToCheckIn.length > 0){
-      var nextItem = listToCheckIn[0];
-      console.log(`Checking-in item: ${nextItem.asset}`);
-      inputField.value = nextItem.asset;
-      listToCheckIn.shift();
-      submitButton.click();
-    } else {
-      harvestItems();
-    }
-  }
-}
-
-function harvestItems(){
-  var checkedInSucessfully = [];
-  const assetsIn = document.querySelectorAll("td.optional-01");
-  assetsIn.forEach((item) => {
-      var thisEntry = item.innerText.trim();
-      if (thisEntry != "Rental"){
-        const firstSpaceIndex = thisEntry.indexOf(' ');
-        // If there's no space, return the entire string
-        if (firstSpaceIndex === -1) {
-          checkedInSucessfully.push(thisEntry);
-        } else {
-          thisEntry = thisEntry.substring(0, firstSpaceIndex);
-          checkedInSucessfully.push(thisEntry);
-        }
-      }
-  });
-  console.log(`We have checked in:`);
-  console.log(checkedInSucessfully);
-
-
-  // Now click the element with the ID "show_complete_modal"
-  const completeButton = document.getElementById("show_complete_modal");
-  if (completeButton) {
-      chrome.runtime.sendMessage({
-        messageType: "autocheckinreport",
-        containerRef: containerRef,
-        assets: checkedInSucessfully
-      });
-      completeButton.click();
-      const finalButton = document.querySelector('button.btn.btn-primary[data-disable-with="wait ..."]');
-      if (finalButton) {
-          finalButton.click();
-          setTimeout(function () {
-            chrome.runtime.sendMessage({ action: "closeTab" });
-          }, 50);
-      }
-  }
-
-
-
-}
-
-
-chrome.storage.local.get([containerRef]).then((result) => {
+  chrome.storage.local.get([containerRef]).then((result) => {
   if (result) {
       console.log(result);
       listToCheckIn = result[containerRef];
@@ -149,3 +88,71 @@ observer.observe(document.body, {
   subtree: true,
   characterData: true
 });
+
+
+
+});
+
+
+function processItem(){
+  if (readyToProcess){
+  readyToProcess = false;
+  console.log(listToCheckIn.length);
+    if (listToCheckIn.length > 0){
+      var nextItem = listToCheckIn[0];
+      console.log(`Checking-in item: ${nextItem.asset}`);
+      inputField.value = nextItem.asset;
+      listToCheckIn.shift();
+      submitButton.click();
+    } else {
+      harvestItems();
+    }
+  }
+}
+
+function harvestItems(){
+  var checkedInSucessfully = [];
+  const assetsIn = document.querySelectorAll("td.optional-01");
+  assetsIn.forEach((item) => {
+      var thisEntry = item.innerText.trim();
+      if (thisEntry != "Rental"){
+        const firstSpaceIndex = thisEntry.indexOf(' ');
+        // If there's no space, return the entire string
+        if (firstSpaceIndex === -1) {
+          checkedInSucessfully.push(thisEntry);
+        } else {
+          thisEntry = thisEntry.substring(0, firstSpaceIndex);
+          checkedInSucessfully.push(thisEntry);
+        }
+      }
+  });
+  console.log(`We have checked in:`);
+  console.log(checkedInSucessfully);
+
+
+  // Now click the element with the ID "show_complete_modal"
+
+ 
+  const completeButton = document.getElementById("show_complete_modal");
+  
+  if (completeButton) {
+      chrome.runtime.sendMessage({
+        messageType: "autocheckinreport",
+        containerRef: containerRef,
+        assets: checkedInSucessfully
+      });
+      completeButton.click();
+      const finalButton = document.querySelector('button.btn.btn-primary[data-disable-with="wait ..."]');
+      if (finalButton) {
+          finalButton.click();
+          setTimeout(function () {
+            chrome.runtime.sendMessage({ action: "closeTab" });
+          }, 50);
+      }
+  }
+
+
+
+}
+
+
